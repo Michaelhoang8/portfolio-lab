@@ -2,6 +2,8 @@
 
 Three working full-stack applications in a shared, dependency-free Python workspace. Browser interfaces, JSON APIs, SQLite persistence, transactional domain logic, and regression tests are included.
 
+![Experiment Studio browser preview](docs/experiment-studio.png)
+
 | App | What it does | Engineering focus |
 | --- | --- | --- |
 | Issue Desk | Create, search, prioritize, and move issues across a three-stage board | Audit events, validation, idempotent status updates |
@@ -33,6 +35,8 @@ node --check portfolio/static/app.js
 ```
 
 Node is optional for running the apps; it is used only for the JavaScript syntax check. CI runs the Python tests on 3.11, 3.12, and 3.13. The nine tests cover real HTTP behavior, persistence, validation, SQL-like input, duplicate SKUs, audit events, Wilson boundaries, rollback on overdraw, and simultaneous withdrawals through separate connections.
+
+Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
 ## Architecture
 
