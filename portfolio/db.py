@@ -1,0 +1,43 @@
+"""SQLite connection lifecycle and version-one schema."""
+import sqlite3
+from pathlib import Path
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS tickets (
+ id INTEGER PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL,
+ priority TEXT NOT NULL CHECK(priority IN ('low','medium','high')),
+ status TEXT NOT NULL DEFAULT 'backlog' CHECK(status IN ('backlog','active','done')),
+ created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE TABLE IF NOT EXISTS events (
+ id INTEGER PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES tickets(id),
+ detail TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE TABLE IF NOT EXISTS products (
+ id INTEGER PRIMARY KEY, sku TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+ reorder_point INTEGER NOT NULL CHECK(reorder_point >= 0));
+CREATE TABLE IF NOT EXISTS movements (
+ id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id),
+ delta INTEGER NOT NULL CHECK(delta != 0), note TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE TABLE IF NOT EXISTS experiments (
+ id INTEGER PRIMARY KEY, name TEXT NOT NULL,
+ a_visitors INTEGER NOT NULL, a_conversions INTEGER NOT NULL,
+ b_visitors INTEGER NOT NULL, b_conversions INTEGER NOT NULL,
+ CHECK(a_visitors > 0 AND b_visitors > 0),
+ CHECK(a_conversions BETWEEN 0 AND a_visitors),
+ CHECK(b_conversions BETWEEN 0 AND b_visitors));
+"""
+
+def connect(path):
+    db = sqlite3.connect(path, timeout=10)
+    db.row_factory = sqlite3.Row
+    db.execute('PRAGMA foreign_keys=ON')
+    return db
+
+def initialize(path):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with connect(path) as db:
+        db.execute('PRAGMA journal_mode=WAL')
+        db.executescript(SCHEMA)
+
+def rows(cursor):
+    return [dict(row) for row in cursor.fetchall()]
