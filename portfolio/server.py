@@ -6,7 +6,7 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .db import connect, initialize
-from . import services, data_apps, security_apps
+from . import services, data_apps, security_apps, ml_apps
 from .validation import ValidationError, NotFoundError
 
 STATIC = Path(__file__).parent / 'static'
@@ -33,6 +33,9 @@ def handler_for(database):
                     db.close()
                 return
             files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                     '/ml': ('ml.html', 'text/html; charset=utf-8'),
+                     '/ml.js': ('ml.js', 'text/javascript; charset=utf-8'),
+                     '/ml.css': ('ml.css', 'text/css; charset=utf-8'),
                      '/security': ('security.html', 'text/html; charset=utf-8'),
                      '/security.js': ('security.js', 'text/javascript; charset=utf-8'),
                      '/security.css': ('security.css', 'text/css; charset=utf-8'),
@@ -55,12 +58,16 @@ def handler_for(database):
             db = connect(database)
             try:
                 length = int(self.headers.get('Content-Length', '0'))
-                limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/')) else 16384
+                limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/')) else 16384
                 if not 0 < length <= limit:
                     raise ValidationError(f'Request must contain 1–{limit} bytes')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
+                ml_routes = {'/api/ml/train':ml_apps.train,'/api/ml/search':ml_apps.search,'/api/ml/evaluate':ml_apps.evaluate}
+                if self.path in ml_routes:
+                    self.reply(200, ml_routes[self.path](data))
+                    return
                 security_routes = {'/api/security/logs':security_apps.auth_logs,
                     '/api/security/headers':security_apps.inspect_headers,'/api/security/secrets':security_apps.scan_secrets}
                 if self.path in security_routes:

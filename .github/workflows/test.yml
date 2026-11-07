@@ -20,3 +20,4 @@ jobs:
       - run: node --check portfolio/static/app.js
       - run: node --check portfolio/static/data.js
       - run: node --check portfolio/static/security.js
+      - run: node --check portfolio/static/ml.js
