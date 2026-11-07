@@ -191,3 +191,9 @@ The initial implementation was created with AI assistance. Commit timestamps ref
 ### Retry-safe stock movements
 
 Stockroom generates a request key for each movement. Retrying the unchanged form after a network failure reuses that key for the lifetime of the page. The server records the key and ledger entry in the same transaction, so concurrent retries write only once. A replay returns the original movement ID and balance with `replayed: true`; the current balance is available from `/api/state`. Reusing a key with different movement data returns HTTP 409. Rejected movements do not consume keys. API callers should retain and reuse their own key when retrying. Reloading the browser clears its pending key.
+
+### Analysis request lifecycle
+
+The twelve stateless analysis apps expose **Cancel analysis** while a request is active. Switching modes cancels the previous request, and a 60-second timeout restores the controls instead of leaving a page busy indefinitely. Cancellation stops the browser waiting for a result; an already-running server computation may still finish. Input remains in memory after cancellation. File reads discard stale completions when newer input or a sample has been chosen. No request is retried automatically.
+
+Run the frontend lifecycle checks with `node --test tests/ui_requests.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.

@@ -26,3 +26,4 @@ jobs:
       - run: node --check portfolio/static/identities.js
       - run: node --check portfolio/static/capabilities.js
       - run: node --check portfolio/static/observatory.js
+      - run: node --test tests/ui_requests.test.cjs

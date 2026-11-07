@@ -134,3 +134,6 @@ body[data-app]:not(.still-life) button:not(:disabled):active{translate:0 0}
 .response-pagination span{font-size:12px;color:var(--muted)}
 .response-pagination button{padding:9px 12px;white-space:nowrap}
 @media(max-width:760px){.response-pagination{flex-wrap:wrap}.response-pagination span{order:-1;flex-basis:100%}}
+
+body[data-app] #cancel-analysis{margin:8px 0;padding:10px 14px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+body[data-app=clean] #cancel-analysis{grid-column:2}
