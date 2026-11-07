@@ -63,3 +63,29 @@ test('timeout aborts the fetch and distinguishes it from user cancellation', asy
   await assert.rejects(request,/timed out after 60 seconds/);
   assert.equal(h.cleared(),1);
 });
+
+test('analysis rejects non-object JSON reports and malformed error envelopes',async()=>{
+  for(const value of [null,[],42,'unexpected',true]){
+    const h=harness(async()=>({ok:true,json:async()=>value}));
+    await assert.rejects(h.request('/api/data/profile',{}),/unreadable response/);
+    assert.equal(h.cleared(),1);
+  }
+  for(const error of [null,{},[],42,'']){
+    const h=harness(async()=>({ok:false,status:400,json:async()=>({error})}));
+    await assert.rejects(h.request('/api/data/profile',{}),/Analysis failed \(HTTP 400\)/);
+  }
+});
+test('analysis deadline and cancellation remain active after response headers arrive',async()=>{
+  for(const cancel of ['timeout','pagehide']){
+    let bodyStarted;
+    const started=new Promise(resolve=>{bodyStarted=resolve;});
+    const h=harness(async(_url,options)=>({ok:true,json:()=>{
+      bodyStarted();return new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}));
+    }}));
+    const request=h.request('/api/data/profile',{});
+    await started;
+    if(cancel==='timeout')h.timeout();else h.event(cancel);
+    await assert.rejects(request,cancel==='timeout'?/timed out/:/cancelled/);
+    assert.equal(h.cleared(),1);
+  }
+});

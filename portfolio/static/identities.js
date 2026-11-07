@@ -149,7 +149,8 @@ window.analysisBusy = function (busy, success = false) {
     try{
       const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(body),signal:request.controller.signal});
       let data;try{data=await response.json();}catch(error){if(error.name==='AbortError')throw error;throw Error('The server returned an unreadable response. Check the server and try again.');}
-      if(!response.ok)throw Error(data.error||`Analysis failed (HTTP ${response.status}).`);
+      if(!data||typeof data!=='object'||Array.isArray(data))throw Error('The server returned an unreadable response. Check the server and try again.');
+      if(!response.ok)throw Error(typeof data.error==='string'&&data.error?data.error:`Analysis failed (HTTP ${response.status}).`);
       return data;
     }catch(error){
       if(error.name==='AbortError')throw Error(request.timedOut?'The analysis timed out after 60 seconds. Your input is preserved; try a smaller dataset.':'Analysis cancelled. Your input is preserved.');

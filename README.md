@@ -255,6 +255,8 @@ The twelve stateless analysis apps expose **Cancel analysis** while a request is
 
 All twelve stateless analysis apps now accept local UTF-8 files appropriate to their input format. A shared decoder enforces each tool’s byte limit and consistent recovery messages. Eleven JavaScript tests cover byte limits, BOM/Unicode decoding, unreadable files, invalid encoding, and stale-file completions across the data, ML, security, and DevOps collections. Files load into the editor first; analysis requires an explicit run.
 
+Analysis responses must contain a JSON object before rendering begins. Null, array, primitive, and malformed error envelopes produce readable recovery messages rather than raw rendering errors or misleading offline messages. Lifecycle tests also stall response-body decoding after headers arrive to verify that the complete-response timeout and navigation cancellation remain active.
+
 The shared JSON decoder rejects unpaired Unicode surrogate escapes in values and object keys before data reaches SQLite or analysis functions. Valid paired escapes and ordinary Unicode remain supported; malformed-input errors do not echo submitted content.
 
 Run the JavaScript checks with `node --test`. Test discovery includes request cancellation, response deadlines, workspace ordering, inventory filtering, CSV headers, and file-import recovery; CI runs them alongside Python tests and JavaScript syntax checks.
