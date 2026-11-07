@@ -81,3 +81,19 @@ test('workspace write parsing rejects unusable responses without hiding uncertai
   h.requests.at(-1).resolve({response:{ok:false,status:409},text:'{"error":"Stale version"}'});
   await assert.rejects(posted,error=>error.status===409&&error.message==='Stale version');
 });
+
+test('inventory filters combine SKU search with exact stock boundaries and stable ordering',()=>{
+  const h=harness();
+  const products=[{name:'Keyboard',sku:'KEY-01',stock:5,reorder_point:5},
+    {name:'Dock',sku:'DOCK-01',stock:0,reorder_point:10},
+    {name:'Monitor',sku:'MON-01',stock:8,reorder_point:2},
+    {name:'Dock',sku:'DOCK-02',stock:2,reorder_point:5}];
+  const names=(query,status,order)=>Array.from(h.context.visibleProducts(products,query,status,order),p=>p.sku);
+  assert.deepEqual(names(' dock ','reorder','name'),['DOCK-01','DOCK-02']);
+  assert.deepEqual(names('','empty','name'),['DOCK-01']);
+  assert.deepEqual(names('','healthy','name'),['MON-01']);
+  assert.deepEqual(names('KEY-01','reorder','name'),['KEY-01']);
+  assert.deepEqual(names('','all','stock'),['DOCK-01','DOCK-02','KEY-01','MON-01']);
+  assert.deepEqual(names('','all','shortfall'),['DOCK-01','DOCK-02','KEY-01','MON-01']);
+  assert.equal(products[0].sku,'KEY-01'); // Sorting must not mutate the loaded workspace.
+});

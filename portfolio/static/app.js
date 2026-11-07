@@ -64,10 +64,53 @@ function comparisonReport(comparison) {
   const status={insufficient_counts:'Counts are too sparse for the normal-approximation test.',difference_detected:'Evidence of a difference at the 5% level.',inconclusive:'No clear evidence of a difference at the 5% level. This does not establish equivalence.'}[comparison.status];
   return `<p class="help">95% interval for B − A: <strong>${interval} pp</strong></p><details class="comparison-details"><summary>Comparison method &amp; evidence</summary><p>${escape(status)}</p><p>Two-sided p-value: <strong>${escape(p)}</strong></p><p class="help">The adjusted interval uses Agresti–Caffo; the test uses pooled variance. These methods can disagree near a cutoff. The test requires at least 5 expected successes and failures in each variant.</p><p class="help">Assumes independent randomized groups and a fixed stopping point. No correction for repeated looks or multiple comparisons. A p-value is not the probability that B is better, and statistical evidence does not measure business value.</p></details>`;
 }
+function visibleProducts(products,query,status,order){
+  const search=query.trim().toLowerCase();
+  const visible=products.filter(product=>(!search||`${product.name} ${product.sku}`.toLowerCase().includes(search))&&
+    (status==='reorder'?product.stock<=product.reorder_point:status==='empty'?product.stock===0:
+     status==='healthy'?product.stock>product.reorder_point:true));
+  return visible.sort((a,b)=>{
+    const difference=order==='stock'?a.stock-b.stock:order==='shortfall'?
+      Math.max(0,b.reorder_point-b.stock)-Math.max(0,a.reorder_point-a.stock):0;
+    return difference||a.name.localeCompare(b.name)||a.sku.localeCompare(b.sku);
+  });
+}
+function renderInventoryOverview(){
+  const query=$('#inventory-search').value,status=$('#inventory-status').value,order=$('#inventory-sort').value;
+  const products=visibleProducts(state.products,query,status,order),custom=!!query.trim()||!!status||order!=='name';
+  $('#products').innerHTML=products.map(p=>`<tr><td>${escape(p.name)}<small>${escape(p.sku)}</small></td><td>${p.stock}</td><td>${p.reorder_point}</td><td class="${p.stock<=p.reorder_point?'warning':''}">${p.stock<=p.reorder_point?'Reorder':'Healthy'}</td></tr>`).join('')||
+    `<tr><td colspan="4">${state.products.length?'No products match these filters.':'No products yet. Add your first product below.'}</td></tr>`;
+  $('#inventory-count').textContent=`${products.length} of ${state.products.length} products shown. Overview totals include all products.`;
+  $('#inventory-view-options summary').textContent=custom?'Inventory filters · customized':'Filter inventory';
+  $('#reset-inventory-filters').hidden=!custom;
+}
+function readInventoryFilters(){
+  const params=new URLSearchParams(location.search);
+  $('#inventory-search').value=(params.get('stock_q')||'').slice(0,200);
+  $('#inventory-status').value=['reorder','empty','healthy'].includes(params.get('stock_status'))?params.get('stock_status'):'';
+  $('#inventory-sort').value=['stock','shortfall'].includes(params.get('stock_sort'))?params.get('stock_sort'):'name';
+}
+function updateInventoryFilters(){
+  const url=new URL(location.href);
+  for(const [parameter,value] of [['stock_q',$('#inventory-search').value.trim()],['stock_status',$('#inventory-status').value],
+                                 ['stock_sort',$('#inventory-sort').value==='name'?'':$('#inventory-sort').value]]){
+    if(value)url.searchParams.set(parameter,value);else url.searchParams.delete(parameter);
+  }
+  history.replaceState(null,'',url);renderInventoryOverview();
+}
+$('#inventory-search').addEventListener('input',updateInventoryFilters);
+$('#inventory-status').addEventListener('change',updateInventoryFilters);
+$('#inventory-sort').addEventListener('change',updateInventoryFilters);
+$('#reset-inventory-filters').addEventListener('click',()=>{
+  $('#inventory-search').value='';$('#inventory-status').value='';$('#inventory-sort').value='name';
+  updateInventoryFilters();$('#inventory-search').focus();
+});
+window.addEventListener('popstate',()=>{readInventoryFilters();renderInventoryOverview();});
+readInventoryFilters();
 function render() {
   renderTickets();
   stats('#inventory-stats', [['Products', state.products.length], ['Units on hand', state.products.reduce((n,p) => n+p.stock,0)], ['At reorder point', state.products.filter(p => p.stock <= p.reorder_point).length]]);
-  $('#products').innerHTML = state.products.map(p => `<tr><td>${escape(p.name)}<small>${escape(p.sku)}</small></td><td>${p.stock}</td><td>${p.reorder_point}</td><td class="${p.stock <= p.reorder_point ? 'warning' : ''}">${p.stock <= p.reorder_point ? 'Reorder' : 'Healthy'}</td></tr>`).join('') || '<tr><td colspan="4">No products yet. Add your first product below.</td></tr>';
+  renderInventoryOverview();
   const editing=$('#edit-product').value;
   $('#edit-product').innerHTML='<option value="">Select a product</option>'+state.products.map(p=>`<option value="${p.id}">${escape(p.name)} · ${escape(p.sku)}</option>`).join('');
   $('#edit-product').value=editing;
