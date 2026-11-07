@@ -1,22 +1,45 @@
 'use strict';
 const $=s=>document.querySelector(s);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let mode='logs',result=null,busy=false;
+let mode='logs',result=null,busy=false,findingView=null;
 const config={logs:['Authentication events','Detection report','Analyze events →','JSON Lines: timestamp (with timezone), ip, user, status (failure or success). Events are sorted before analysis.'],headers:['Response headers','Header review','Inspect headers →','Paste one HTTP response header block. Review is heuristic; HTTPS and real browser behavior are not tested.'],secrets:['Source text','Secret findings','Scan text →','Paste configuration or source text. Reports include rule names and line numbers, never credential values or snippets.']};
 const logSample=Array.from({length:5},(_,i)=>JSON.stringify({timestamp:`2026-01-15T10:0${i}:00Z`,ip:'192.0.2.10',user:'demo-admin',status:'failure'})).concat([JSON.stringify({timestamp:'2026-01-15T10:05:00Z',ip:'192.0.2.10',user:'demo-admin',status:'success'})],Array.from({length:5},(_,i)=>JSON.stringify({timestamp:`2026-01-15T11:0${i}:00Z`,ip:'198.51.100.20',user:`demo-user-${i}`,status:'failure'}))).join('\n');
 const samples={logs:logSample,headers:"HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'\nStrict-Transport-Security: max-age=3600\nX-Content-Type-Options: nosniff\nReferrer-Policy: strict-origin-when-cross-origin\nSet-Cookie: demo_session=FICTIONAL; Secure; SameSite=Lax",secrets:'# Fictional examples. These are not real credentials.\npassword = "DEMO_ONLY_NOT_A_REAL_PASSWORD"\napi_key = "DEMO_ONLY_NOT_A_REAL_API_KEY"\nAuthorization: Bearer DEMO_ONLY_NOT_A_REAL_BEARER\n'};
 function message(text,error=false){$('#notice').textContent=text;$('#notice').className=error?'error':'';}
-function invalidate(){result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
+function invalidate(){findingView=null;result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
 function switchMode(next){if(busy)return;mode=config[next]?next:'logs';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#log-options').hidden=mode!=='logs';$('#source').value='';invalidate();message('');}
 const stats=items=>`<div class="stats">${items.map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(v=>`<th>${esc(v)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const findingPageSize=50;
+function findingRange(){
+ const start=findingView.page*findingPageSize,end=Math.min(start+findingPageSize,findingView.items.length);
+ return `${start+1}–${end} of ${findingView.items.length} findings`;
+}
+function findingCards(){
+ const start=findingView.page*findingPageSize;
+ return findingView.items.slice(start,start+findingPageSize).map(findingView.renderer).join('');
+}
+function findingList(items,renderer){
+ findingView={items,renderer,page:0};if(!items.length)return '';
+ return `<div id="finding-list">${findingCards()}</div><div id="finding-pages" class="response-pagination" role="group" aria-label="Finding pages" ${items.length<=findingPageSize?'hidden':''}><button type="button" data-finding-page="-1" disabled>Previous findings</button><span id="finding-range" role="status" aria-live="polite">${findingRange()}</span><button type="button" data-finding-page="1">Next findings</button></div>`;
+}
+$('#result').addEventListener('click',event=>{
+ const button=event.target.closest('[data-finding-page]');if(!button||button.disabled||!findingView)return;
+ const last=Math.ceil(findingView.items.length/findingPageSize)-1;
+ findingView.page=Math.max(0,Math.min(last,findingView.page+Number(button.dataset.findingPage)));
+ $('#finding-list').innerHTML=findingCards();$('#finding-range').textContent=findingRange();
+ document.querySelector('[data-finding-page="-1"]').disabled=findingView.page===0;
+ document.querySelector('[data-finding-page="1"]').disabled=findingView.page===last;
+ const heading=$('#finding-list h3');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true});
+ $('#finding-list').scrollIntoView({block:'start'});
+});
 function render(r){
  if(mode==='logs'){
-  $('#result').innerHTML=stats([['Accepted events',r.accepted],['Failed sign-ins',r.failures],['Alerts',r.alerts.length]])+`<p class="summary">Threshold: ${r.threshold} failures / ${r.window_minutes} minutes. Alerts are investigation leads, not proof of compromise. Duplicate input events are retained; use deduplicated logs.</p>`+r.alerts.map(a=>`<article class="finding ${a.severity}"><h3>${esc(a.rule)}<small>${esc(a.severity)}</small></h3><p>${esc(a.detail)}</p><p class="meta">${esc(a.timestamp)} · ${esc(a.ip)} · ${esc(a.user)}<br>Input line ${a.line} · evidence count ${a.count}</p></article>`).join('')+(r.alerts.length?'':'<p>No rules triggered for this input and configuration.</p>')+'<h3>Top failure sources</h3>'+table(['Source IP','Failures'],r.top_sources.map(s=>[s.ip,s.failures]))+`<h3>Rejected lines (${r.rejected.length})</h3>`+table(['Line','Reason'],r.rejected.slice(0,20).map(e=>[e.line,e.reason]));
+  $('#result').innerHTML=stats([['Accepted events',r.accepted],['Failed sign-ins',r.failures],['Alerts',r.alerts.length]])+`<p class="summary">Threshold: ${r.threshold} failures / ${r.window_minutes} minutes. Alerts are investigation leads, not proof of compromise. Duplicate input events are retained; use deduplicated logs.</p>`+findingList(r.alerts,a=>`<article class="finding ${a.severity}"><h3>${esc(a.rule)}<small>${esc(a.severity)}</small></h3><p>${esc(a.detail)}</p><p class="meta">${esc(a.timestamp)} · ${esc(a.ip)} · ${esc(a.user)}<br>Input line ${a.line} · evidence count ${a.count}</p></article>`)+(r.alerts.length?'':'<p>No rules triggered for this input and configuration.</p>')+'<h3>Top failure sources</h3>'+table(['Source IP','Failures'],r.top_sources.map(s=>[s.ip,s.failures]))+`<h3>Rejected lines (${r.rejected.length})</h3>`+table(['Line','Reason'],r.rejected.slice(0,20).map(e=>[e.line,e.reason]));
  }else if(mode==='headers'){
-  $('#result').innerHTML=stats([['Checks',r.findings.length],['Review needed',r.review_count],['Observed controls',r.observed_count]])+`<p class="summary">${esc(r.note)}</p>`+r.findings.map(f=>`<article class="finding ${f.status}"><h3>${esc(f.control)}<small>${esc(f.status)}</small></h3><p>${esc(f.detail)}</p><p class="action">${esc(f.action)}</p></article>`).join('')+`<p class="hint">Duplicate headers: ${esc(r.duplicate_headers.join(', ')||'none')}. Malformed lines: ${esc(r.malformed_lines.join(', ')||'none')}.</p>`;
+  $('#result').innerHTML=stats([['Checks',r.findings.length],['Review needed',r.review_count],['Observed controls',r.observed_count]])+`<p class="summary">${esc(r.note)}</p>`+findingList(r.findings,f=>`<article class="finding ${f.status}"><h3>${esc(f.control)}<small>${esc(f.status)}</small></h3><p>${esc(f.detail)}</p><p class="action">${esc(f.action)}</p></article>`)+`<p class="hint">Duplicate headers: ${esc(r.duplicate_headers.join(', ')||'none')}. Malformed lines: ${esc(r.malformed_lines.join(', ')||'none')}.</p>`;
  }else{
-  $('#result').innerHTML=stats([['Lines scanned',r.lines_scanned],['Potential secrets',r.count],['Raw values returned',0]])+`<p class="summary">${esc(r.note)}</p>`+r.findings.map(f=>`<article class="finding ${f.severity}"><h3>${esc(f.rule)}<small>${esc(f.severity)}</small></h3><p>Line ${f.line} · credential value withheld</p><p class="action">${esc(f.action)}</p></article>`).join('')+(r.count?'':'<p>No supported patterns matched. This is not a guarantee that the text contains no secrets.</p>');
+  $('#result').innerHTML=stats([['Lines scanned',r.lines_scanned],['Potential secrets',r.count],['Raw values returned',0]])+`<p class="summary">${esc(r.note)}</p>`+findingList(r.findings,f=>`<article class="finding ${f.severity}"><h3>${esc(f.rule)}<small>${esc(f.severity)}</small></h3><p>Line ${f.line} · credential value withheld</p><p class="action">${esc(f.action)}</p></article>`)+(r.count?'':'<p>No supported patterns matched. This is not a guarantee that the text contains no secrets.</p>');
  }
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.mode;}));

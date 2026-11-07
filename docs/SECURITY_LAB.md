@@ -67,3 +67,7 @@ python -m benchmarks.secret_scan --baseline ba1ccc0 --findings 4000 --runs 5
 ```
 
 The fixture contains 4,000 synthetic password assignments, with no real credentials. Before timing, the harness verifies that both revisions return identical reports. One Windows/Python 3.13.17 run measured a five-run median of 19.692 ms for indexed line lookup versus 274.793 ms for the earlier repeated-prefix scan. Hardware, input shape, and system load affect timings; this is not a general speedup guarantee or a CI performance threshold. The optional baseline executes the security module from the named local Git revision, so compare reviewed revisions only. Line-location tests also cover LF, CRLF, CR, and Unicode line separators.
+
+Security reports display at most 50 finding cards per page, with keyboard-accessible previous/next controls and an announced range. Changing pages keeps the detailed analysis and export controls intact. Totals, downloaded JSON, and redacted findings CSV contain all findings, not just the visible page.
+
+[Paginated report and full-export browser capture](design/security-pagination.png), using 120 synthetic findings.
