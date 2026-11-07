@@ -1,6 +1,7 @@
 """Offline defensive analysis. No network requests or persistent input storage."""
 import ipaddress
 from bisect import bisect_right
+from itertools import islice
 from .json_input import decode
 import re
 from collections import Counter, defaultdict, deque
@@ -68,24 +69,28 @@ def auth_logs(data):
             active.discard(('burst',ip))
         if len(source_users) < threshold:
             active.discard(('spray',ip))
-        def alert(rule, severity, count, detail):
+        def alert(rule, severity, count, detail, evidence, count_unit='failure events'):
+            recent_evidence=list(islice(reversed(evidence),50))[::-1]
             alerts.append({'rule':rule,'severity':severity,'ip':ip,'user':user,
-                'timestamp':now.isoformat(), 'line':event['line'],'count':count,'detail':detail})
+                'timestamp':now.isoformat(), 'line':event['line'],'count':count,'count_unit':count_unit,'detail':detail,
+                'evidence_lines':[item['line'] for item in recent_evidence], 'evidence_total':len(evidence),
+                'evidence_truncated':len(evidence)>50,'evidence_start':evidence[0]['time'].isoformat(),
+                'evidence_end':evidence[-1]['time'].isoformat()})
         if event['status'] == 'failure':
             failures[ip] += 1
             recent.append(event)
             source_users[user] += 1
             account.append(event)
             if len(recent) >= threshold and ('burst',ip) not in active:
-                alert('Failure burst','medium',len(recent),'Repeated failures from one source within the rolling window')
+                alert('Failure burst','medium',len(recent),'Repeated failures from one source within the rolling window',recent)
                 active.add(('burst',ip))
             users = len(source_users)
             if users >= threshold and ('spray',ip) not in active:
-                alert('Multiple accounts targeted','high',users,'Failures against distinct accounts from one source; investigate possible spraying')
+                alert('Multiple accounts targeted','high',users,'Failures against distinct accounts from one source; investigate possible spraying',recent,'distinct accounts')
                 active.add(('spray',ip))
         else:
             if len(account) >= threshold:
-                alert('Success after failures','high',len(account),'Same account and source succeeded after repeated failures; verify with the account owner')
+                alert('Success after failures','high',len(account),'Same account and source succeeded after repeated failures; verify with the account owner',account)
             account.clear()
     return {'accepted':len(events),'rejected':rejected,'failures':sum(failures.values()),
             'sources':len({e['ip'] for e in events}),'alerts':alerts,
