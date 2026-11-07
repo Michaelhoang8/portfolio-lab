@@ -66,6 +66,41 @@ class DomainTests(unittest.TestCase):
         current=s.snapshot(self.db)['tickets'][0]
         self.assertEqual((current['title'],current['assignee'],current['status']),('Current','','active'))
 
+    def test_product_metadata_edit_is_versioned_without_changing_stock(self):
+        product=self.product()
+        s.movement_create(self.db,{'product_id':product,'delta':7,'note':'Opening stock'})
+        updated=s.product_details(self.db,product,{'name':'Renamed keyboard','reorder_point':9,'expected_version':1})
+        self.assertEqual(updated['version'],2)
+        replay=s.product_details(self.db,product,{'name':'Renamed keyboard','reorder_point':9,'expected_version':1})
+        self.assertEqual(replay['version'],2)
+        row=s.snapshot(self.db)['products'][0]
+        self.assertEqual((row['sku'],row['stock'],row['name'],row['reorder_point']),('KEY-01',7,'Renamed keyboard',9))
+        self.assertEqual(self.db.execute('SELECT count(*) FROM movements').fetchone()[0],1)
+
+    def test_product_edit_validation_and_stale_versions_preserve_saved_values(self):
+        product=self.product()
+        s.product_details(self.db,product,{'reorder_point':10,'expected_version':1})
+        with self.assertRaises(ConflictError):
+            s.product_details(self.db,product,{'name':'Stale rename','expected_version':1})
+        for fields in ({'name':''},{'reorder_point':-1},{'sku':'REPLACED'},{'expected_version':True}):
+            with self.subTest(fields=fields),self.assertRaises(ValidationError):
+                s.product_details(self.db,product,{'expected_version':2,**fields})
+        row=s.snapshot(self.db)['products'][0]
+        self.assertEqual((row['name'],row['reorder_point'],row['version']),('Keyboard',10,2))
+
+    def test_concurrent_product_edit_has_one_winner(self):
+        product=self.product();barrier=threading.Barrier(2)
+        def edit(name):
+            db=connect(self.path)
+            try:
+                barrier.wait(timeout=5)
+                try:return s.product_details(db,product,{'name':name,'expected_version':1})['version']
+                except ConflictError:return 'conflict'
+            finally:db.close()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results=list(pool.map(edit,['First label','Second label']))
+        self.assertCountEqual(results,[2,'conflict'])
+
     def test_stock_rejects_overdraw_without_writing_ledger(self):
         pid = self.product()
         s.movement_create(self.db, {'product_id':pid,'delta':5,'note':'Receive'})
@@ -405,6 +440,19 @@ class HttpTests(unittest.TestCase):
             self.assertEqual(response.status,200)
             self.assertEqual(json.load(response)['model']['features'],['x'])
         with self.request('/api/extensions/model',b'{"text":"invalid"}',headers) as response:
+            self.assertEqual(response.status,400)
+
+    def test_product_metadata_endpoint_and_version_conflict(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/products',b'{"name":"HTTP product","sku":"EDIT-HTTP","reorder_point":2}',headers) as response:
+            product=json.load(response)['id']
+        route=f'/api/products/{product}/details'
+        with self.request(route,b'{"name":"Updated label","expected_version":1}',headers) as response:
+            self.assertEqual(response.status,200)
+            self.assertEqual(json.load(response)['version'],2)
+        with self.request(route,b'{"reorder_point":5,"expected_version":1}',headers) as response:
+            self.assertEqual(response.status,409)
+        with self.request(route,b'{"name":"Missing version"}',headers) as response:
             self.assertEqual(response.status,400)
 
     def test_assignment_endpoint_persists_and_audits(self):

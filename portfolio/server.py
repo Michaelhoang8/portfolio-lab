@@ -161,6 +161,9 @@ def handler_for(database, api_key=None):
                 details=re.fullmatch(r'/api/tickets/(\d+)/details',self.path)
                 if details:
                     self.reply(200,services.ticket_details(db,int(details[1]),data));return
+                product_details=re.fullmatch(r'/api/products/(\d+)/details',self.path)
+                if product_details:
+                    self.reply(200,services.product_details(db,int(product_details[1]),data));return
                 devops_routes={'/api/devops/manifest':devops_apps.manifest,'/api/devops/pipeline':devops_apps.pipeline,'/api/devops/reliability':devops_apps.reliability}
                 if self.path in devops_routes:
                     self.reply(200,capabilities.enrich(self.path,data,devops_routes[self.path](data)))

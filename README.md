@@ -7,7 +7,7 @@ Sixteen working applications in a shared, dependency-free Python workspace: prod
 | App | What it does | Engineering focus |
 | --- | --- | --- |
 | Issue Desk | Edit issues, filter due dates, and review stale versions across a three-stage board | Audit events, optimistic concurrency, draft preservation |
-| Stockroom | Track products, receipts, withdrawals, and reorder thresholds | Immutable movement ledger, concurrent-write correctness |
+| Stockroom | Edit product labels and reorder thresholds; track receipts and withdrawals | Versioned metadata, immutable movement ledger, concurrent-write correctness |
 | Experiment Studio | Compare conversion rates and differences with documented uncertainty | Wilson/Agresti–Caffo intervals, pooled tests, independent reference checks |
 | Dataset Explorer | Profile uploaded CSVs, missingness, duplicates, frequent values, and numeric distributions | Bounded parsing, type inference, descriptive statistics |
 | Pipeline Studio | Trim cells, drop blank rows, deduplicate, and export cleaned CSVs | Ordered transformations, idempotence, safe exports |
@@ -186,11 +186,11 @@ Each HTTP request opens and closes its own database connection. Stock mutations 
 
 All requests require one loopback Host header (`localhost`, `127.0.0.1`, or `[::1]`, with an optional valid port). Unrelated, missing, or duplicate Host headers are rejected before routes run. Forwarded host headers are not trusted; the server remains intended for direct loopback access.
 
-The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a complete snapshot, use the online backup command below; it includes committed WAL data and all persisted tables.
+The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a complete snapshot, use the documented online backup command; it includes committed WAL data and all persisted tables.
 
 ## API
 
-The original product endpoints below require `Content-Type: application/json` and `X-Portfolio-Client: browser` for POST. Successful creates return 201; status updates return 200. Invalid inputs return 400, missing resources 404, and conflicting SKUs 409. Errors have an `error` string. The separate versioned Notes API uses API-key authentication and problem-details errors; see its dedicated documentation.
+The original product endpoints below require `Content-Type: application/json` and `X-Portfolio-Client: browser` for POST. Successful creates return 201; status and metadata updates return 200. Invalid inputs return 400, missing resources 404, and conflicting SKUs or stale edit versions 409. Errors have an `error` string. The separate versioned Notes API uses API-key authentication and problem-details errors; see its dedicated documentation.
 
 | Method | Endpoint | Body |
 | --- | --- | --- |
@@ -198,7 +198,9 @@ The original product endpoints below require `Content-Type: application/json` an
 | GET | `/api/state` | None; returns tickets, events, products, movements, experiments |
 | POST | `/api/tickets` | `title`, `description`, `priority` (low/medium/high) |
 | POST | `/api/tickets/{id}/status` | `status` (backlog/active/done) |
+| POST | `/api/tickets/{id}/details` | Partial `title`, `description`, `priority`, `assignee`, `due_date`; optional `expected_version` |
 | POST | `/api/products` | `name`, `sku`, `reorder_point` (integer ≥ 0) |
+| POST | `/api/products/{id}/details` | Partial `name`, `reorder_point`; required `expected_version` |
 | POST | `/api/movements` | `product_id`, `delta` (nonzero signed integer), `note`, optional `request_key` |
 | POST | `/api/experiments` | `name`, `a_visitors`, `a_conversions`, `b_visitors`, `b_conversions` |
 
@@ -222,6 +224,10 @@ The twelve stateless analysis apps expose **Cancel analysis** while a request is
 
 Run the frontend checks with `node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.
 
+## Product metadata editing
+
+Stockroom’s **Edit product details** disclosure loads an existing product name and reorder threshold. Saving requires the loaded metadata version; stale edits return 409 and remain in the form. **Discard edits and load saved values** explicitly reloads the current version. SKU stays the stable identity, stock continues to derive from movements, and metadata edits do not create stock movements. Ledger views use the current product name. Metadata does not have a separate audit trail.
+
 ## Recent workflow captures
 
-These screenshots use synthetic QA data: [model export and inference](docs/design/saved-model-workflow.png), [experiment comparison](docs/design/experiment-comparison.png), [REST cancellation](docs/design/rest-cancellation.png), [invalid-file recovery](docs/design/ml-file-recovery.png), and [pipeline timing diagnostics](docs/design/pipeline-timing.png). They supplement the automated tests; they are not automated visual regression coverage.
+These screenshots use synthetic QA data: [model export and inference](docs/design/saved-model-workflow.png), [experiment comparison](docs/design/experiment-comparison.png), [REST cancellation](docs/design/rest-cancellation.png), [invalid-file recovery](docs/design/ml-file-recovery.png), [pipeline timing diagnostics](docs/design/pipeline-timing.png), and [product metadata editing](docs/design/stockroom-metadata.png). They supplement the automated tests; they are not automated visual regression coverage.

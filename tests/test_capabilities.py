@@ -211,9 +211,12 @@ class PersistentCapabilities(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db:
             db.executescript(SCHEMA)
             db.execute("INSERT INTO tickets(title,description,priority) VALUES ('Old','Existing','low')")
+            db.execute("INSERT INTO products(sku,name,reorder_point) VALUES ('OLD','Original product',3)")
             db.commit()
         initialize(path);initialize(path)
-        with closing(sqlite3.connect(path)) as db:self.assertEqual(db.execute('SELECT title,assignee,due_date FROM tickets').fetchone(),('Old','',''))
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(db.execute('SELECT title,assignee,due_date FROM tickets').fetchone(),('Old','',''))
+            self.assertEqual(db.execute('SELECT sku,name,reorder_point,version FROM products').fetchone(),('OLD','Original product',3,1))
 
     def test_replenishment_uses_withdrawals_and_preserves_ledger(self):
         pid=services.product_create(self.db,{'name':'Item','sku':'ONE','reorder_point':3})['id']

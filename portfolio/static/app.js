@@ -58,6 +58,9 @@ function render() {
   renderTickets();
   stats('#inventory-stats', [['Products', state.products.length], ['Units on hand', state.products.reduce((n,p) => n+p.stock,0)], ['At reorder point', state.products.filter(p => p.stock <= p.reorder_point).length]]);
   $('#products').innerHTML = state.products.map(p => `<tr><td>${escape(p.name)}<small>${escape(p.sku)}</small></td><td>${p.stock}</td><td>${p.reorder_point}</td><td class="${p.stock <= p.reorder_point ? 'warning' : ''}">${p.stock <= p.reorder_point ? 'Reorder' : 'Healthy'}</td></tr>`).join('') || '<tr><td colspan="4">No products yet. Add your first product below.</td></tr>';
+  const editing=$('#edit-product').value;
+  $('#edit-product').innerHTML='<option value="">Select a product</option>'+state.products.map(p=>`<option value="${p.id}">${escape(p.name)} · ${escape(p.sku)}</option>`).join('');
+  $('#edit-product').value=editing;
   const previous = $('#product-select').value;
   $('#product-select').innerHTML = '<option value="">Select a product</option>' + state.products.map(p => `<option value="${p.id}">${escape(p.name)} · ${p.stock} available</option>`).join('');
   $('#product-select').value = previous;
@@ -100,6 +103,36 @@ function wireForm(id, path, numbers) {
   });
 }
 wireForm('#ticket-form','/api/tickets',[]);
+function loadProductEditor(){
+ const form=$('#product-edit-form'),product=state.products.find(p=>String(p.id)===$('#edit-product').value);
+ form.querySelector('[name=name]').value=product?.name||'';
+ form.querySelector('[name=reorder_point]').value=product?.reorder_point??'';
+ form.dataset.version=product?.version||'';
+ form.querySelector('.product-feedback').textContent=product?`Loaded saved version ${product.version}.`:'';
+}
+$('#edit-product').addEventListener('change',loadProductEditor);
+$('#reload-product').addEventListener('click',async()=>{
+ const form=$('#product-edit-form'),feedback=form.querySelector('.product-feedback');
+ if(form.dataset.saving)return;
+ if(!$('#edit-product').value){feedback.textContent='Select a product first.';return;}
+ const fields=[...form.elements];form.dataset.saving='true';fields.forEach(field=>field.disabled=true);
+ try{await refresh();loadProductEditor();}
+ catch(error){feedback.textContent='Could not load saved values. Your edits are preserved.';}
+ finally{fields.forEach(field=>field.disabled=false);delete form.dataset.saving;}
+});
+$('#product-edit-form').addEventListener('submit',async event=>{
+ event.preventDefault();const form=event.currentTarget;if(form.dataset.saving)return;
+ const id=$('#edit-product').value,feedback=form.querySelector('.product-feedback');
+ const data={name:form.querySelector('[name=name]').value,reorder_point:Number(form.querySelector('[name=reorder_point]').value),expected_version:Number(form.dataset.version)};
+ const fields=[...form.elements];form.dataset.saving='true';form.setAttribute('aria-busy','true');fields.forEach(field=>field.disabled=true);feedback.textContent='Saving product details…';
+ let saved=false;
+ try {
+  const result=await post(`/api/products/${id}/details`,data);saved=true;form.dataset.version=result.version;
+  form.querySelector('[name=name]').value=result.name;form.querySelector('[name=reorder_point]').value=result.reorder_point;
+  await refresh();feedback.textContent='Product details saved.';notice('Product details saved.');
+ } catch(error){const message=saved?'Product details saved, but the overview could not refresh. Load saved values to refresh it.':error.message;feedback.textContent=message;notice(message,true);}
+ finally{fields.forEach(field=>field.disabled=false);delete form.dataset.saving;form.setAttribute('aria-busy','false');}
+});
 wireForm('#product-form','/api/products',['reorder_point']);
 wireForm('#movement-form','/api/movements',['product_id','delta']);
 wireForm('#experiment-form','/api/experiments',['a_visitors','a_conversions','b_visitors','b_conversions']);

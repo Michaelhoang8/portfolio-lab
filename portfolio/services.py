@@ -35,6 +35,26 @@ def product_create(db, data):
         product_id = db.execute('INSERT INTO products(sku,name,reorder_point) VALUES (?,?,?)', values).lastrowid
     return {'id': product_id}
 
+def product_details(db, product_id, data):
+    if set(data)-{'name','reorder_point','expected_version'}:
+        raise ValidationError('Only product name and reorder point can be edited')
+    version=integer(data,'expected_version',1)
+    with db:
+        db.execute('BEGIN IMMEDIATE')
+        old=db.execute('SELECT * FROM products WHERE id=?',(product_id,)).fetchone()
+        if old is None:
+            raise NotFoundError('Product not found')
+        merged={**dict(old),**data}
+        name,reorder=text(merged,'name'),integer(merged,'reorder_point')
+        changed=name!=old['name'] or reorder!=old['reorder_point']
+        if changed:
+            if version!=old['version']:
+                raise ConflictError('This product changed since it was loaded. Your edits are preserved; load saved values before editing again.')
+            db.execute('UPDATE products SET name=?,reorder_point=?,version=version+1 WHERE id=?',
+                       (name,reorder,product_id))
+        return {'id':product_id,'name':name,'reorder_point':reorder,'version':old['version']+bool(changed)}
+
+
 def movement_create(db, data):
     product_id = integer(data, 'product_id', 1)
     delta = integer(data, 'delta', -1_000_000, 1_000_000)
