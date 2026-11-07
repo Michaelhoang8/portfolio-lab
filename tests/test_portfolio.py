@@ -259,6 +259,42 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(rows[-1]['Quantity change'],'-2')
         self.assertEqual(rows[-1]['Balance after movement'],'501')
 
+    def test_issue_audit_export_is_complete_ordered_and_spreadsheet_safe(self):
+        ticket=s.ticket_create(self.db,{'title':'=SYNTHETIC_FORMULA()','description':'Audit fixture','priority':'low'})['id']
+        for index in range(1002):
+            s.ticket_move(self.db,ticket,{'status':'active' if index%2==0 else 'backlog'})
+        s.ticket_archive(self.db,ticket,{'archived':True,'expected_version':1003})
+        chunks=list(s.issue_audit_csv(self.db))
+        self.assertEqual(len(chunks),4) # header and three bounded data batches
+        rows=list(csv.DictReader(io.StringIO(''.join(chunks))))
+        self.assertEqual(len(rows),1004)
+        self.assertEqual(len(s.snapshot(self.db)['events']),100)
+        self.assertEqual(rows[0]['Event'],'Created in backlog')
+        self.assertEqual(rows[-1]['Event'],'Archived issue')
+        self.assertEqual([int(row['Event ID']) for row in rows],list(range(1,1005)))
+        self.assertTrue(all(row['Current issue title']=="'=SYNTHETIC_FORMULA()" for row in rows))
+        self.assertTrue(all(row['Issue ID']==str(ticket) for row in rows))
+
+    def test_issue_audit_export_keeps_one_snapshot_during_concurrent_edits(self):
+        ticket=s.ticket_create(self.db,{'title':'Original title','description':'Audit fixture','priority':'low'})['id']
+        s.ticket_move(self.db,ticket,{'status':'active'})
+        stream=s.issue_audit_csv(self.db,batch_size=1)
+        chunks=[next(stream),next(stream)]
+        other=connect(self.path)
+        try:s.ticket_details(other,ticket,{'title':'New title','expected_version':2})
+        finally:other.close()
+        chunks.extend(stream)
+        old=list(csv.DictReader(io.StringIO(''.join(chunks))))
+        new=list(csv.DictReader(io.StringIO(''.join(s.issue_audit_csv(self.db)))))
+        self.assertEqual(len(old),2)
+        self.assertTrue(all(row['Current issue title']=='Original title' for row in old))
+        self.assertEqual(len(new),3)
+        self.assertTrue(all(row['Current issue title']=='New title' for row in new))
+
+    def test_issue_audit_empty_export_has_headers(self):
+        rows=list(csv.reader(io.StringIO(''.join(s.issue_audit_csv(self.db)))))
+        self.assertEqual(rows,[['Event ID','Timestamp UTC','Issue ID','Current issue title','Event']])
+
     def test_empty_ledger_export_still_contains_headers(self):
         rows=list(csv.reader(io.StringIO(''.join(s.movement_csv(self.db)))))
         self.assertEqual(len(rows),1)
@@ -561,6 +597,20 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(json.load(response)['replayed'],replayed)
         with self.request('/api/movements',json.dumps({**payload,'delta':4}).encode(),headers) as response:
             self.assertEqual(response.status,409)
+
+    def test_issue_audit_download_supports_get_and_bodyless_head(self):
+        with self.request('/api/issues-audit.csv') as response:
+            self.assertEqual(response.status,200)
+            self.assertIn('text/csv',response.headers['Content-Type'])
+            self.assertIn('issue-audit.csv',response.headers['Content-Disposition'])
+            self.assertEqual(response.headers['Cache-Control'],'no-store')
+            rows=list(csv.reader(io.StringIO(response.read().decode('utf-8'))))
+            self.assertEqual(rows[0],['Event ID','Timestamp UTC','Issue ID','Current issue title','Event'])
+            self.assertTrue(all(len(row)==5 for row in rows))
+        request=Request(self.url+'/api/issues-audit.csv',method='HEAD')
+        with urlopen(request,timeout=5) as response:
+            self.assertEqual(response.status,200)
+            self.assertEqual(response.read(),b'')
 
     def test_ledger_download_headers_and_csv_shape(self):
         with self.request('/api/movements.csv') as response:

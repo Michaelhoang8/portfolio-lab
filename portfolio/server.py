@@ -77,14 +77,17 @@ def handler_for(database, api_key=None):
                 rest_api.handle(self,database,api_key)
                 return
             path = self.path.split('?', 1)[0]
-            if path == '/api/movements.csv':
+            downloads={'/api/movements.csv':(services.movement_csv,'stock-movements.csv'),
+                       '/api/issues-audit.csv':(services.issue_audit_csv,'issue-audit.csv')}
+            if path in downloads:
+                export,filename=downloads[path]
                 db = connect(database)
-                chunks = services.movement_csv(db)
+                chunks = export(db)
                 try:
                     first = next(chunks)
                     self.send_response(200)
                     self.send_header('Content-Type','text/csv; charset=utf-8')
-                    self.send_header('Content-Disposition','attachment; filename="stock-movements.csv"')
+                    self.send_header('Content-Disposition',f'attachment; filename="{filename}"')
                     self.send_header('Cache-Control','no-store')
                     self.send_header('X-Content-Type-Options','nosniff')
                     self.send_header('Connection','close')

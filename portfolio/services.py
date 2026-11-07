@@ -245,3 +245,18 @@ def movement_csv(db, batch_size=500):
             yield safe_csv([],[[str(value) for value in row] for row in batch],include_header=False)
     finally:
         cursor.close()
+
+
+def issue_audit_csv(db,batch_size=500):
+    """Yield all issue events in recorded order, including archived issues."""
+    from .data_apps import safe_csv
+    cursor=db.execute("""SELECT e.id,e.created_at,e.ticket_id,t.title,e.detail
+        FROM events e JOIN tickets t ON t.id=e.ticket_id ORDER BY e.id""")
+    try:
+        yield safe_csv(['Event ID','Timestamp UTC','Issue ID','Current issue title','Event'],[])
+        while True:
+            batch=cursor.fetchmany(batch_size)
+            if not batch:break
+            yield safe_csv([],[[str(value) for value in row] for row in batch],include_header=False)
+    finally:
+        cursor.close()

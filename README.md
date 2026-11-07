@@ -195,6 +195,7 @@ The original product endpoints below require `Content-Type: application/json` an
 | Method | Endpoint | Body |
 | --- | --- | --- |
 | GET | `/api/movements.csv` | Full ledger CSV with per-product running balances; streamed in 500-row batches |
+| GET | `/api/issues-audit.csv` | Complete issue event CSV, streamed in 500-row batches |
 | GET | `/api/state` | None; returns tickets, events, products, movements, experiments |
 | POST | `/api/tickets` | `title`, `description`, `priority` (low/medium/high) |
 | POST | `/api/tickets/{id}/status` | `status` (backlog/active/done) |
@@ -231,6 +232,12 @@ Each stage displays ten issues per page with independent Previous/Next controls.
 Open an issue’s editor and choose **Archive issue** to remove it from the default board. **View options → Issue visibility** switches between current, archived, or all issues, and persists as `issue_archive` in the URL. Archived cards retain their stage, details, assignee, deadline, and audit history; **Restore issue** returns them to the current board. Archive status controls visibility, not edit permissions. Overview totals include all issues.
 
 Unsaved local edits must be saved before archiving/restoring. Both actions use `POST /api/tickets/{id}/archive` with `{"archived":true,"expected_version":1}` (or false to restore). The version is required; stale changes return 409. Repeating the existing archive state is a no-op without a duplicate event. Migration, simultaneous edit/archive races, API responses, archive filtering, and snapshot recovery are covered by tests. A browser check archived and restored a synthetic issue while preserving its original stage ([capture](docs/design/issue-archive.png)).
+
+### Complete issue audit export
+
+**Recent activity → Export full issue audit CSV** downloads every recorded issue event in ascending event-ID order, including archived issues. Fields include event ID, UTC timestamp, issue ID, the current issue title, and event description. Titles reflect the export snapshot, not a historical title for each event. The recent on-screen list and workspace JSON retain their existing preview limits.
+
+The export uses one SQLite query snapshot and batches 500 rows at a time; it does not collect the complete event history in browser memory. Spreadsheet formula-like text is escaped. Tests cover 1,004 events, archive history, concurrent edits during streaming, empty databases, and bodyless HEAD responses. A browser download matched every event in its synthetic QA database ([capture](docs/design/issue-audit-export.png)).
 
 ### Retry-safe stock movements
 

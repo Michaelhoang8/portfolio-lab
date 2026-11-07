@@ -144,3 +144,7 @@ body[data-app=clean] #cancel-analysis{grid-column:2}
 .conflict-review{margin:16px 0;padding-top:12px;border-top:1px solid var(--line)}
 .conflict-values dt{font-size:11px;color:var(--muted);margin-top:12px}
 .conflict-values dd{margin:3px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+
+/* Keep workspace export actions aligned with each app palette. */
+body[data-app] .panel .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body[data-app] .panel .section-head a{color:var(--blue);font-size:12px;text-underline-offset:3px}
