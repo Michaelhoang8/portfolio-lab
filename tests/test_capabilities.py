@@ -97,6 +97,24 @@ class AnalysisCapabilities(unittest.TestCase):
         self.assertEqual(rows[0][2],len(result['alerts']))
         self.assertEqual(rows[0][1],'high')
 
+    def test_model_import_roundtrip_and_report_wrapper(self):
+        model={'features':['a'],'weights':[2],'means':[3],'scales':[4],'intercept':1,'threshold':.7}
+        expected=c.predict({'model':model,'csv':'a\n3\n7'})
+        for payload in (model,{'model':model,'metrics':{}}):
+            imported=c.load_model({'text':json.dumps(payload)})['model']
+            self.assertEqual(c.predict({'model':imported,'csv':'a\n3\n7'}),expected)
+            self.assertEqual(imported['threshold'],.7)
+
+    def test_model_import_rejects_ambiguous_or_unsupported_files(self):
+        model={'features':['x'],'weights':[1],'means':[0],'scales':[1],'intercept':0}
+        invalid=['{}','[]','null','{bad','{"model":{},"model":{}}',
+                 json.dumps({**model,'algorithm':'unknown'}),json.dumps({**model,'features':['']}),
+                 json.dumps({**model,'scales':[0]}),json.dumps({**model,'threshold':2}),
+                 json.dumps({**model,'weights':[float('inf')]}),' '*200001]
+        for raw in invalid:
+            with self.subTest(raw=raw[:100]),self.assertRaises(ValidationError):
+                c.load_model({'text':raw})
+
     def test_inference_reuses_scaler_and_aligns_reordered_columns(self):
         model={'features':['a','b'],'weights':[1,2],'means':[10,20],'scales':[2,4],'intercept':0}
         r=c.predict({'model':model,'csv':'b,extra,a\n20,ignore,10\n24,ignore,12\n'})

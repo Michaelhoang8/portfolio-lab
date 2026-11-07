@@ -3,7 +3,7 @@ import math
 import statistics
 from collections import Counter, defaultdict
 from decimal import Decimal
-from . import data_apps, ml_apps, security_apps, devops_apps
+from . import data_apps, ml_apps, security_apps, devops_apps, json_input
 from .validation import ValidationError, integer
 
 
@@ -177,11 +177,13 @@ def quantity(value, resource):
     return amount*units[unit]/(1 if resource=='cpu' else 1024**2)
 
 
-def predict(data):
-    model=data.get('model')
+def validated_model(model):
+    algorithm='standardized binary logistic regression'
+    if isinstance(model,dict) and model.get('algorithm',algorithm)!=algorithm:
+        raise ValidationError('Unsupported model algorithm')
     if not isinstance(model,dict): raise ValidationError('Provide a trained model object')
     features=model.get('features')
-    if not isinstance(features,list) or not 1<=len(features)<=12 or any(not isinstance(f,str) for f in features) or len(set(features))!=len(features): raise ValidationError('Model requires 1–12 unique feature names')
+    if not isinstance(features,list) or not 1<=len(features)<=12 or any(not isinstance(f,str) or not f.strip() or len(f)>1000 for f in features) or len(set(features))!=len(features): raise ValidationError('Model requires 1–12 unique feature names')
     vectors=[]
     for key in ('weights','means','scales'):
         values=model.get(key)
@@ -189,7 +191,30 @@ def predict(data):
         vectors.append([ml_apps.number(v,key,1e-12 if key=='scales' else -1e12,1e12) for v in values])
     weights,means,scales=vectors
     intercept=ml_apps.number(model.get('intercept'),'intercept',-1e12,1e12)
-    threshold=ml_apps.number(data.get('threshold',model.get('threshold',.5)),'threshold',0,1)
+    threshold=ml_apps.number(model.get('threshold',.5),'threshold',0,1)
+    return {'algorithm':algorithm,'features':features,'weights':weights,'means':means,
+            'scales':scales,'intercept':intercept,'threshold':threshold}
+
+
+def load_model(data):
+    raw=data.get('text')
+    if not isinstance(raw,str) or not raw.strip() or len(raw.encode('utf-8'))>200_000:
+        raise ValidationError('Choose a model JSON file under 200 KB')
+    try:
+        parsed=json_input.decode(raw)
+    except ValueError:
+        raise ValidationError('Invalid model JSON: use unique fields and finite numbers') from None
+    if isinstance(parsed,dict) and 'model' in parsed:
+        parsed=parsed['model']
+    return {'model':validated_model(parsed)}
+
+
+def predict(data):
+    model=validated_model(data.get('model'))
+    features=model['features']
+    weights,means,scales=(model[key] for key in ('weights','means','scales'))
+    intercept=model['intercept']
+    threshold=ml_apps.number(data.get('threshold',model['threshold']),'threshold',0,1)
     headers,rows=data_apps.parse(data)
     if any(f not in headers for f in features): raise ValidationError('Prediction CSV must include every model feature')
     predictions=[]

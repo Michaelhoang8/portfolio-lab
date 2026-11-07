@@ -141,7 +141,7 @@ def handler_for(database, api_key=None):
                 data = decode(read_exact(self.rfile,length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
-                extensions={'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}
+                extensions={'/api/extensions/model':capabilities.load_model,'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}
                 if self.path in extensions:
                     self.reply(200,extensions[self.path](data));return
                 if self.path == '/api/extensions/stock-plan':

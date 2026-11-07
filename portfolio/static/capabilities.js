@@ -13,6 +13,8 @@
     const source=q('.source');
     if (!source || !q('#run')) return;
     q('#capability-options')?.remove();
+    q('#saved-model')?.remove();
+    if(app==='train') installSavedModel(source);
     if (!controls[app]) return;
     const fieldset=document.createElement('details'); fieldset.id='capability-options';
     fieldset.innerHTML='<summary>Analysis settings</summary><div class="disclosure-body">'+controls[app]+'</div>';
@@ -44,9 +46,16 @@
       if(result[key])exportButton(section,label,name,result[key],'text/csv;charset=utf-8');
     }
     if(result.model) {
+      exportButton(section,'Download model JSON','classifier-model.json',JSON.stringify(result.model,null,2));
+      section.append(predictionPanel(result.model));
+    }
+    if(section.childNodes.length){section.insertAdjacentHTML('afterbegin','<summary>Detailed analysis & exports</summary>');q('#result').append(section);}
+  };
+  function predictionPanel(model) {
       const panel=document.createElement('div');panel.className='prediction-panel';
-      panel.innerHTML='<h3>Use this model · batch prediction</h3><p class="hint">Paste CSV with the trained feature names. Training means and scales are reused; no refitting occurs. Extra columns are ignored. Up to 5,000 rows.</p><label>Unlabeled feature rows<textarea class="prediction-input" spellcheck="false"></textarea></label><label>Decision threshold<input class="prediction-threshold" required type="number" min="0" max="1" step="0.01" value="0.5"></label><button type="button" class="predict-button">Predict rows</button><p class="prediction-message" role="status"></p><div class="prediction-output"></div>';
-      panel.querySelector('textarea').value=result.model.features.map(name=>'"'+name.replaceAll('"','""')+'"').join(',')+'\n'+result.model.means.join(',');
+      panel.innerHTML='<h3>Use this model · batch prediction</h3><p class="hint">Paste CSV with the trained feature names. Training means and scales are reused; no refitting occurs. Extra columns are ignored. Up to 5,000 rows.</p><label>Unlabeled feature rows<textarea class="prediction-input" spellcheck="false"></textarea></label><label>Decision threshold<input class="prediction-threshold" required type="number" min="0" max="1" step="any" value="0.5"></label><button type="button" class="predict-button">Predict rows</button><p class="prediction-message" role="status"></p><div class="prediction-output"></div>';
+      panel.querySelector('textarea').value=model.features.map(name=>'"'+name.replaceAll('"','""')+'"').join(',')+'\n'+model.means.join(',');
+      panel.querySelector('input').value=model.threshold ?? .5;
       let prediction=null;
       const output=panel.querySelector('.prediction-output'),message=panel.querySelector('.prediction-message');
       panel.addEventListener('input',()=>{prediction=null;output.replaceChildren();message.textContent='Inputs changed. Predict again.';});
@@ -54,15 +63,36 @@
         if (!panel.querySelector('input').reportValidity()) return;
         if (!panel.querySelector('textarea').value.trim()) {message.textContent='Paste feature rows before predicting.';panel.querySelector('textarea').focus();return;}
         const fields=[...panel.querySelectorAll('input,textarea,button')];fields.forEach(c=>c.disabled=true);message.textContent='Predicting…';panel.setAttribute('aria-busy','true');output.replaceChildren();
-        try{prediction=await request('/api/extensions/predict',{model:result.model,csv:panel.querySelector('textarea').value,threshold:Number(panel.querySelector('input').value)});
+        try{prediction=await request('/api/extensions/predict',{model:model,csv:panel.querySelector('textarea').value,threshold:Number(panel.querySelector('input').value)});
           output.innerHTML=table(['Record','Score','Predicted class'],prediction.predictions.slice(0,50).map(p=>[p.record,p.score.toFixed(5),p.predicted]));
           exportButton(output,'Download all predictions','predictions.csv',prediction.csv,'text/csv;charset=utf-8');message.textContent=`Predicted ${prediction.rows} ${prediction.rows===1?'row':'rows'}. Showing ${Math.min(50,prediction.rows)}.`;
         }catch(error){prediction=null;output.replaceChildren();message.textContent=error.message;}finally{fields.forEach(c=>c.disabled=false);panel.setAttribute('aria-busy','false');}
       });
-      section.append(panel);
-    }
-    if(section.childNodes.length){section.insertAdjacentHTML('afterbegin','<summary>Detailed analysis & exports</summary>');q('#result').append(section);}
-  };
+    return panel;
+  }
+  function installSavedModel(source) {
+    const section=document.createElement('details');section.id='saved-model';
+    section.innerHTML='<summary>Use a saved model</summary><div class="disclosure-body"><p class="hint">Load a Classifier Lab model or full training report. JSON only, up to 200 KB. Parameters are validated locally by this server.</p><label>Model JSON<input type="file" accept=".json,application/json"></label><p class="model-message" role="status"></p><div class="model-output"></div></div>';
+    const input=section.querySelector('input'),message=section.querySelector('.model-message'),output=section.querySelector('.model-output');
+    let revision=0;
+    input.addEventListener('change',async()=>{
+      const file=input.files?.[0];input.value='';const current=++revision;output.replaceChildren();
+      if(!file){message.textContent='';return;}
+      if(file.size>200000){message.textContent='Choose a model JSON file under 200 KB.';return;}
+      message.textContent='Validating model…';section.setAttribute('aria-busy','true');
+      try {
+        const text=await file.text();
+        if(current!==revision || !section.isConnected)return;
+        const result=await request('/api/extensions/model',{text});
+        if(current!==revision || !section.isConnected)return;
+        output.append(predictionPanel(result.model));
+        exportButton(output,'Download validated model','classifier-model.json',JSON.stringify(result.model,null,2));
+        message.textContent=`Model ready. ${result.model.features.length} ${result.model.features.length===1?'feature':'features'}. Training parameters are preserved.`;
+      } catch(error) {if(current===revision && section.isConnected)message.textContent=error.message;}
+      finally {if(current===revision)section.setAttribute('aria-busy','false');}
+    });
+    source.append(section);
+  }
   function panel(sectionId,title,formHtml,handler) {
     const section=q(sectionId);if(!section)return;
     const container=document.createElement('details');container.className='panel extension-report';
@@ -78,7 +108,7 @@
   document.addEventListener('DOMContentLoaded',()=>{
     document.querySelectorAll('.source input[type=number]').forEach(input=>input.required=true);
     q('#run')?.addEventListener('click',event=>{
-      const inputs=[...document.querySelectorAll('.source input,.source select,.source textarea')].filter(input=>!input.closest('[hidden]'));
+      const inputs=[...document.querySelectorAll('.source input,.source select,.source textarea')].filter(input=>!input.closest('[hidden],#saved-model'));
       const invalid=inputs.find(input=>!input.checkValidity());
       if(invalid){event.stopImmediatePropagation();invalid.reportValidity();}
     },true);
