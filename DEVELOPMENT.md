@@ -2,7 +2,7 @@
 
 These are proposed milestones, not claims of completed work. Make future commits when each change is actually implemented and verified.
 
-1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. Search and priority filters persist in the URL. Next, add archival and pagination for larger datasets.
+1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. Search, priority, and open due-date filters persist in the URL, along with ordering by newest, priority, or due date. Next, add archival and pagination for larger datasets.
 2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. A streamed full-ledger CSV export includes running balances. Next, add receiving documents and supplier lead-time history.
 3. **Experiment Studio:** a direct difference interval and pooled two-proportion test are implemented and checked against published NIST examples. Next, add experiment hypotheses and guardrail metrics. Sample-size planning remains separate from observed outcomes.
 4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and API contract tests.

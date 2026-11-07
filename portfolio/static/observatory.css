@@ -137,3 +137,6 @@ body[data-app]:not(.still-life) button:not(:disabled):active{translate:0 0}
 
 body[data-app] #cancel-analysis{margin:8px 0;padding:10px 14px;border:1px solid var(--line);background:transparent;color:var(--ink)}
 body[data-app=clean] #cancel-analysis{grid-column:2}
+
+.issue-view-options{margin:0 0 16px;font-size:13px}
+.issue-view-options>.two-col{margin-top:16px;max-width:620px}
