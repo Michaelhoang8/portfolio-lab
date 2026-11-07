@@ -167,11 +167,11 @@ node --check portfolio/static/app.js
 node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs tests/ui_utilities.test.cjs tests/ui_rest_transport.test.cjs
 ```
 
-Node is optional for running the apps; it is used for JavaScript syntax and lifecycle checks. CI runs the Python tests on 3.11, 3.12, and 3.13. The original nine tests cover real HTTP behavior, persistence, validation, SQL-like input, duplicate SKUs, audit events, Wilson boundaries, rollback on overdraw, and simultaneous withdrawals through separate connections.
+Node is optional for running the apps; it is used for JavaScript syntax and lifecycle checks. CI runs Python 3.11–3.13 on Linux and Python 3.13 on Windows, with Node 22 on each job. Windows coverage exercises filesystem locking, SQLite backups, CLI subprocesses, and Unicode behavior; UTF-8 mode makes subprocess text encoding explicit.
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The Python suite covers product workflows, concurrency, HTTP contracts, data analysis, security review, ML, DevOps, and capability extensions. CI runs it across Python 3.11–3.13, checks JavaScript syntax, and runs the JavaScript request-lifecycle tests.
+The Python suite covers product workflows, concurrency, HTTP contracts, data analysis, security review, ML, DevOps, and capability extensions. CI checks JavaScript syntax and discovers all JavaScript regressions alongside the Python suite. Each operating-system/version job has a ten-minute limit and runs independently so a failure does not hide results from the other environments.
 
 ## Architecture
 
