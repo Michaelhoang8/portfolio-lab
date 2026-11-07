@@ -1,6 +1,6 @@
 """Offline defensive analysis. No network requests or persistent input storage."""
 import ipaddress
-import json
+from .json_input import decode
 import re
 from collections import Counter, defaultdict, deque
 from datetime import datetime, timezone
@@ -23,7 +23,7 @@ def auth_logs(data):
         if not raw.strip():
             continue
         try:
-            item = json.loads(raw)
+            item = decode(raw)
             if not isinstance(item, dict):
                 raise ValueError()
             stamp = item.get('timestamp')
@@ -33,7 +33,10 @@ def auth_logs(data):
             if time.utcoffset() is None:
                 raise ValueError()
             time = time.astimezone(timezone.utc)
-            ip = str(ipaddress.ip_address(item.get('ip')))
+            raw_ip = item.get('ip')
+            if not isinstance(raw_ip,str):
+                raise ValueError()
+            ip = str(ipaddress.ip_address(raw_ip))
             user = item.get('user')
             if not isinstance(user,str) or not user.strip() or len(user) > 120:
                 raise ValueError()

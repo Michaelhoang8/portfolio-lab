@@ -32,6 +32,15 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             s.auth_logs({'text':event(0),'threshold':True})
 
+    def test_logs_reject_ambiguous_json_and_numeric_ip_addresses(self):
+        duplicate=event(0)[:-1]+',"status":"success"}'
+        deep=event(0)[:-1]+',"extra":'+'['*100+'0'+']'*100+'}'
+        invalid=[event(0,ip=1),event(0,ip=True),duplicate,deep,event(0)[:-1]+',"extra":NaN}']
+        result=s.auth_logs({'text':'\n'.join([event(0),*invalid])})
+        self.assertEqual(result['accepted'],1)
+        self.assertEqual(len(result['rejected']),5)
+        self.assertEqual(result['failures'],1)
+
     def test_failure_burst_rearms_after_window_expires(self):
         r=s.auth_logs({'text':'\n'.join([event(0),event(1),event(20),event(21)]),'threshold':2})
         self.assertEqual(sum(a['rule']=='Failure burst' for a in r['alerts']),2)

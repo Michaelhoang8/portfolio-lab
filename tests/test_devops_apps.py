@@ -28,6 +28,12 @@ class DevOpsTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 d.manifest({'text':json.dumps(doc)})
 
+    def test_embedded_documents_reject_duplicate_and_nonfinite_json(self):
+        for text in ['{"jobs":[],"jobs":[]}', '{"metadata":{"x":NaN}}',
+                     '{"metadata":{"x":1e999}}', '{"x":'+'['*100+'0'+']'*100+'}']:
+            with self.subTest(text=text[:50]), self.assertRaises(ValidationError):
+                d.document({'text':text})
+
     def test_parallel_scheduling_and_critical_path(self):
         jobs=[{'id':'a','duration':10},{'id':'b','duration':20},{'id':'c','needs':['a','b'],'duration':5}]
         parallel=plan(jobs)

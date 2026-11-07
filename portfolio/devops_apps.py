@@ -1,6 +1,6 @@
 """Offline deployment policy checks, deterministic pipeline simulation, and SLO math."""
 import heapq
-import json
+from .json_input import decode
 import re
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
@@ -13,7 +13,7 @@ def document(data):
     if not isinstance(text,str) or not text.strip() or len(text.encode())>200_000:
         raise ValidationError('Provide a JSON object of 1–200,000 bytes')
     try:
-        value=json.loads(text)
+        value=decode(text)
     except (ValueError,RecursionError):
         raise ValidationError('Input must be valid JSON') from None
     if not isinstance(value,dict):
