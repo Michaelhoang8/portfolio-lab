@@ -1,5 +1,7 @@
 # Portfolio Lab
 
+> **The apps now have separate repositories.** See the [16 standalone repositories](docs/REPOSITORIES.md) for individual clones, launch instructions, and CI. This combined repository is retained as the migration source and development history.
+
 Sixteen working applications in a shared, dependency-free Python workspace: product, data, defensive security, machine-learning, cloud/DevOps, and REST API collections. Browser interfaces, JSON APIs, SQLite persistence, stateless analysis, and regression tests are included.
 
 ![Experiment Studio browser preview](docs/design/experiment-studio.png)
