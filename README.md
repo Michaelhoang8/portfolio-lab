@@ -141,6 +141,24 @@ For a separate workspace or a different port:
 python -m portfolio.server --port 8080 --database data/another.db
 ```
 
+## Backup and recovery
+
+```sh
+python -m portfolio.backup create --database data/portfolio.db --output data/workspace-backup.db
+python -m portfolio.backup verify data/workspace-backup.db
+```
+
+Choose a new output filename for every snapshot. The backup uses SQLite's online backup API, so the local server can remain running. It checks database integrity, foreign-key references, and the current application's required tables before publishing a complete file. Existing output files are never overwritten. A 30-second copy deadline prevents indefinite retries under write contention. The output directory must already exist and support hard links (for example NTFS or ext4); publication fails safely if it does not.
+
+To rehearse recovery, copy a verified snapshot into a **new** database and open it on a separate port:
+
+```sh
+python -m portfolio.backup create --database data/workspace-backup.db --output data/recovered-workspace.db
+python -m portfolio.server --database data/recovered-workspace.db --port 8001
+```
+
+The recovered workspace contains the saved point in time, including the full stock ledger, audit events, notes, and idempotency records. Changes made after that snapshot are absent. Inspect the recovered data before choosing it as your active workspace. Backups under `data/` are excluded from Git. There is no automatic retention, encryption, cloud upload, or scheduled backup. See [SQLite's online backup documentation](https://www.sqlite.org/backup.html) for the underlying snapshot mechanism.
+
 ## Verify
 
 ```sh
@@ -166,7 +184,7 @@ Browser: semantic HTML + responsive CSS + vanilla JavaScript
 
 Each HTTP request opens and closes its own database connection. Stock mutations acquire `BEGIN IMMEDIATE` before reading the ledger balance, so two withdrawals cannot both spend the same units. Failed mutations roll back. Inventory balances derive from the ledger rather than a second mutable counter. Issue status changes and audit entries commit together. Repeating the current status adds no extra event.
 
-The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a full backup, stop the server and copy the SQLite database.
+The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a complete snapshot, use the online backup command below; it includes committed WAL data and all persisted tables.
 
 ## API
 

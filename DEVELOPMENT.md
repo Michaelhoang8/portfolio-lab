@@ -6,7 +6,7 @@ These are proposed milestones, not claims of completed work. Make future commits
 2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. A streamed full-ledger CSV export includes running balances. Next, add receiving documents and supplier lead-time history.
 3. **Experiment Studio:** a direct difference interval and pooled two-proportion test are implemented and checked against published NIST examples. Next, add experiment hypotheses and guardrail metrics. Sample-size planning remains separate from observed outcomes.
 4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and API contract tests.
-5. **Multi-user deployment:** add authentication, ownership checks on every record, CSRF protection, secrets management, and backup/restore verification before exposing the service publicly.
+5. **Multi-user deployment:** add authentication, ownership checks on every record, CSRF protection, and secrets management before exposing the service publicly. Local online snapshots and recovery verification are implemented; encrypted off-device backups and retention remain deployment work.
 6. **Frontend quality:** automate browser flows, add screenshot regression checks at desktop and mobile widths, and conduct a keyboard/screen-reader accessibility review.
 
 ## Interview walkthrough
