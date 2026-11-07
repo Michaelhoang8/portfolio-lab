@@ -1,6 +1,6 @@
 # Portfolio Lab
 
-Six working applications in a shared, dependency-free Python workspace: three product apps and three data apps. Browser interfaces, JSON APIs, SQLite persistence for product records, stateless CSV processing, and regression tests are included.
+Nine working applications in a shared, dependency-free Python workspace: three product apps, three data apps, and three defensive security apps. Browser interfaces, JSON APIs, SQLite persistence for product records, stateless analysis, and regression tests are included.
 
 ![Experiment Studio browser preview](docs/experiment-studio.png)
 
@@ -12,6 +12,11 @@ Six working applications in a shared, dependency-free Python workspace: three pr
 | Dataset Explorer | Profile uploaded CSVs, missingness, duplicates, frequent values, and numeric distributions | Bounded parsing, type inference, descriptive statistics |
 | Pipeline Studio | Trim cells, drop blank rows, deduplicate, and export cleaned CSVs | Ordered transformations, idempotence, safe exports |
 | Revenue Lens | Map sales columns, aggregate month/category totals, and inspect rejected records | Decimal arithmetic, validation, transparent data quality reporting |
+| Auth Watch | Analyze authentication logs for failure bursts and suspicious success sequences | Rolling windows, event ordering, detection-rule tests |
+| Header Review | Review pasted HTTP response headers and cookie attributes | Policy heuristics, ambiguity handling, actionable findings |
+| Secret Sentinel | Identify credential patterns without returning raw secret values | Pattern matching, overlap deduplication, report redaction |
+
+The security apps are at **http://127.0.0.1:8000/security**. See [Security Lab documentation](docs/SECURITY_LAB.md) for samples, rule definitions, and limitations.
 
 The three data apps are at **http://127.0.0.1:8000/data** after starting the server. Use **Load sample** for fictional data containing deliberate quality problems. See [Data Lab documentation](docs/DATA_LAB.md).
 
@@ -43,7 +48,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 19 tests; see docs/DATA_LAB.md for the ten additional data tests.
+The full suite now contains 32 tests: nine original domain/API tests, ten data tests, and thirteen security tests. CI also checks JavaScript syntax for all three interfaces.
 
 ## Architecture
 
