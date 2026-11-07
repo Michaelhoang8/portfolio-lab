@@ -69,6 +69,8 @@ def evaluate(data):
                      'observed_rate':statistics.mean(labels[i] for i in selected) if selected else None})
     return {'rows':len(rows),'threshold':threshold,'positive_rate':sum(labels)/len(labels),
             'metrics':metrics(labels,scores,threshold),'calibration':bins,
+            'predictions':[{'record':index,'actual':actual,'score':score,'predicted':int(score>=threshold)}
+                           for index,(actual,score) in enumerate(zip(labels,scores),2)],
             'thresholds':[{'threshold':i/10,**metrics(labels,scores,i/10)} for i in range(11)]}
 
 def sigmoid(value):

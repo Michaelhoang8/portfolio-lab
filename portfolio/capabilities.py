@@ -138,6 +138,19 @@ def enrich(path, data, result):
         result['cost_analysis']={'fp_cost':fp,'fn_cost':fn,'best_grid_threshold':best[0],'minimum_cost':best[3]}
         tables=[table('Cost-sensitive threshold grid',['Threshold','False positives','False negatives','Total cost','Cost / row'],candidates)]
         notes=[f'Lowest cost on this 0.1-step grid: threshold {best[0]} (cost {best[3]:g}). Ties choose the higher threshold. Select thresholds on validation data, then assess once on an untouched test set. Costs are user-specified units.']
+        audit=[]
+        for item in result['predictions']:
+            actual,predicted=item['actual'],item['predicted']
+            outcome=('true ' if actual==predicted else 'false ')+('positive' if predicted else 'negative')
+            cost=0 if actual==predicted else fp if predicted else fn
+            audit.append([item['record'],actual,item['score'],predicted,outcome,result['threshold'],cost])
+        errors=[row for row in audit if row[1]!=row[3]]
+        result['prediction_audit_csv']=data_apps.safe_csv(
+            ['record','actual','score','predicted','outcome','threshold','error_cost'],
+            [[str(value) for value in row] for row in audit])
+        tables.append(table(f'Misclassified records · first 20 of {len(errors)}',
+                            ['Record','Actual','Score','Predicted','Outcome','Threshold','Error cost'],errors[:20]))
+        notes.append('The error preview and full prediction audit use your selected threshold, not the lowest-cost grid threshold. Record numbers include the CSV header as record 1. Other source columns are omitted; join by record number when investigating errors.')
     elif path == '/api/devops/manifest':
         doc=devops_apps.document(data);spec=doc['spec'];replicas=spec.get('replicas',1)
         if type(replicas) is not int or not 0<=replicas<=100000: raise ValidationError('replicas must be an integer between 0 and 100000 for capacity analysis')

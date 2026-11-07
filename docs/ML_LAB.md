@@ -75,3 +75,9 @@ References used for methodology: [scikit-learn data-leakage guidance](https://sc
 Classifier Lab and Model Observatory accept UTF-8 CSV files up to 1 MB. Retrieval Studio accepts UTF-8 `.txt` collections up to 200 KB, using the same `---` document separators as pasted input. Files populate the editable input and are not analyzed until you run the tool. Invalid encoding, empty files, and oversized files leave the existing input intact. A newer file, manual edit, sample, mode switch, or analysis run supersedes an earlier pending file read. Column suggestions update after CSV loading.
 
 Manual workflow captures: [portable model inference](design/saved-model-workflow.png) and [invalid UTF-8 upload preserving a completed report](design/ml-file-recovery.png).
+
+### Prediction error audit
+
+Model Observatory includes source record numbers, actual labels, scores, and predicted classes for every evaluated row in its JSON report. Detailed analysis shows the first 20 misclassified records and offers a full prediction-audit CSV containing all rows, outcome names, the selected threshold, and each error’s configured cost. The audit uses the threshold you entered; it does not silently substitute the best threshold from the coarse cost grid. Extra input columns are omitted. Join the logical record number back to the input when investigating errors (header is record 1; blank physical rows are skipped).
+
+Tests reconcile all four outcomes with the confusion matrix, cover score-equals-threshold behavior and asymmetric error costs, and verify a 5,000-row export keeps every record and full score precision despite the bounded preview. A browser download was checked against the displayed threshold and confusion matrix ([capture](design/prediction-audit.png)).
