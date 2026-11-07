@@ -120,8 +120,10 @@ def inspect_headers(data):
             duplicate_directive |= key in directives
             directives.setdefault(key,tokens[1:])
     script = directives.get('script-src',directives.get('default-src'))
-    csp_ok = bool(csp) and script is not None and not duplicate_directive and not any(
-        token in ("'unsafe-inline'","'unsafe-eval'",'*','data:','http:','https:') for token in script)
+    script_policies = [script, directives.get('script-src-elem',script), directives.get('script-src-attr',script)]
+    csp_ok = bool(csp) and not duplicate_directive and all(policy is not None and not any(
+        token in ("'unsafe-inline'","'unsafe-eval'",'*','data:','http:','https:') for token in policy)
+        for policy in script_policies)
     add('Content Security Policy','observed' if csp_ok else 'review',
         'Restrictive script-source syntax observed' if csp_ok else 'Missing, ambiguous, or broad script policy',
         'Review a nonce/hash-based CSP against application requirements; this is a heuristic, not browser policy validation.')
@@ -132,8 +134,10 @@ def inspect_headers(data):
         'Restrictive framing header observed' if frame_ok or (not frame and xfo_ok) else 'No unambiguous self-only or deny framing policy found',
         'Use CSP frame-ancestors with the embedding origins your application requires.')
     hsts = one('strict-transport-security')
-    ages = re.findall(r'(?:^|;)\s*max-age\s*=\s*(\d+)\s*(?=;|$)',hsts,re.I)
-    strong_hsts = len(ages)==1 and int(ages[0]) >= 31536000
+    ages = re.findall(r'(?:^|;)\s*max-age\s*=\s*([0-9]+)\s*(?=;|$)',hsts,re.I)
+    # Decimal-string comparison avoids Python's integer conversion digit limit.
+    age=(ages[0].lstrip('0') or '0') if len(ages)==1 else ''
+    strong_hsts = len(ages)==1 and (len(age)>8 or len(age)==8 and age>='31536000')
     add('HTTPS persistence','observed' if strong_hsts else 'review',
         'HSTS max-age of at least one year observed' if strong_hsts else 'Missing, ambiguous, or short HSTS lifetime',
         'Only use HSTS on HTTPS. Validate HTTPS support before choosing a long lifetime or includeSubDomains.')
@@ -146,10 +150,17 @@ def inspect_headers(data):
         'Restrictive referrer policy observed' if referrer_ok else 'Review absent, complex, or permissive policy',
         'Choose a Referrer-Policy appropriate for the data in page URLs.')
     for index, cookie in enumerate(headers.get('set-cookie',[]),1):
-        attrs = {part.strip().split('=',1)[0].lower():part.strip().partition('=')[2].lower() for part in cookie.split(';')[1:]}
+        parts=[part.strip() for part in cookie.split(';')[1:] if part.strip()]
+        names=[part.split('=',1)[0].lower() for part in parts]
+        attrs = {part.split('=',1)[0].lower():part.partition('=')[2].lower() for part in parts}
         missing = [key for key in ('secure','httponly') if key not in attrs]
         if attrs.get('samesite') not in ('lax','strict','none'):
             missing.append('valid SameSite')
+        if len(names)!=len(set(names)):
+            missing.append('duplicate attributes')
+        cookie_name=cookie.partition('=')[0].strip()
+        if cookie_name.startswith('__Host-') and ('domain' in attrs or attrs.get('path')!='/'):
+            missing.append('host-prefix requires Path=/ and no Domain')
         add(f'Cookie #{index}','review' if missing else 'observed',
             'Review: '+', '.join(missing) if missing else 'Secure, HttpOnly, and SameSite attributes observed',
             'Assess each cookie by purpose; session cookies generally need Secure and HttpOnly. SameSite=None requires Secure.')
