@@ -3,13 +3,13 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pct=n=>n===null?'N/A':`${(n*100).toFixed(1)}%`;
 const dec=n=>n===null?'N/A':Number(n.toPrecision(5));
-let mode='train',result=null,busy=false;
+let mode='train',result=null,busy=false,fileRevision=0;
 const config={train:['Training data','Model report','Train classifier →','CSV: 8–1,000 rows, 1–12 numeric features, binary target. No missing values or duplicate feature rows.'],search:['Document collection','Retrieval results','Search documents →','Separate 2–100 documents with a line containing ---. Up to 200 KB total.'],evaluate:['Labeled predictions','Evaluation report','Evaluate predictions →','CSV with actual (0/1) and score (0–1) columns. Up to 5,000 rows.']};
 const trainSample='signal,noise,label\n'+Array.from({length:64},(_,i)=>{const signal=((i*17)%64-32)/8,noise=((i*11)%23-11)/5;const label=signal+0.35*noise+((i%7===0)?2:0)>0?1:0;return `${signal},${noise},${label}`;}).join('\n');
 const samples={train:trainSample,search:'Database transactions\nA database transaction groups writes into an atomic unit. Rollback reverses uncommitted changes after an error. Isolation helps protect concurrent operations.\n---\nModel evaluation\nPrecision and recall reveal different classification errors. A confusion matrix counts true and false predictions.\n---\nDatabase backups\nBackups preserve durable copies of database records. Recovery procedures should be tested regularly.\n---\nWeb security\nA content security policy restricts browser resources. Cookies may need Secure, HttpOnly, and SameSite attributes.\n---\nTransaction consistency\nAn inventory transaction can check stock and write a movement together. If stock is insufficient, rollback prevents partial updates.',evaluate:'actual,score\n1,0.95\n0,0.80\n1,0.75\n1,0.65\n0,0.60\n1,0.45\n0,0.35\n0,0.20\n1,0.15\n0,0.05'};
 function message(text,error=false){$('#notice').textContent=text;$('#notice').className=error?'error':'';}
 function invalidate(){result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
-function switchMode(next){if(busy)return;mode=config[next]?next:'train';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));for(const key of Object.keys(config))$(`#${key}-options`).hidden=key!==mode;$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#source').value='';invalidate();message('');}
+function switchMode(next){if(busy)return;fileRevision++;mode=config[next]?next:'train';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));for(const key of Object.keys(config))$(`#${key}-options`).hidden=key!==mode;$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3]+(mode==='search'?' UTF-8 text.':' UTF-8 CSV, up to 1 MB.');$('#file-label').textContent=mode==='search'?'Choose a document collection':'Choose a CSV file';$('#file').accept=mode==='search'?'.txt,text/plain':'.csv,text/csv';$('#source').value='';invalidate();message('');}
 const stats=items=>`<div class="stats">${items.map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 function matrix(m){const c=m.confusion;return `<h3>Confusion matrix</h3><div class="matrix"><div>True negatives<strong>${c.tn}</strong></div><div class="error-cell">False positives<strong>${c.fp}</strong></div><div class="error-cell">False negatives<strong>${c.fn}</strong></div><div>True positives<strong>${c.tp}</strong></div></div>`;}
@@ -25,10 +25,23 @@ function render(r){
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.mode;}));
 window.addEventListener('hashchange',()=>switchMode(location.hash.slice(1)));
-$('#sample').addEventListener('click',()=>{$('#source').value=samples[mode];invalidate();message('Synthetic sample loaded.');});
-document.querySelectorAll('textarea,input').forEach(input=>input.addEventListener('input',()=>{invalidate();message('Input changed. Run the analysis to update the report.');}));
+$('#sample').addEventListener('click',()=>{fileRevision++;$('#source').value=samples[mode];invalidate();message('Synthetic sample loaded.');});
+document.querySelectorAll('textarea,input:not([type=file])').forEach(input=>input.addEventListener('input',()=>{fileRevision++;invalidate();message('Input changed. Run the analysis to update the report.');}));
+$('#file').addEventListener('change',async()=>{
+ const file=$('#file').files?.[0];$('#file').value='';if(!file)return;
+ const revision=++fileRevision,limit=mode==='search'?200000:1000000;
+ try {
+  if(file.size>limit)throw Error(`Choose a file no larger than ${mode==='search'?'200 KB':'1 MB'}.`);
+  message(`Reading ${file.name}…`);
+  const buffer=await file.arrayBuffer();
+  if(revision!==fileRevision || busy)return;
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer);}catch{throw Error('This file is not valid UTF-8 text. Export it as UTF-8 and try again.');}
+  if(!text.trim())throw Error('The selected file is empty. Choose a file with input data.');
+  $('#source').value=text;invalidate();message(`Loaded ${file.name}. Review the input, then run the analysis.`);document.dispatchEvent(new Event('source-loaded'));
+ } catch(error) {if(revision===fileRevision)message(error.message,true);}
+});
 $('#run').addEventListener('click',async()=>{
- if(busy)return;busy=true;window.analysisBusy(true);result=null;const controls=[...document.querySelectorAll('input,select,textarea,button')];controls.forEach(c=>c.disabled=true);message('Computing locally…');
+ if(busy)return;fileRevision++;busy=true;window.analysisBusy(true);result=null;const controls=[...document.querySelectorAll('input,select,textarea,button')];controls.forEach(c=>c.disabled=true);message('Computing locally…');
  try{const text=$('#source').value;const body=mode==='search'?{documents:text,query:$('#query').value}:{csv:text,target:$('#target').value,seed:Number($('#seed').value),threshold:Number($('#threshold').value)};const data=await window.analysisRequest(`/api/ml/${mode}`,{...body,...window.capabilityInputs()});result=data;render(data);window.renderCapabilities(data);message('Complete. Download the report to keep these results.');}catch(e){invalidate();message(e.message,true);}finally{busy=false;controls.forEach(c=>c.disabled=false);$('#download').disabled=!result;window.analysisBusy(false,!!result);if((config[location.hash.slice(1)]?location.hash.slice(1):'train')!==mode)switchMode(location.hash.slice(1));}
 });
 $('#download').addEventListener('click',()=>{if(!result)return;const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`ml-${mode}-report.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
