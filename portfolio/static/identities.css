@@ -343,6 +343,17 @@ body[data-app] #capability-options select{display:block;width:100%;padding:10px;
 .ticket-assignment summary{cursor:pointer;overflow-wrap:anywhere}
 .ticket-assignment button{padding:8px 12px;border:1px solid var(--line)}
 #request-history small{overflow-wrap:anywhere;white-space:normal}
+.extension-report td{font-variant-numeric:tabular-nums;line-height:1.6}
+.extension-report th{position:sticky;top:0;background:var(--surface);z-index:1}
+.extension-report .table-scroll{max-height:460px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:18px}
+.extension-report tbody tr:hover{background:var(--bg,var(--paper))}
+.extension-report .hint{max-width:90ch}
+.prediction-message,.extension-message{padding:10px 0;font-size:13px;line-height:1.6}
+.prediction-message:empty,.extension-message:empty{display:none}
+.extension-report[aria-busy=true] .extension-message,.prediction-panel[aria-busy=true] .prediction-message{font-weight:700}
+.prediction-panel{border-radius:var(--radius)}
+.ticket-assignment[open]{padding:12px;border:1px solid var(--line);background:var(--field)}
+@media(max-width:760px){.extension-report .table-scroll{max-height:380px}.extension-form{grid-template-columns:1fr}.prediction-panel{padding:14px}}
 .collection-menu summary{cursor:pointer;padding:9px 12px;border:1px solid currentColor;border-radius:5px;list-style-position:inside}
 .collection-links{position:absolute;right:0;top:calc(100% + 10px);width:215px;padding:7px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 35px #0002}
 body[data-app] header .collection-links a{display:block;padding:11px 13px;font:13px/1.5 system-ui;text-decoration:none;border-radius:4px;color:var(--ink)}

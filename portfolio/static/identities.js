@@ -54,6 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && menu.open) { menu.open = false; summary.focus(); }
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      const prediction = event.target.closest('.prediction-panel');
+      const form = event.target.closest('.extension-form');
+      if (prediction) { event.preventDefault(); const button=prediction.querySelector('.predict-button'); if (!button.disabled) button.click(); return; }
+      if (form) { event.preventDefault(); if (!form.querySelector('button').disabled) form.requestSubmit(); return; }
       const run = document.querySelector('#run');
       if (run && !run.disabled) { event.preventDefault(); run.click(); }
     }

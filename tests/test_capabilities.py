@@ -14,6 +14,29 @@ def enhanced(path, data, function):
 
 
 class AnalysisCapabilities(unittest.TestCase):
+    def test_revenue_rejects_nonplain_amounts_without_breaking_reconciliation(self):
+        values=['1e2','1_000','1.000','NaN','Infinity','100.00','-25.25']
+        data={'csv':'date,category,amount\n'+'\n'.join(f'2026-01-01,A,{v}' for v in values)}
+        r=enhanced('/api/data/sales',data,d.sales)
+        self.assertEqual((r['accepted_rows'],r['rejected_rows'],r['total']),(2,5,'74.75'))
+        self.assertEqual(r['capabilities']['tables'][1]['rows'][0][:3],['100.00','25.25','74.75'])
+
+    def test_cost_analysis_zero_costs_and_null_validation(self):
+        data={'csv':'actual,score\n1,0.2\n0,0.8','false_positive_cost':0,'false_negative_cost':0}
+        r=enhanced('/api/ml/evaluate',data,ml.evaluate)
+        self.assertEqual(r['cost_analysis']['best_grid_threshold'],1)
+        with self.assertRaises(ValidationError):enhanced('/api/ml/evaluate',{**data,'false_negative_cost':None},ml.evaluate)
+
+    def test_burn_zero_traffic_is_insufficient_even_with_six_buckets(self):
+        csv='timestamp,total,bad\n'+'\n'.join(f'2026-01-01T0{i}:00:00Z,0,0' for i in range(6))
+        r=enhanced('/api/devops/reliability',{'csv':csv},ops.reliability)
+        self.assertEqual(r['burn_alert']['state'],'insufficient data')
+
+    def test_prediction_header_escaping_in_saved_model(self):
+        model={'features':['quoted,feature'],'weights':[1],'means':[0],'scales':[1],'intercept':0}
+        r=c.predict({'model':model,'csv':'"quoted,feature"\n0'})
+        self.assertEqual(r['predictions'][0]['score'],.5)
+
     def test_profile_correlation_outlier_and_constant(self):
         data={'csv':'x,y,constant\n1,2,5\n2,4,5\n3,6,5\n4,8,5\n100,200,5\n'}
         r=enhanced('/api/data/profile',data,d.profile)['capabilities']['tables']
@@ -178,6 +201,16 @@ class PersistentCapabilities(unittest.TestCase):
         item=c.stock_plan(self.db,{})['items'][0]
         self.assertIsNone(item['days_cover'])
         self.assertEqual(item['order_quantity'],4)
+
+    def test_replenishment_excludes_old_and_future_demand(self):
+        pid=services.product_create(self.db,{'name':'Dated','sku':'DATES','reorder_point':1})['id']
+        with self.db:
+            self.db.execute("INSERT INTO movements(product_id,delta,note) VALUES (?,100,'Receive')",(pid,))
+            for modifier in ['-31 days','+1 day','-1 day']:
+                self.db.execute("INSERT INTO movements(product_id,delta,note,created_at) VALUES (?,-10,'Dated',datetime('now',?))",(pid,modifier))
+        item=c.stock_plan(self.db,{})['items'][0]
+        self.assertEqual(item['withdrawals_30d'],10)
+        self.assertEqual(item['stock'],70)
 
 
 if __name__=='__main__':unittest.main()

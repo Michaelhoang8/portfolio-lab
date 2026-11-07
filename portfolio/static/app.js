@@ -10,8 +10,12 @@ function stats(target, items) { $(target).innerHTML = items.map(([label, value])
 async function refresh() {
   const response = await fetch('/api/state');
   if (!response.ok) throw new Error('Could not load workspace. Check the server and refresh.');
-  state = await response.json(); render();
+  const next = await response.json();
+  const stockChanged = JSON.stringify([state.products,state.movements]) !== JSON.stringify([next.products,next.movements]);
+  state = next; render();
+  if (stockChanged) document.dispatchEvent(new Event('stock-updated'));
 }
+function localToday() { const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
 function renderTickets() {
   stats('#ticket-stats', [['Total issues', state.tickets.length], ['In progress', state.tickets.filter(t => t.status === 'active').length], ['Completed', state.tickets.filter(t => t.status === 'done').length]]);
   const search = $('#search').value.toLowerCase(), priority = $('#priority-filter').value;
@@ -20,7 +24,7 @@ function renderTickets() {
   $('#reset-filters').hidden = !search && !priority;
   $('#board').innerHTML = ['backlog', 'active', 'done'].map(status => {
     const tickets = filtered.filter(t => t.status === status);
-    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment"><summary>${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < new Date().toLocaleDateString("en-CA") ? " · Overdue" : ""}</summary><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save assignment</button></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
+    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment"><summary>${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save assignment</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
   }).join('');
   $('#activity').innerHTML = state.events.slice(0, 8).map(e => `<div class="activity">#${e.ticket_id} · ${escape(e.detail)}<small>${escape(new Date(e.created_at).toLocaleString())}</small></div>`).join('') || empty('Create an issue to start the activity trail.');
 }
@@ -87,7 +91,17 @@ refresh().catch(error => notice(error.message,true));
 
 $('#board').addEventListener('click',async event=>{
  const id=event.target.dataset.saveAssignment;if(!id)return;
- const button=event.target;button.disabled=true;
- try{await post(`/api/tickets/${id}/details`,{assignee:document.querySelector(`[data-assignee="${id}"]`).value,due_date:document.querySelector(`[data-due="${id}"]`).value});await refresh();notice('Assignment and deadline saved.');}
- catch(error){notice(error.message,true);button.disabled=false;}
+ const details=event.target.closest('details');
+ const fields=[...details.querySelectorAll('input,button')];
+ const feedback=details.querySelector('.assignment-feedback');
+ if(fields.some(field=>field.disabled))return;
+ const invalid=fields.find(field=>field.checkValidity&&!field.checkValidity());
+ if(invalid){invalid.reportValidity();return;}
+ fields.forEach(field=>field.disabled=true);feedback.textContent='Saving assignment…';
+ try{
+  await post(`/api/tickets/${id}/details`,{assignee:details.querySelector('[data-assignee]').value,due_date:details.querySelector('[data-due]').value});
+  await refresh();notice('Assignment and deadline saved.');
+  const updated=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+  if(updated){updated.open=true;updated.querySelector('.assignment-feedback').textContent='Assignment and deadline saved.';updated.querySelector('summary').focus();}
+ }catch(error){notice(error.message,true);feedback.textContent=error.message;fields.forEach(field=>field.disabled=false);}
 });

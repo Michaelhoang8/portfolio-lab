@@ -126,6 +126,8 @@ def sales(data):
             if not category:
                 raise ValueError('Category is empty')
             raw = row[fields['amount']].strip()
+            if not re.fullmatch(r'[+-]?[0-9]+(?:\.[0-9]{1,2})?',raw):
+                raise ValueError('Amount must be a plain number with at most two decimals')
             amount = Decimal(raw)
             if not amount.is_finite() or abs(amount) > Decimal('1000000000'):
                 raise ValueError('Amount must be finite and within ±1 billion')

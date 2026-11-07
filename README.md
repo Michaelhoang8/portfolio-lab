@@ -114,6 +114,14 @@ Describe what you can demonstrate and explain. Examples to adapt after reviewing
 
 Avoid claiming production deployments, real business impact, or forecast accuracy from synthetic demos. The repository includes AI-assisted implementation; understand the tradeoffs and tests before presenting the work.
 
+### Feature polish verification
+
+The latest pass verified every populated workspace at 390px width without horizontal page overflow. All twelve analysis apps rejected empty input, recovered with samples, and exported parseable reports. Cleaning audits retained all 12 sample source records while cleaned CSV contained 10 output records; secret finding exports omitted matched values. REST checks covered 401-to-200 recovery, ten-entry history truncation, replay preparation without sending, credential-free collection export, and clearing key/history on reload.
+
+Regression fixes include stock-plan invalidation after inventory changes (including results from an in-flight calculation), context-aware Ctrl/Command+Enter for prediction and planning, required numeric settings, quoted CSV feature names in prediction examples, plain-decimal revenue validation, and date-aware replenishment windows that exclude future/old withdrawals. Assignment saves now retain local feedback and keyboard focus. Diagnostic tables use bounded scrolling, keyboard focus, and readable numeric formatting; exports preserve full precision.
+
+The automated suite covers 101 domain/API cases. Interaction, download, and responsive checks above are manual browser checks, not an automated cross-browser compatibility guarantee.
+
 ## Run locally
 
 Requires Python 3.11 or later. No pip packages required. Run from this repository:
@@ -142,7 +150,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 96 tests: eleven product/domain/HTTP tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, fifteen REST tests, and twenty-one capability tests. CI also checks JavaScript syntax for all six interfaces and the shared identity and capability controllers.
+The full suite now contains 101 tests: eleven product/domain/HTTP tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, fifteen REST tests, and twenty-six capability tests. CI also checks JavaScript syntax for all six interfaces and the shared identity and capability controllers.
 
 ## Architecture
 

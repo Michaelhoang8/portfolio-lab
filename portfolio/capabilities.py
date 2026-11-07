@@ -215,7 +215,7 @@ def experiment_plan(data):
 def stock_plan(db,data):
     lead=integer(data,'lead_days',1,365) if 'lead_days' in data else 7
     safety=integer(data,'safety_days',0,365) if 'safety_days' in data else 7
-    rows=db.execute("SELECT p.*, COALESCE(SUM(m.delta),0) stock, COALESCE(SUM(CASE WHEN m.delta<0 AND m.created_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days') THEN -m.delta ELSE 0 END),0) demand FROM products p LEFT JOIN movements m ON m.product_id=p.id GROUP BY p.id ORDER BY p.name").fetchall()
+    rows=db.execute("SELECT p.*, COALESCE(SUM(m.delta),0) stock, COALESCE(SUM(CASE WHEN m.delta<0 AND julianday(m.created_at)>=julianday('now','-30 days') AND julianday(m.created_at)<=julianday('now') THEN -m.delta ELSE 0 END),0) demand FROM products p LEFT JOIN movements m ON m.product_id=p.id GROUP BY p.id ORDER BY p.name").fetchall()
     items=[]
     for row in rows:
         daily=row['demand']/30
