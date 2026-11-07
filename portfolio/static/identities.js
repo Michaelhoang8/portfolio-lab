@@ -76,6 +76,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('main').focus();
   });
   document.body.prepend(skip);
+  // Table previews can be wider than a phone or a keyboard user's viewport.
+  const labelTables = () => document.querySelectorAll('.table-scroll,.table-wrap').forEach(region => {
+    region.tabIndex=0;region.setAttribute('role','region');
+    if(!region.hasAttribute('aria-label')){
+      const heading=region.querySelector('h2,h3')||region.previousElementSibling;
+      region.setAttribute('aria-label',heading?.matches('h2,h3')?heading.textContent.trim():'Scrollable data table');
+    }
+  });
+  let tableFrame;
+  new MutationObserver(records=>{
+    if(!records.some(record=>record.addedNodes.length))return;
+    cancelAnimationFrame(tableFrame);tableFrame=requestAnimationFrame(labelTables);
+  }).observe(document.querySelector('main'),{childList:true,subtree:true});
+  labelTables();
+
 });
 
 window.analysisEmpty = function (mode) {

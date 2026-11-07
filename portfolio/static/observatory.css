@@ -128,3 +128,9 @@ body[data-app]:not(.still-life) button:not(:disabled):active{translate:0 0}
 @keyframes disclosure-in{from{opacity:.35;translate:0 4px}to{opacity:1;translate:0 0}}
 @keyframes result-settle{from{opacity:.65;translate:0 4px}to{opacity:1;translate:0 0}}
 @media(prefers-reduced-motion:reduce){body[data-app] button{translate:none!important}}
+
+.response-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}
+.response-pagination[hidden]{display:none}
+.response-pagination span{font-size:12px;color:var(--muted)}
+.response-pagination button{padding:9px 12px;white-space:nowrap}
+@media(max-width:760px){.response-pagination{flex-wrap:wrap}.response-pagination span{order:-1;flex-basis:100%}}
