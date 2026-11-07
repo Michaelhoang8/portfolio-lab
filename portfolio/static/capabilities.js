@@ -64,6 +64,7 @@
     for(const [key,label,name] of [['audit_csv','Export full row audit','cleaning-audit.csv'],['findings_csv','Export redacted findings','secret-findings.csv']]){
       if(result[key])exportButton(section,label,name,result[key],'text/csv;charset=utf-8');
     }
+    if(result.rejected_rows>0 && result.rejected_csv)exportButton(section,'Export rejected records','rejected-records.csv',result.rejected_csv,'text/csv;charset=utf-8');
     if(result.model) {
       exportButton(section,'Download model JSON','classifier-model.json',JSON.stringify(result.model,null,2));
       section.append(predictionPanel(result.model));

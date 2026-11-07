@@ -28,6 +28,8 @@ These are bounded, local analytics apps, not a distributed ETL service. The brow
 
 ## Verification and next milestones
 
-Data tests cover malformed CSV, multiline quoting, BOMs, missing values, duplicates, numeric edge cases, transformation order, idempotence, safe export, exact decimal totals, refunds, invalid dates, column mappings, and HTTP input validation. Browser smoke checks exercise all three apps using the fictional sample. File chooser and mobile viewport automation are not included.
+Data tests cover malformed CSV, multiline quoting, BOMs, missing values, duplicates, numeric edge cases, transformation order, idempotence, safe export, exact decimal totals, refunds, invalid dates, column mappings, and HTTP input validation. Browser smoke checks exercise all three apps using the fictional sample. Manual browser checks also cover file selection: empty and invalid UTF-8 files preserve the prior source and downloadable report. Mobile viewport automation is not included.
 
 Useful follow-ups: schema contracts with per-column validation rules, saved pipeline configurations, Parquet support, source-to-output lineage, large-file streaming, SQL transformations, and scheduled ingestion. For interviews, explain the distinction between row rejection and whole-file rejection, why Decimal is used for monetary aggregation, and why missing values are not automatically filled.
+
+Large Revenue Lens charts show 20 months or categories at a time. Chart scales use the full series, so paging does not change the meaning of bar lengths; the JSON report still contains every group. Rejected rows can be downloaded directly as spreadsheet-safe CSV under Detailed analysis & exports. A 45-category browser fixture verified 20/20/5 page boundaries, signed values, the final disabled Next button, and a rejected formula-like value exported as text ([capture](design/revenue-pagination.png)).

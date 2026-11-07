@@ -9,14 +9,25 @@ function invalidate(){result=null;$('#download').disabled=true;$('#result').inne
 function switchMode(next){if(busy)return;fileRevision++;mode=config[next]?next:'profile';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#clean-options').hidden=mode!=='clean';$('#sales-options').hidden=mode!=='sales';$('#result-title').textContent=config[mode][0];$('#run').textContent=config[mode][1];invalidate();message('');}
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v ?? '—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const stats=items=>`<div class="stats">${items.map(([label,value])=>`<div class="stat"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`;
-function bars(title,items){const low=Math.min(0,...items.map(i=>Number(i.amount))),high=Math.max(1,...items.map(i=>Number(i.amount)));return `<div class="chart"><h3>${title}</h3>${items.map(i=>`<div class="bar-row"><span>${esc(i.label)}</span><meter min="${low}" max="${high}" value="${Number(i.amount)}" aria-label="${esc(i.label)} amount"></meter><strong>${esc(i.amount)}</strong></div>`).join('') || '<p>No valid rows to chart.</p>'}</div>`;}
+const chartPageSize=20;
+function bars(title,items,key,page=0){
+ const low=Math.min(0,...items.map(i=>Number(i.amount))),high=Math.max(1,...items.map(i=>Number(i.amount))),start=page*chartPageSize,end=Math.min(start+chartPageSize,items.length);
+ return `<div class="chart" id="chart-${key}"><h3 tabindex="-1">${title}</h3>${items.slice(start,end).map(i=>`<div class="bar-row"><span>${esc(i.label)}</span><meter min="${low}" max="${high}" value="${Number(i.amount)}" aria-label="${esc(i.label)} amount"></meter><strong>${esc(i.amount)}</strong></div>`).join('') || '<p>No valid rows to chart.</p>'}<div class="response-pagination" role="group" aria-label="${title} pages" ${items.length<=chartPageSize?'hidden':''}><button type="button" data-chart="${key}" data-page="${page-1}" ${page===0?'disabled':''}>Previous</button><span role="status" aria-live="polite">${start+1}–${end} of ${items.length}</span><button type="button" data-chart="${key}" data-page="${page+1}" ${end>=items.length?'disabled':''}>Next</button></div></div>`;
+}
+$('#result').addEventListener('click',event=>{
+ const button=event.target.closest('[data-chart]');if(!button||button.disabled||mode!=='sales'||!result)return;
+ const key=button.dataset.chart;if(!['monthly','categories'].includes(key))return;
+ const page=Math.max(0,Math.min(Math.ceil(result[key].length/chartPageSize)-1,Number(button.dataset.page)));
+ $(`#chart-${key}`).outerHTML=bars(key==='monthly'?'Monthly net amount':'Category breakdown',result[key],key,page);
+ const chart=$(`#chart-${key}`);chart.querySelector('h3').focus({preventScroll:true});chart.scrollIntoView({block:'start'});
+});
 function render(r){
  if(mode==='profile'){
   $('#result').innerHTML=stats([['Rows',r.rows],['Columns',r.columns.length],['Missing cells',r.missing_cells]])+`<p class="summary">${r.duplicate_rows} exact duplicate rows. Blank or whitespace-only cells count as missing. Numeric inference requires every nonblank value to be a finite number within ±1e100.</p>`+table(['Column','Type','Missing','Distinct','Mean / median'],r.columns.map(c=>[c.name,c.type,c.missing,c.distinct,c.type==='numeric'?`${Number(c.mean.toPrecision(6))} / ${Number(c.median.toPrecision(6))}`:'—']))+'<h3>Frequent values</h3>'+table(['Column','Top values (up to five)'],r.columns.map(c=>[c.name,c.top.map(v=>`${v.value} (${v.count})`).join(', ')]))+'<h3>Preview · first 10 rows</h3>'+table(r.columns.map(c=>c.name),r.preview);
  }else if(mode==='clean'){
   $('#result').innerHTML=stats([['Input rows',r.input_rows],['Output rows',r.output_rows],['Trimmed cells',r.trimmed_cells]])+`<p class="summary">Removed ${r.duplicates_removed} duplicate rows and ${r.empty_rows_removed} blank rows. Original input is preserved. Download the cleaned CSV to continue your workflow.</p><h3>Preview · first 20 rows</h3>`+table(r.headers,r.preview);
  }else{
-  $('#result').innerHTML=stats([['Net amount',r.total],['Accepted rows',r.accepted_rows],['Rejected rows',r.rejected_rows]])+`<p class="summary">Average transaction: ${esc(r.average??'N/A')}. ${r.refund_rows} negative transactions included. Currency is not inferred or converted. Duplicate transactions are retained; clean duplicates first if appropriate.</p>`+bars('Monthly net amount',r.monthly)+bars('Category breakdown',r.categories)+'<h3>Rejected records · first 20</h3>'+table(['Record','Reason'],r.rejections.slice(0,20).map(e=>[e.record,e.reason]))+'<p class="hint">Download report includes all rejection details and a spreadsheet-safe rejection CSV.</p>';
+  $('#result').innerHTML=stats([['Net amount',r.total],['Accepted rows',r.accepted_rows],['Rejected rows',r.rejected_rows]])+`<p class="summary">Average transaction: ${esc(r.average??'N/A')}. ${r.refund_rows} negative transactions included. Currency is not inferred or converted. Duplicate transactions are retained; clean duplicates first if appropriate.</p>`+bars('Monthly net amount',r.monthly,'monthly')+bars('Category breakdown',r.categories,'categories')+'<h3>Rejected records · first 20</h3>'+table(['Record','Reason'],r.rejections.slice(0,20).map(e=>[e.record,e.reason]))+'<p class="hint">Download report includes every month, category, and rejection. Detailed analysis includes a spreadsheet-safe rejection CSV export.</p>';
  }
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.mode;}));
@@ -30,7 +41,9 @@ $('#file').addEventListener('change',async()=>{
   message(`Reading ${file.name}…`);
   const buffer=await file.arrayBuffer();
   if(revision!==fileRevision||busy)return;
-  $('#source').value=new TextDecoder('utf-8',{fatal:true}).decode(buffer);invalidate();message(`Loaded ${file.name}`);document.dispatchEvent(new Event('source-loaded'));
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer);}catch{throw Error('This file is not valid UTF-8 text. Export it as UTF-8 and try again.');}
+  if(!text.trim())throw Error('The selected file is empty. Choose a CSV with input data.');
+  $('#source').value=text;invalidate();message(`Loaded ${file.name}. Review the input, then run the analysis.`);document.dispatchEvent(new Event('source-loaded'));
  }catch(error){if(revision===fileRevision)message(error.message,true);}
  finally{if(revision===fileRevision)$('#file').value='';}
 });
