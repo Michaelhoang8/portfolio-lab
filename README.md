@@ -6,16 +6,16 @@ Sixteen working applications in a shared, dependency-free Python workspace: prod
 
 | App | What it does | Engineering focus |
 | --- | --- | --- |
-| Issue Desk | Create, search, prioritize, and move issues across a three-stage board | Audit events, validation, idempotent status updates |
+| Issue Desk | Edit issues, filter due dates, and review stale versions across a three-stage board | Audit events, optimistic concurrency, draft preservation |
 | Stockroom | Track products, receipts, withdrawals, and reorder thresholds | Immutable movement ledger, concurrent-write correctness |
-| Experiment Studio | Save A/B conversion counts and compare rates with 95% Wilson intervals | Numeric validation, statistical edge cases, uncertainty presentation |
+| Experiment Studio | Compare conversion rates and differences with documented uncertainty | Wilson/Agresti–Caffo intervals, pooled tests, independent reference checks |
 | Dataset Explorer | Profile uploaded CSVs, missingness, duplicates, frequent values, and numeric distributions | Bounded parsing, type inference, descriptive statistics |
 | Pipeline Studio | Trim cells, drop blank rows, deduplicate, and export cleaned CSVs | Ordered transformations, idempotence, safe exports |
 | Revenue Lens | Map sales columns, aggregate month/category totals, and inspect rejected records | Decimal arithmetic, validation, transparent data quality reporting |
 | Auth Watch | Analyze authentication logs for failure bursts and suspicious success sequences | Rolling windows, event ordering, detection-rule tests |
 | Header Review | Review pasted HTTP response headers and cookie attributes | Policy heuristics, ambiguity handling, actionable findings |
 | Secret Sentinel | Identify credential patterns without returning raw secret values | Pattern matching, overlap deduplication, report redaction |
-| Classifier Lab | Train and export a binary logistic regression model | Reproducible splits, training-only scaling, held-out evaluation |
+| Classifier Lab | Train, export, reload, and run batch inference with logistic regression models | Reproducible splits, training-only scaling, validated model portability |
 | Retrieval Studio | Rank documents with explainable TF-IDF similarity | Sparse vectors, cosine similarity, term contributions |
 | Model Observatory | Inspect classification metrics and threshold tradeoffs | Tied-rank AUC, calibration bins, probability losses |
 | Manifest Review | Review selected Kubernetes Deployment policies | Structured configuration checks, scoped findings |
@@ -221,3 +221,7 @@ Stockroom generates a request key for each movement. Retrying the unchanged form
 The twelve stateless analysis apps expose **Cancel analysis** while a request is active. Switching modes cancels the previous request, and a 60-second timeout restores the controls instead of leaving a page busy indefinitely. Cancellation stops the browser waiting for a result; an already-running server computation may still finish. Input remains in memory after cancellation. File reads discard stale completions when newer input or a sample has been chosen. No request is retried automatically.
 
 Run the frontend checks with `node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.
+
+## Recent workflow captures
+
+These screenshots use synthetic QA data: [model export and inference](docs/design/saved-model-workflow.png), [experiment comparison](docs/design/experiment-comparison.png), [REST cancellation](docs/design/rest-cancellation.png), [invalid-file recovery](docs/design/ml-file-recovery.png), and [pipeline timing diagnostics](docs/design/pipeline-timing.png). They supplement the automated tests; they are not automated visual regression coverage.

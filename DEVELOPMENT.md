@@ -23,8 +23,9 @@ These are proposed milestones, not claims of completed work. Make future commits
 
 Use claims only after you can explain, maintain, and demonstrate the implementation. Do not describe fictional demo data as business impact or imply real customers.
 
-- Developed a three-app portfolio with JavaScript interfaces, Python JSON APIs, and persistent SQLite storage.
+- Developed a sixteen-app portfolio across six collections, with JavaScript interfaces, Python JSON APIs, SQLite-backed workflows, and stateless analysis tools.
 - Implemented a transactional inventory ledger and tested simultaneous withdrawals to prevent negative stock.
-- Added audit history, validated experiment analysis, and automated domain/API regression tests with a Python-version CI matrix.
+- Added versioned issue editing, reference-checked experiment comparisons, and automated domain/API regression tests with a Python-version CI matrix.
+- Implemented verified online SQLite snapshots and tested recovery with concurrent writes, inventory retry keys, and persisted API state.
 
 Add measurable performance or user outcomes only after you collect actual evidence. Describe AI assistance honestly if asked about your process.

@@ -81,3 +81,5 @@ REST Studio allows cancelling an in-flight request and imposes a 30-second deadl
 Transport tests cover stalled bodies, cancellation before and during fetch, HTTP error responses, timer cleanup, and recovery wording for reads versus writes. A delayed local QA server was used to verify the visible Cancel request workflow.
 
 The outer local HTTP adapter validates Host before API authentication or routing. Missing, duplicate, or non-loopback Host values return a generic 400 JSON error rather than a route-specific problem response. Use the documented localhost/127.0.0.1 URL; custom hostnames and forwarded-host overrides are unsupported.
+
+[Cancelled-request browser capture](design/rest-cancellation.png), using a deliberately delayed local QA response.

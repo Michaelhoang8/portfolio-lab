@@ -73,3 +73,5 @@ References used for methodology: [scikit-learn data-leakage guidance](https://sc
 ## Local input files
 
 Classifier Lab and Model Observatory accept UTF-8 CSV files up to 1 MB. Retrieval Studio accepts UTF-8 `.txt` collections up to 200 KB, using the same `---` document separators as pasted input. Files populate the editable input and are not analyzed until you run the tool. Invalid encoding, empty files, and oversized files leave the existing input intact. A newer file, manual edit, sample, mode switch, or analysis run supersedes an earlier pending file read. Column suggestions update after CSV loading.
+
+Manual workflow captures: [portable model inference](design/saved-model-workflow.png) and [invalid UTF-8 upload preserving a completed report](design/ml-file-recovery.png).

@@ -74,3 +74,5 @@ All operations are stateless. Inputs are not inserted into SQLite. Reports may c
 DevOps tests cover selected manifest policies and malformed shapes, dependency scheduling, ideal critical paths, worker capacity, retry success/exhaustion, transitive skips, independent-job continuation, cycles, duplicate IDs, weighted error budgets, zero traffic, metric gaps, timestamp normalization, and API routes. Browser smoke checks verified all three samples. No real Kubernetes deployment or CI-provider runtime was exercised; the existing GitHub Actions workflow runs the actual repository test suite separately from the simulator.
 
 Next milestones: validate against a versioned Kubernetes schema, add OPA/Rego policy evaluation, import actual CI run timings, model backoff and environment locks, and ingest sanitized Prometheus metrics. Interview topics include DAG cycle detection, discrete-event simulation, retry capacity costs, the difference between configuration presence and runtime guarantees, and request-based versus time-based reliability measurement.
+
+[Pipeline timing browser capture](design/pipeline-timing.png), using the fictional sample pipeline.
