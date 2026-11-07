@@ -208,6 +208,18 @@ def enrich(path, data, result):
                                 ['First missing UTC bucket','Last missing UTC bucket','Hours'],rows[:20]))
             result['missing_ranges_csv']=data_apps.safe_csv(['first_missing_utc','last_missing_utc','hours'],
                                                            [[str(value) for value in row] for row in rows])
+        worst=sorted((bucket for bucket in result['buckets'] if bucket['bad']>0),
+                     key=lambda bucket:(-bucket['burn_rate'],-bucket['bad'],bucket['timestamp']))[:10]
+        tables.append(table('Hours with highest observed error ratios · up to 10',
+                            ['UTC bucket','Requests','Bad requests','Burn rate'],
+                            [[bucket['timestamp'],bucket['total'],bucket['bad'],bucket['burn_rate']] for bucket in worst]))
+        result['hourly_metrics_csv']=data_apps.safe_csv(
+            ['timestamp_utc','total','bad','success_rate','burn_rate','target_slo_percent'],
+            [[str(value) if value is not None else '' for value in
+              [bucket['timestamp'],bucket['total'],bucket['bad'],
+               (bucket['total']-bucket['bad'])/bucket['total'] if bucket['total'] else None,
+               bucket['burn_rate'],result['target']]] for bucket in result['buckets']])
+        notes.append('The historical table ranks supplied hours with errors by error ratio (equivalently burn rate for this target), then bad-request count and UTC time. Low-traffic ratios can be noisy; request counts are shown for context. The hourly CSV includes all supplied buckets, including zero-traffic buckets with undefined rates left empty. Missing hours are not fabricated. Success rates in the CSV are fractions from 0 to 1.')
         notes.append('Coverage spans the first through last supplied bucket, inclusive. Gap endpoints are missing bucket start times, also inclusive. No coverage is inferred before or after this span; missing hours are not treated as healthy or zero traffic.')
     if tables or notes: result['capabilities']={'tables':tables,'notes':notes}
     return result

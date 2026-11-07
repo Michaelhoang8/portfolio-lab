@@ -95,3 +95,9 @@ Detailed analysis previews up to 20 ranges and exports every range as CSV. JSON 
 ### Local file input
 
 Manifest Review and Pipeline Planner accept local UTF-8 JSON files up to 200 KB; Reliability Desk accepts metrics CSV up to 1 MB. File selection loads the editor without running analysis. Invalid files preserve the previous input and downloadable report. Delayed reads cannot overwrite manual edits, a newer file, another tool, or a running analysis. Browser checks covered a two-job JSON pipeline, invalid-file recovery, and metrics CSV ([capture](design/devops-file-import.png)).
+
+### Historical reliability review
+
+Detailed analysis lists up to ten supplied hours with observed errors, ranked by error ratio (equivalently burn rate for the selected target), then bad-request count and UTC timestamp. Request counts stay visible because ratios from small traffic volumes can be noisy. This review can surface earlier incidents outside the main latest-48-hour table; it does not change the two-window check at the end of the dataset.
+
+**Export all hourly metrics** downloads every supplied bucket in UTC order, including total/bad requests, success-rate fraction, burn rate, and target SLO percentage. Zero-traffic success/burn rates are empty rather than zero. Missing hours remain absent and can be inspected through the separate coverage/gap report. Tests cover an early high-error hour, complete exports, no-error data, zero traffic, and gaps. A browser fixture exported all 60 buckets and preserved the earlier 50× burn ([capture](design/reliability-history.png)).
