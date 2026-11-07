@@ -6,15 +6,20 @@ Run `python -m portfolio.server` from the repository and open http://127.0.0.1:8
 
 ## Manifest Review
 
-Paste one Kubernetes `apps/v1` Deployment as JSON, up to 200 KB with 1–30 containers. This tool reviews selected configuration policies and reports the precise field path:
+Paste one Linux Kubernetes `apps/v1` Deployment as JSON, up to 200 KB with 1–30 containers. This tool reviews selected configuration policies and reports the precise field path:
 
 - At least two replicas and a RollingUpdate strategy (including its default).
 - Nonempty selector matchLabels consistent with the pod template.
 - Container images ending in a SHA-256 digest reference.
 - CPU/memory request and limit presence, and readiness/liveness probe handler presence.
 - Non-root execution, disabled privilege escalation, and absence of privileged mode.
+- Disabled hostNetwork, hostPID, and hostIPC (omission uses false).
+- Read-only root filesystems and dropping ALL Linux capabilities, with only NET_BIND_SERVICE permitted as an addition.
+- An explicit RuntimeDefault or Localhost seccomp profile; Localhost also needs a nonempty localhostProfile.
 
-Pod-level runAsNonRoot is inherited unless explicitly overridden at container level. `observed` means a selected check matched, not that the manifest is valid, deployable, or secure. The checker does not validate resource-quantity syntax, probe handler contents, Kubernetes versions, image provenance, admission controls, node capacity, topology, network policies, rollout budgets, or cluster state. Empty probe handler objects count as present even though they may be invalid. matchExpressions are outside scope. A policy finding calls for review, not automatic remediation. No kubectl command is executed.
+Pod-level runAsNonRoot and seccompProfile are inherited unless explicitly overridden at container level. An explicit empty container seccompProfile is flagged rather than silently inheriting the pod setting. Missing seccomp configuration is flagged even if a particular cluster might supply a runtime default; this tool cannot inspect that cluster. Boolean controls require actual JSON booleans. Windows pods are rejected because these checks target Linux; init and ephemeral containers are outside the current review. `observed` means a selected check matched, not that the manifest is valid, deployable, or secure. The checker does not validate resource-quantity syntax, probe handler contents, Kubernetes versions, image provenance, admission controls, node capacity, topology, network policies, rollout budgets, or cluster state. Empty probe handler objects count as present even though they may be invalid. matchExpressions are outside scope. A policy finding calls for review, not automatic remediation. No kubectl command is executed.
+
+The isolation checks follow selected controls from the [Kubernetes Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) and [application security checklist](https://kubernetes.io/docs/concepts/security/application-security-checklist/). Read-only root filesystems are an application hardening recommendation, not a claim of Restricted-profile compliance. Seccomp profile contents, availability on nodes, and enforcement are not verified. Regression tests cover inheritance, container overrides, malformed shapes, strict booleans, and capability additions. The sample browser report flags the three missing container controls ([capture](design/manifest-isolation.png)).
 
 The [Kubernetes rolling-update documentation](https://kubernetes.io/docs/tasks/run-application/update-deployment-rolling/) explains why readiness, available capacity, maxSurge, and maxUnavailable also affect a rollout. The app only checks the strategy name; it does not certify zero downtime.
 

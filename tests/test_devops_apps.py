@@ -8,7 +8,7 @@ def plan(jobs,workers=2):
     return d.pipeline({'text':json.dumps({'jobs':jobs}),'workers':workers})
 
 def manifest():
-    return {'apiVersion':'apps/v1','kind':'Deployment','spec':{'replicas':2,'selector':{'matchLabels':{'app':'demo'}},'template':{'metadata':{'labels':{'app':'demo'}},'spec':{'securityContext':{'runAsNonRoot':True},'containers':[{'name':'api','image':'example.invalid/api@sha256:'+'a'*64,'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'500m','memory':'128Mi'}},'readinessProbe':{'httpGet':{}},'livenessProbe':{'exec':{}},'securityContext':{'allowPrivilegeEscalation':False}}]}}}}
+    return {'apiVersion':'apps/v1','kind':'Deployment','spec':{'replicas':2,'selector':{'matchLabels':{'app':'demo'}},'template':{'metadata':{'labels':{'app':'demo'}},'spec':{'securityContext':{'runAsNonRoot':True,'seccompProfile':{'type':'RuntimeDefault'}},'containers':[{'name':'api','image':'example.invalid/api@sha256:'+'a'*64,'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'500m','memory':'128Mi'}},'readinessProbe':{'httpGet':{}},'livenessProbe':{'exec':{}},'securityContext':{'allowPrivilegeEscalation':False,'readOnlyRootFilesystem':True,'capabilities':{'drop':['ALL']}}}]}}}}
 
 class DevOpsTests(unittest.TestCase):
     def test_manifest_selected_controls_and_inherited_nonroot(self):
@@ -22,6 +22,46 @@ class DevOpsTests(unittest.TestCase):
         doc['spec']['template']['spec']['containers'][0]['image']='demo:latest'
         r=d.manifest({'text':json.dumps(doc)})
         self.assertEqual(r['review_count'],3)
+
+    def test_manifest_linux_isolation_controls_and_strict_booleans(self):
+        doc=manifest();pod=doc['spec']['template']['spec']
+        security=pod['containers'][0]['securityContext']
+        pod.update(hostNetwork=True,hostPID='false',hostIPC=0)
+        security.update(readOnlyRootFilesystem='true',capabilities={'drop':['NET_RAW'],'add':['SYS_ADMIN']})
+        report=d.manifest({'text':json.dumps(doc)})
+        failed={finding['rule'] for finding in report['findings'] if finding['status']=='review'}
+        self.assertEqual(failed,{'hostNetwork disabled','hostPID disabled','hostIPC disabled',
+                                 'Read-only root filesystem','Restricted Linux capabilities'})
+        for added in ([],['NET_BIND_SERVICE']):
+            security['capabilities']={'drop':['ALL'],'add':added}
+            report=d.manifest({'text':json.dumps(doc)})
+            self.assertEqual(next(f['status'] for f in report['findings'] if f['rule']=='Restricted Linux capabilities'),'observed')
+        for invalid in ('ALL',[None],['SYS_ADMIN']):
+            security['capabilities']={'drop':['ALL'],'add':invalid}
+            report=d.manifest({'text':json.dumps(doc)})
+            self.assertEqual(next(f['status'] for f in report['findings'] if f['rule']=='Restricted Linux capabilities'),'review')
+
+    def test_manifest_seccomp_inheritance_overrides_and_localhost_presence(self):
+        doc=manifest();pod=doc['spec']['template']['spec'];security=pod['containers'][0]['securityContext']
+        for profile,expected in (({'type':'Unconfined'},'review'),({},'review'),
+                                 ({'type':'RuntimeDefault'},'observed'),({'type':'Localhost'},'review'),
+                                 ({'type':'Localhost','localhostProfile':'  '},'review'),
+                                 ({'type':'Localhost','localhostProfile':'profiles/api.json'},'observed')):
+            with self.subTest(profile=profile):
+                security['seccompProfile']=profile
+                report=d.manifest({'text':json.dumps(doc)})
+                self.assertEqual(next(f['status'] for f in report['findings'] if f['rule']=='Seccomp profile declared'),expected)
+        del security['seccompProfile']
+        pod['securityContext'].pop('seccompProfile')
+        report=d.manifest({'text':json.dumps(doc)})
+        self.assertEqual(next(f['status'] for f in report['findings'] if f['rule']=='Seccomp profile declared'),'review')
+        for invalid in (None,[],True):
+            security['seccompProfile']=invalid
+            with self.assertRaises(ValidationError):d.manifest({'text':json.dumps(doc)})
+        security.pop('seccompProfile')
+        pod['os']={'name':'windows'}
+        with self.assertRaisesRegex(ValidationError,'Linux'):
+            d.manifest({'text':json.dumps(doc)})
 
     def test_manifest_rejects_unsupported_and_bad_shapes(self):
         for doc in [{'kind':'Pod'}, {**manifest(),'spec':[]}, {'apiVersion':'apps/v1','kind':'Deployment','spec':{'template':{'spec':{'containers':[]}}}}]:

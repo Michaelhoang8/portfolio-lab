@@ -32,6 +32,9 @@ def manifest(data):
     spec=obj(doc.get('spec'),'spec')
     template=obj(spec.get('template'),'spec.template')
     pod=obj(template.get('spec'),'spec.template.spec')
+    operating_system=obj(pod.get('os',{}),'spec.template.spec.os').get('name','linux')
+    if operating_system!='linux':
+        raise ValidationError('Deployment policy review currently supports Linux pods only')
     containers=pod.get('containers')
     if not isinstance(containers,list) or not 1<=len(containers)<=30:
         raise ValidationError('Provide 1–30 containers')
@@ -46,6 +49,9 @@ def manifest(data):
     labels=obj(obj(template.get('metadata',{}),'template.metadata').get('labels',{}),'template labels')
     match=obj(selector.get('matchLabels',{}),'selector.matchLabels')
     check('spec.selector.matchLabels','Selector matches template',bool(match) and all(labels.get(k)==v for k,v in match.items()),'Use nonempty matchLabels consistent with pod labels; matchExpressions are outside this checker.')
+    for field in ('hostNetwork','hostPID','hostIPC'):
+        check('spec.template.spec.'+field,field+' disabled',pod.get(field,False) is False,
+              'Keep host namespace sharing disabled unless explicitly required and isolated.')
     pod_security=obj(pod.get('securityContext',{}),'pod.securityContext')
     for index,container in enumerate(containers):
         container=obj(container,f'container {index}')
@@ -65,8 +71,21 @@ def manifest(data):
         check(path+'.securityContext.runAsNonRoot','Non-root execution',security.get('runAsNonRoot',pod_security.get('runAsNonRoot')) is True,'Set runAsNonRoot and use an image compatible with a non-root user.')
         check(path+'.securityContext.allowPrivilegeEscalation','Privilege escalation disabled',security.get('allowPrivilegeEscalation') is False,'Set allowPrivilegeEscalation: false where compatible.')
         check(path+'.securityContext.privileged','Privileged mode disabled',security.get('privileged',False) is False,'Avoid privileged containers unless explicitly required and isolated.')
+        check(path+'.securityContext.readOnlyRootFilesystem','Read-only root filesystem',security.get('readOnlyRootFilesystem') is True,
+              'Set readOnlyRootFilesystem: true where compatible and provide explicit writable volumes for required paths.')
+        capabilities=obj(security.get('capabilities',{}),'container.securityContext.capabilities')
+        dropped=capabilities.get('drop',[]);added=capabilities.get('add',[])
+        restricted=isinstance(dropped,list) and 'ALL' in dropped and all(isinstance(item,str) for item in dropped)
+        restricted=restricted and isinstance(added,list) and all(item=='NET_BIND_SERVICE' for item in added)
+        check(path+'.securityContext.capabilities','Restricted Linux capabilities',restricted,
+              'Drop ALL Linux capabilities. This policy permits only NET_BIND_SERVICE to be added back; review whether it is needed.')
+        profile=obj(security.get('seccompProfile',pod_security.get('seccompProfile',{})),'seccompProfile')
+        local=profile.get('localhostProfile')
+        configured=profile.get('type')=='RuntimeDefault' or (profile.get('type')=='Localhost' and isinstance(local,str) and bool(local.strip()))
+        check(path+'.securityContext.seccompProfile','Seccomp profile declared',configured,
+              'Declare RuntimeDefault or a Localhost profile with localhostProfile, at pod or container level. Container settings override pod settings; profile availability and runtime enforcement are not verified.')
     return {'containers':len(containers),'findings':findings,'review_count':sum(f['status']=='review' for f in findings),
-            'note':'Static review only, not Kubernetes schema validation or a security certification. No cluster is contacted.'}
+            'note':'Static review of selected Linux pod and regular-container controls only; init and ephemeral containers are excluded. Not Kubernetes schema validation or a security certification. No cluster is contacted.'}
 
 def pipeline(data):
     doc=document(data)
