@@ -8,7 +8,7 @@ import uuid
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode, urlsplit
 from .db import connect
-from .json_input import decode
+from .json_input import decode, read_exact
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS api_notes (
@@ -51,17 +51,21 @@ def handle(handler,database,api_key):
     db=None
     def send(status,body=None,headers=None,problem=False):
         raw=b'' if body is None else json.dumps(body).encode('utf-8')
-        handler.send_response(status)
-        handler.send_header('Content-Type','application/problem+json' if problem else 'application/json')
-        handler.send_header('Content-Length',str(len(raw)))
-        handler.send_header('Cache-Control','no-store')
-        handler.send_header('X-Content-Type-Options','nosniff')
-        handler.send_header('X-Request-ID',request_id)
-        for key,value in (headers or {}).items():
-            handler.send_header(key,value)
-        handler.end_headers()
-        if handler.command!='HEAD':
-            handler.wfile.write(raw)
+        try:
+            handler.send_response(status)
+            handler.send_header('Content-Type','application/problem+json' if problem else 'application/json')
+            handler.send_header('Content-Length',str(len(raw)))
+            handler.send_header('Cache-Control','no-store')
+            handler.send_header('X-Content-Type-Options','nosniff')
+            handler.send_header('X-Request-ID',request_id)
+            for key,value in (headers or {}).items():
+                handler.send_header(key,value)
+            handler.end_headers()
+            if handler.command!='HEAD':
+                handler.wfile.write(raw)
+        except (BrokenPipeError, ConnectionResetError):
+            handler.close_connection=True
+
     try:
         if not api_key:
             raise Problem(503,'Set PORTFOLIO_API_KEY in the server environment to enable the Notes API')
@@ -72,13 +76,13 @@ def handle(handler,database,api_key):
         collection=path=='/api/v1/notes'
         if not collection and not item:
             raise Problem(404,'Resource not found')
-        allowed='GET, POST, OPTIONS' if collection else 'GET, PUT, PATCH, DELETE, OPTIONS'
+        allowed='GET, HEAD, POST, OPTIONS' if collection else 'GET, HEAD, PUT, PATCH, DELETE, OPTIONS'
         if handler.command=='OPTIONS':
             send(204,headers={'Allow':allowed});return
         if handler.command not in allowed.split(', '):
             send(405,{'type':'about:blank','title':'Method Not Allowed','status':405,'detail':'Method not supported on this resource','instance':path},headers={'Allow':allowed},problem=True);return
         db=connect(database)
-        if handler.command=='GET' and collection:
+        if handler.command in ('GET','HEAD') and collection:
             query=parse_qs(parsed.query,keep_blank_values=True,max_num_fields=10)
             if set(query)-{'page','page_size','status','q'} or any(len(v)!=1 for v in query.values()):
                 raise Problem(400,'Use each supported query parameter at most once')
@@ -108,7 +112,7 @@ def handle(handler,database,api_key):
                       'next':path+'?'+urlencode(next_query) if page*size<total else None});return
         if parsed.query:
             raise Problem(400,'Query parameters are only supported on the collection GET')
-        if handler.command=='GET':
+        if handler.command in ('GET','HEAD'):
             row=db.execute('SELECT * FROM api_notes WHERE id=?',(item[1],)).fetchone()
             if row is None:
                 raise Problem(404,'Note not found')
@@ -126,7 +130,7 @@ def handle(handler,database,api_key):
             if not 1<=length<=65536:
                 raise Problem(413,'JSON body must contain 1–65536 bytes')
             try:
-                payload=decode(handler.rfile.read(length))
+                payload=decode(read_exact(handler.rfile,length))
             except (ValueError,UnicodeError,RecursionError):
                 raise Problem(400,'Malformed JSON body') from None
             payload=validate(payload,partial=handler.command=='PATCH')
@@ -171,6 +175,8 @@ def handle(handler,database,api_key):
             send(204)
         else:
             send(200,note,{'ETag':etag(note)})
+    except TimeoutError:
+        send(408,{'type':'about:blank','title':'Request Timeout','status':408,'detail':'Request body timed out','instance':path},problem=True)
     except Problem as error:
         send(error.status,{'type':'about:blank','title':HTTPStatus(error.status).phrase,'status':error.status,'detail':error.detail,'instance':path},problem=True)
     except (ValueError,UnicodeError):

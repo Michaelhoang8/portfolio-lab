@@ -3,6 +3,8 @@ import csv
 import io
 import tempfile
 import threading
+import socket
+import http.client
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from http.server import ThreadingHTTPServer
@@ -235,6 +237,42 @@ class HttpTests(unittest.TestCase):
             with self.request(path) as response:
                 self.assertEqual(response.status,200)
                 self.assertIn("frame-ancestors 'none'", response.headers['Content-Security-Policy'])
+
+    def test_head_and_static_query_parameters(self):
+        for path in ['/?preview=1','/app.js?v=1','/api/state','/api/movements.csv']:
+            with self.subTest(path=path):
+                response=urlopen(Request(self.url+path,method='HEAD'),timeout=5)
+                with response:
+                    self.assertEqual(response.status,200)
+                    self.assertEqual(response.read(),b'')
+                    self.assertIsNotNone(response.headers['Content-Type'])
+
+    def test_truncated_body_and_duplicate_lengths_are_rejected(self):
+        for headers in ['Content-Length: 20', 'Content-Length: 2\r\nContent-Length: 2']:
+            with self.subTest(headers=headers), socket.create_connection(self.server.server_address,timeout=5) as connection:
+                request=('POST /api/extensions/experiment-plan HTTP/1.0\r\nHost: localhost\r\n'
+                         'Content-Type: application/json\r\nX-Portfolio-Client: browser\r\n'+headers+'\r\n\r\n{}')
+                connection.sendall(request.encode('ascii'))
+                connection.shutdown(socket.SHUT_WR)
+                response=http.client.HTTPResponse(connection);response.begin()
+                self.assertEqual(response.status,400)
+                self.assertIn('error',json.loads(response.read()))
+
+    def test_slow_request_body_returns_timeout_error(self):
+        class FastTimeoutHandler(self.server.RequestHandlerClass):
+            def setup(self):
+                super().setup()
+                self.connection.settimeout(.05)
+        server=ThreadingHTTPServer(('127.0.0.1',0),FastTimeoutHandler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            with socket.create_connection(server.server_address,timeout=5) as connection:
+                connection.sendall(b'POST /api/extensions/experiment-plan HTTP/1.0\r\nHost: localhost\r\nContent-Type: application/json\r\nX-Portfolio-Client: browser\r\nContent-Length: 20\r\n\r\n{}')
+                response=http.client.HTTPResponse(connection);response.begin()
+                self.assertEqual(response.status,408)
+                self.assertEqual(json.loads(response.read())['error'],'Request body timed out')
+        finally:
+            server.shutdown();server.server_close();thread.join()
 
     def test_http_validation_and_not_found(self):
         headers = {'Content-Type':'application/json','X-Portfolio-Client':'browser'}

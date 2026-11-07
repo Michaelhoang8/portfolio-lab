@@ -209,7 +209,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -217,6 +217,66 @@
                 }
               }
             }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "published"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        ]
+      },
+      "head": {
+        "summary": "Return GET response metadata without a response body",
+        "responses": {
+          "200": {
+            "description": "200",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured."
           }
         },
         "parameters": [
@@ -303,7 +363,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -354,7 +414,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -406,7 +466,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -445,7 +505,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -505,7 +565,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -552,7 +612,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -574,6 +634,31 @@
           }
         ]
       },
+      "head": {
+        "summary": "Return GET response metadata without a response body",
+        "responses": {
+          "200": {
+            "description": "200",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "ETag": {
+                "description": "Strong entity tag for this note version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured."
+          }
+        }
+      },
       "options": {
         "summary": "Discover allowed methods",
         "responses": {
@@ -594,7 +679,7 @@
             }
           },
           "default": {
-            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
+            "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.",
             "content": {
               "application/problem+json": {
                 "schema": {

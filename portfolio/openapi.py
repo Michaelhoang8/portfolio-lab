@@ -1,5 +1,6 @@
 """Generate the checked-in Notes API contract: python -m portfolio.openapi."""
 import json
+from copy import deepcopy
 from pathlib import Path
 
 def build_spec():
@@ -21,7 +22,7 @@ def build_spec():
         if schema:
             result['content']={'application/json':{'schema':{'$ref':'#/components/schemas/'+schema}}}
         return result
-    problem={'description':'Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.',
+    problem={'description':'Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured.',
              'content':{'application/problem+json':{'schema':{'$ref':'#/components/schemas/Problem'}}}}
     def operation(summary,code,schema=None,input_schema=None):
         result={'summary':summary,'responses':{str(code):response(code,schema),'default':problem}}
@@ -43,6 +44,13 @@ def build_spec():
     for method,schema,code in [('put','NoteInput',200),('patch','NotePatch',200),('delete',None,204)]:
         item[method]=operation({'put':'Replace a note','patch':'Partially update a note','delete':'Delete a note'}[method],code,'Note' if code==200 else None,schema)
         item[method]['parameters']=[{'name':'If-Match','in':'header','required':True,'description':'Exact current ETag. Wildcards, weak tags, and lists are not supported.','schema':{'type':'string'}}]
+    def head(get_operation):
+        result=deepcopy(get_operation)
+        result['summary']='Return GET response metadata without a response body'
+        for response_spec in result['responses'].values():
+            response_spec.pop('content',None)
+        return result
+    item['head']=head(item['get'])
     options=operation('Discover allowed methods',204)
     options['responses']['204']['headers']['Allow']={'schema':{'type':'string'}}
     item['options']=options
@@ -50,7 +58,7 @@ def build_spec():
             'description':'Local single-workspace demo. Only these /api/v1 routes require the configured key. Request bodies are limited to 64 KiB. See REST_API.md for concurrency and replay semantics.'},
             'servers':[{'url':'/'}],'security':[{'ApiKey':[]}],
             'components':{'securitySchemes':{'ApiKey':{'type':'apiKey','in':'header','name':'X-API-Key'}},'schemas':schemas},
-            'paths':{'/api/v1/notes':{'get':listing,'post':create,'options':options},'/api/v1/notes/{id}':item}}
+            'paths':{'/api/v1/notes':{'get':listing,'head':head(listing),'post':create,'options':options},'/api/v1/notes/{id}':item}}
 
 if __name__=='__main__':
     path=Path(__file__).parent/'static'/'openapi.json'

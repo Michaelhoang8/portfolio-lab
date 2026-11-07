@@ -53,6 +53,20 @@ class RestTests(unittest.TestCase):
                 self.assertEqual(problem['detail'],'Malformed JSON body')
                 self.assertEqual(headers['Content-Type'],'application/problem+json')
 
+    def test_head_matches_get_metadata_without_body(self):
+        _,created,_=self.create()
+        for path in ['/api/v1/notes?page_size=1',created['Location']]:
+            get_status,get_headers,_=self.request(path=path)
+            status,headers,body=self.request('HEAD',path)
+            self.assertEqual(status,get_status)
+            self.assertEqual(headers['Content-Length'],get_headers['Content-Length'])
+            self.assertEqual(headers.get('ETag'),get_headers.get('ETag'))
+            self.assertIsNone(body)
+        status,headers,body=self.request('HEAD',headers={'X-API-Key':'wrong'})
+        self.assertEqual(status,401)
+        self.assertEqual(headers['Content-Type'],'application/problem+json')
+        self.assertIsNone(body)
+
     def test_create_location_get_and_persistence(self):
         status,headers,note=self.create()
         self.assertEqual(status,201)
@@ -151,7 +165,7 @@ class RestTests(unittest.TestCase):
         status,_,schema=self.request(path='/openapi.json')
         self.assertEqual(status,200)
         self.assertEqual(schema,build_spec())
-        self.assertEqual(set(schema['paths']['/api/v1/notes/{id}']),{'parameters','get','put','patch','delete','options'})
+        self.assertEqual(set(schema['paths']['/api/v1/notes/{id}']),{'parameters','get','head','put','patch','delete','options'})
 
     def test_explorer_assets(self):
         for path in ['/rest','/rest.js','/rest.css']:

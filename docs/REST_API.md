@@ -46,9 +46,11 @@ Collection GET supports `page` (default 1, maximum 100,000), `page_size` (defaul
 
 Responses contain `items`, `page`, `page_size`, `total`, and a relative `next` link or null. Ordering is `created_at DESC, id DESC`. Count and rows are read in one database transaction. This is offset pagination: records inserted or deleted between requests can shift page boundaries. It is not a cross-request snapshot or cursor pagination implementation.
 
+HEAD supports the same resources, authentication, and query validation as GET, with matching response metadata and no body. Request-body reads time out after 15 seconds; truncated bodies and duplicate length headers are rejected.
+
 ### Conditional updates
 
-GET and successful writes return a strong ETag shaped as `"uuid:version"`. Send that exact value in `If-Match` for PUT, PATCH, or DELETE. Missing preconditions return 428; stale or unsupported tags return 412. Wildcards, weak validators, and comma-separated ETag lists are not supported by this demonstration API. Successful PUT/PATCH increments the version, including same-value updates.
+GET, HEAD, and successful writes return a strong ETag shaped as `"uuid:version"`. Send that exact value in `If-Match` for PUT, PATCH, or DELETE. Missing preconditions return 428; stale or unsupported tags return 412. Wildcards, weak validators, and comma-separated ETag lists are not supported by this demonstration API. Successful PUT/PATCH increments the version, including same-value updates.
 
 The ETag comparison and mutation run inside one `BEGIN IMMEDIATE` transaction. Two competing writers using the same version cannot both succeed. A 412 response is a request to fetch the latest note and reconsider the edit; the server does not merge conflicting changes automatically. Conditional cache reads (`If-None-Match`/304) are not implemented; responses use `Cache-Control: no-store`.
 
@@ -62,12 +64,12 @@ Keys are scoped to the configured API key's SHA-256 digest. They are not automat
 
 Implemented REST operations return errors as `application/problem+json` with `type`, `title`, `status`, `detail`, and `instance`, following the basic [RFC 9457 problem-details structure](https://www.rfc-editor.org/rfc/rfc9457.html). Each response includes a generated `X-Request-ID`. Unsupported implemented methods return 405 with Allow. Error messages avoid echoing keys or entire request bodies. The base Python server can still emit its own errors for unsupported protocol methods or malformed HTTP framing.
 
-Common status codes: 400 malformed JSON/query, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 body size, 415 content type, 422 field validation, 428 missing precondition, and 503 unconfigured API.
+Common status codes: 400 malformed JSON/query, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 body size, 415 content type, 422 field validation, 428 missing precondition, and 503 unconfigured API.
 
 The checked-in [OpenAPI JSON](../portfolio/static/openapi.json) describes paths, request bodies, schemas, API-key security, and response headers using [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html). Regenerate with `python -m portfolio.openapi`. A test ensures the checked-in document matches its generator. It is usable as an API reference/import contract; no third-party OpenAPI validator or generated SDK is claimed.
 
 ## Verification and scope
 
-The repository has 73 tests, including 15 REST tests. New checks cover persisted CRUD, replacement/partial updates, deletion, request validation, authentication, missing server configuration, filter/pagination behavior, method discovery, ETags, concurrent writers, concurrent idempotency replay, replay after deletion, problem responses, static assets, and contract regeneration. The Python sample client was run end to end. Browser checks verified authenticated creation and conditional PATCH from version 1 to version 2. Automated browser/mobile tests remain future work.
+Automated checks cover persisted CRUD, replacement/partial updates, deletion, request validation, authentication, missing server configuration, filter/pagination behavior, method discovery, ETags, concurrent writers, concurrent idempotency replay, replay after deletion, problem responses, static assets, and contract regeneration. The Python sample client was run end to end. Browser checks verified authenticated creation and conditional PATCH from version 1 to version 2. Automated browser/mobile tests remain future work.
 
 The server binds to loopback and remains a local demo on Python's development HTTP server. API-key authentication covers only `/api/v1` and does not make the rest of the portfolio internet-ready. There is one shared workspace, no per-user ownership, OAuth, TLS termination, rate limiting, key rotation service, idempotency TTL, or production deployment. UUIDs are identifiers, not authorization boundaries. Notes and idempotency snapshots persist in the existing ignored SQLite database. Future milestones: a production framework, identity and resource ownership, cursor pagination, retention/erasure policies, structured observability, and a generated client validated against the schema.

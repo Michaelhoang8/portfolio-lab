@@ -37,3 +37,10 @@ def decode(raw):
     except (ValueError, UnicodeError, RecursionError):
         # Never reflect submitted content (which may contain secrets) in errors.
         raise ValueError('Malformed JSON body') from None
+
+
+def read_exact(stream, length):
+    raw = stream.read(length)
+    if len(raw) != length:
+        raise ValueError('Incomplete request body')
+    return raw

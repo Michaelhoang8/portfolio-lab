@@ -9,13 +9,17 @@ from pathlib import Path
 from .db import connect, initialize
 from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api, capabilities
 from .validation import ValidationError, NotFoundError, ConflictError
-from .json_input import decode
+from .json_input import decode, read_exact
 
 STATIC = Path(__file__).parent / 'static'
 
 def handler_for(database, api_key=None):
     api_key = os.environ.get('PORTFOLIO_API_KEY','') if api_key is None else api_key
     class Handler(BaseHTTPRequestHandler):
+        def setup(self):
+            super().setup()
+            self.connection.settimeout(15)
+
         def is_rest(self):
             return self.path.split('?',1)[0] == '/api/v1' or self.path.startswith('/api/v1/')
 
@@ -31,20 +35,28 @@ def handler_for(database, api_key=None):
 
         def reply(self, status, body, content_type='application/json; charset=utf-8'):
             raw = json.dumps(body).encode() if content_type.startswith('application/json') else body
-            self.send_response(status)
-            self.send_header('Content-Type', content_type)
-            self.send_header('Content-Length', str(len(raw)))
-            self.send_header('X-Content-Type-Options', 'nosniff')
-            self.send_header('Cache-Control', 'no-store')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'")
-            self.end_headers()
-            self.wfile.write(raw)
+            try:
+                self.send_response(status)
+                self.send_header('Content-Type', content_type)
+                self.send_header('Content-Length', str(len(raw)))
+                self.send_header('X-Content-Type-Options', 'nosniff')
+                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+                self.end_headers()
+                if self.command != 'HEAD':
+                    self.wfile.write(raw)
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
+
+        def do_HEAD(self):
+            self.do_GET()
 
         def do_GET(self):
             if self.is_rest():
                 rest_api.handle(self,database,api_key)
                 return
-            if self.path == '/api/movements.csv':
+            path = self.path.split('?', 1)[0]
+            if path == '/api/movements.csv':
                 db = connect(database)
                 chunks = services.movement_csv(db)
                 try:
@@ -57,6 +69,8 @@ def handler_for(database, api_key=None):
                     self.send_header('Connection','close')
                     self.close_connection = True
                     self.end_headers()
+                    if self.command == 'HEAD':
+                        return
                     self.wfile.write(first.encode('utf-8'))
                     for chunk in chunks:
                         self.wfile.write(chunk.encode('utf-8'))
@@ -66,7 +80,7 @@ def handler_for(database, api_key=None):
                     chunks.close()
                     db.close()
                 return
-            if self.path == '/api/state':
+            if path == '/api/state':
                 db = connect(database)
                 try:
                     self.reply(200, services.snapshot(db))
@@ -97,10 +111,10 @@ def handler_for(database, api_key=None):
                      '/identities.js': ('identities.js', 'text/javascript; charset=utf-8'),
                      '/identities.css': ('identities.css', 'text/css; charset=utf-8'),
                      '/style.css': ('style.css', 'text/css; charset=utf-8')}
-            if self.path not in files:
+            if path not in files:
                 self.reply(404, {'error': 'Not found'})
                 return
-            name, mime = files[self.path]
+            name, mime = files[path]
             raw=(STATIC / name).read_bytes()
             self.reply(200, json.loads(raw) if name=='openapi.json' else raw, mime)
 
@@ -123,7 +137,7 @@ def handler_for(database, api_key=None):
                 limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/','/api/devops/','/api/extensions/')) else 16384
                 if not 0 < length <= limit:
                     raise ValidationError(f'Request must contain 1–{limit} bytes')
-                data = decode(self.rfile.read(length))
+                data = decode(read_exact(self.rfile,length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
                 extensions={'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}
@@ -162,6 +176,8 @@ def handler_for(database, api_key=None):
                 else:
                     raise NotFoundError('Route not found')
                 self.reply(200 if move else 201, result)
+            except TimeoutError:
+                self.reply(408, {'error': 'Request body timed out'})
             except NotFoundError as error:
                 self.reply(404, {'error': str(error)})
             except ConflictError as error:
