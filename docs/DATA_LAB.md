@@ -43,3 +43,5 @@ The diagnostic still requires at least four nonblank numeric values and uses inc
 ### Exact duplicate locations
 
 Dataset Explorer now identifies every exact duplicate record and its first occurrence. Detailed analysis previews up to 20 matches; **Export duplicate locations** downloads all matches as `source_record,duplicate_of`, without source field values. The JSON report includes the complete `duplicate_records` list. Matching uses original parsed values, so whitespace and numeric text differences remain distinct. Record numbers count data records after the header (record 1), skip blank physical lines, and treat quoted multiline fields as one record. This is a location report; it does not remove rows. Tests cover exact-value semantics, multiline records, empty results, and 4,999 exported duplicates. A browser fixture verified 25 exported matches beyond the 20-row preview ([capture](design/duplicate-locations.png)).
+
+Revenue month keys use canonical ISO dates directly, keeping four-digit years and chronological sorting consistent across operating systems. Regression cases cover years 0001–9999 and growth across the 0999/1000 year boundary.

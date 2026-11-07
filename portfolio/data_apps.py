@@ -149,7 +149,7 @@ def sales(data):
             continue
         accepted += 1
         amounts.append(amount)
-        monthly[day.strftime('%Y-%m')] += amount
+        monthly[day.isoformat()[:7]] += amount
         categories[category] += amount
     total = sum(amounts, Decimal(0))
     money = lambda value: format(value.quantize(Decimal('.01')), 'f')

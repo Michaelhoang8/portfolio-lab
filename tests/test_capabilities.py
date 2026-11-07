@@ -74,6 +74,13 @@ class AnalysisCapabilities(unittest.TestCase):
         r=c.predict({'model':model,'csv':'"quoted,feature"\n0'})
         self.assertEqual(r['predictions'][0]['score'],.5)
 
+    def test_sales_growth_crosses_century_with_canonical_month_keys(self):
+        result=enhanced('/api/data/sales',{'csv':'date,category,amount\n1000-01-01,A,20.00\n0999-12-31,A,10.00'},d.sales)
+        trend=result['capabilities']['tables'][0]['rows']
+        self.assertEqual([row[0] for row in trend],['0999-12','1000-01'])
+        self.assertEqual(trend[1][2],100.0)
+        self.assertEqual(trend[1][3],'Consecutive observed months')
+
     def test_profile_duplicate_export_covers_every_record_without_source_values(self):
         result=enhanced('/api/data/profile',{'csv':'name\n'+'PRIVATE_SYNTHETIC_VALUE\n'*5000},d.profile)
         self.assertEqual(result['duplicate_rows'],4999)

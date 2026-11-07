@@ -60,6 +60,14 @@ class DataTests(unittest.TestCase):
         self.assertEqual(result['monthly'],[{'label':'2026-01','amount':'0.30'},{'label':'2026-02','amount':'-0.05'}])
         self.assertEqual((result['accepted_rows'],result['rejected_rows'],result['refund_rows']),(3,3,1))
 
+    def test_sales_month_keys_remain_iso_padded_across_the_supported_date_range(self):
+        dates=['1000-01-01','0001-12-31','0999-12-31','0099-01-01','0001-01-01','9999-12-31']
+        result=d.sales({'csv':'date,category,amount\n'+'\n'.join(f'{day},Demo,1.00' for day in dates)})
+        self.assertEqual([item['label'] for item in result['monthly']],
+                         ['0001-01','0001-12','0099-01','0999-12','1000-01','9999-12'])
+        self.assertEqual(result['accepted_rows'],len(dates))
+        self.assertEqual(result['total'],'6.00')
+
     def test_sales_mapping_and_all_invalid(self):
         result=d.sales({'csv':'day,team,net\nwrong,A,9\n','mapping':{'date':'day','category':'team','amount':'net'}})
         self.assertEqual(result['total'],'0.00')
