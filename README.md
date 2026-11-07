@@ -146,9 +146,10 @@ python -m portfolio.server --port 8080 --database data/another.db
 ```sh
 python -m unittest discover -s tests -v
 node --check portfolio/static/app.js
+node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs tests/ui_utilities.test.cjs
 ```
 
-Node is optional for running the apps; it is used only for the JavaScript syntax check. CI runs the Python tests on 3.11, 3.12, and 3.13. The original nine tests cover real HTTP behavior, persistence, validation, SQL-like input, duplicate SKUs, audit events, Wilson boundaries, rollback on overdraw, and simultaneous withdrawals through separate connections.
+Node is optional for running the apps; it is used for JavaScript syntax and lifecycle checks. CI runs the Python tests on 3.11, 3.12, and 3.13. The original nine tests cover real HTTP behavior, persistence, validation, SQL-like input, duplicate SKUs, audit events, Wilson boundaries, rollback on overdraw, and simultaneous withdrawals through separate connections.
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
@@ -181,7 +182,9 @@ The original product endpoints below require `Content-Type: application/json` an
 | POST | `/api/movements` | `product_id`, `delta` (nonzero signed integer), `note`, optional `request_key` |
 | POST | `/api/experiments` | `name`, `a_visitors`, `a_conversions`, `b_visitors`, `b_conversions` |
 
-Counts must be integers; visitors must be positive and conversions cannot exceed visitors. Relative lift is undefined (`null`, shown as N/A) when baseline conversion is zero. Absolute difference is B minus A. Wilson intervals describe each proportion; they are not a hypothesis test or a sequential testing procedure.
+Counts must be integers; visitors must be positive and conversions cannot exceed visitors. Relative lift is undefined (`null`, shown as N/A) when baseline conversion is zero. Absolute difference is B minus A. Wilson intervals describe each proportion. The difference report adds a 95% Agresti–Caffo interval and a two-sided pooled z-test for equal proportions, with B minus A as the direction. The test is withheld when any pooled expected success/failure count is below 5. The interface explains fixed-horizon independent-group assumptions, the lack of multiple-testing correction, and why an inconclusive result does not establish equivalence.
+
+The adjusted interval adds one success and one failure to each group, uses the adjusted proportions and sample sizes, and clips bounds to [-1, 1]. The p-value uses `erfc(abs(z)/sqrt(2))` to avoid tail cancellation. These are different methods and may disagree near a cutoff. Regression tests reproduce published [NIST z-test results](https://www.itl.nist.gov/div898/software/dataplot/refman1/auxillar/binotest.htm) and [NIST Agresti–Caffo interval results](https://www.itl.nist.gov/div898/software/dataplot/refman1/auxillar/diffprop.htm), with signs reversed for B minus A. Neither method supports repeated peeking or guarantees practical value.
 
 ## Scope and limitations
 

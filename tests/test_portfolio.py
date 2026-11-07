@@ -170,6 +170,37 @@ class DomainTests(unittest.TestCase):
             lower, upper = s.wilson(successes,100)
             self.assertTrue(0 <= lower <= upper <= 1)
 
+    def test_comparison_matches_published_nist_examples(self):
+        # NIST Dataplot binotest.htm: 32/38 vs 39/44, A minus B z=-0.58640.
+        result=s.experiment_comparison(32,38,39,44)
+        self.assertAlmostEqual(result['z_statistic'],.58640,places=5)
+        self.assertAlmostEqual(result['p_value'],.55760,delta=1e-5)  # Published output truncates decimals.
+        # NIST diffprop.htm: Agresti-Caffo A minus B [-.36936,.04794].
+        interval=s.experiment_comparison(8,40,11,30)['difference_interval']
+        self.assertAlmostEqual(interval[0],-.04794,places=5)
+        self.assertAlmostEqual(interval[1],.36936,places=5)
+
+    def test_comparison_reverses_direction_but_not_evidence(self):
+        forward=s.experiment_comparison(100,1000,150,1000)
+        reverse=s.experiment_comparison(150,1000,100,1000)
+        self.assertEqual(forward['status'],'difference_detected')
+        self.assertAlmostEqual(forward['p_value'],reverse['p_value'])
+        self.assertAlmostEqual(forward['z_statistic'],-reverse['z_statistic'])
+        self.assertAlmostEqual(forward['difference_interval'][0],-reverse['difference_interval'][1])
+        same=s.experiment_comparison(50,100,50,100)
+        self.assertEqual(same['p_value'],1)
+        self.assertEqual(same['status'],'inconclusive')
+
+    def test_sparse_comparison_has_no_misleading_p_value(self):
+        for counts in [(0,100,0,100),(100,100,100,100),(1,10,2,10),(0,1,1,1)]:
+            with self.subTest(counts=counts):
+                result=s.experiment_comparison(*counts)
+                self.assertIsNone(result['p_value'])
+                self.assertIsNone(result['z_statistic'])
+                self.assertEqual(result['status'],'insufficient_counts')
+                low,high=result['difference_interval']
+                self.assertTrue(-1<=low<high<=1)
+
     def test_invalid_counts_and_bool_rejected(self):
         for visitors, conversions in [(0,0),(10,11),(True,1)]:
             with self.assertRaises(ValidationError):

@@ -1,5 +1,5 @@
 """Domain operations. Caller owns the connection; mutations own transactions."""
-from math import sqrt
+from math import sqrt, erfc
 import re
 from datetime import date
 from .db import rows
@@ -74,11 +74,35 @@ def wilson(successes, total):
     radius = z * sqrt(p*(1-p)/total + z*z/(4*total*total)) / denominator
     return [max(0, center-radius), min(1, center+radius)]
 
+def experiment_comparison(a_successes, a_total, b_successes, b_total):
+    """Fixed-horizon independent proportions: B minus A, no multiplicity correction."""
+    a, b = a_successes / a_total, b_successes / b_total
+    # Agresti-Caffo: add one success and one failure to each variant.
+    adjusted_a = (a_successes + 1) / (a_total + 2)
+    adjusted_b = (b_successes + 1) / (b_total + 2)
+    center = adjusted_b - adjusted_a
+    radius = 1.959963984540054 * sqrt(adjusted_a * (1-adjusted_a) / (a_total+2)
+                                     + adjusted_b * (1-adjusted_b) / (b_total+2))
+    pooled = (a_successes + b_successes) / (a_total + b_total)
+    expected = [n * p for n in (a_total, b_total) for p in (pooled, 1-pooled)]
+    enough = min(expected) >= 5
+    z = (b-a) / sqrt(pooled * (1-pooled) * (1/a_total + 1/b_total)) if enough else None
+    p_value = erfc(abs(z) / sqrt(2)) if enough else None
+    return {'difference_interval':[max(-1,center-radius),min(1,center+radius)],
+            'interval_method':'Agresti-Caffo', 'confidence_level':.95,
+            'test_method':'Two-sided pooled two-proportion z-test',
+            'z_statistic':z, 'p_value':p_value, 'minimum_expected_count':min(expected),
+            'alpha':.05, 'status':'insufficient_counts' if not enough else
+            ('difference_detected' if p_value < .05 else 'inconclusive')}
+
+
 def experiment_summary(row):
     result = dict(row)
     a = result['a_conversions'] / result['a_visitors']
     b = result['b_conversions'] / result['b_visitors']
-    result.update(a_rate=a, b_rate=b, difference=b-a,
+    result.update(comparison=experiment_comparison(result['a_conversions'],result['a_visitors'],
+                                                   result['b_conversions'],result['b_visitors']),
+                  a_rate=a, b_rate=b, difference=b-a,
                   relative_lift=(b-a)/a if a else None,
                   a_interval=wilson(result['a_conversions'], result['a_visitors']),
                   b_interval=wilson(result['b_conversions'], result['b_visitors']))
