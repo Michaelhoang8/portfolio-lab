@@ -6,7 +6,7 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .db import connect, initialize
-from . import services
+from . import services, data_apps
 from .validation import ValidationError, NotFoundError
 
 STATIC = Path(__file__).parent / 'static'
@@ -33,6 +33,9 @@ def handler_for(database):
                     db.close()
                 return
             files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                     '/data': ('data.html', 'text/html; charset=utf-8'),
+                     '/data.js': ('data.js', 'text/javascript; charset=utf-8'),
+                     '/data.css': ('data.css', 'text/css; charset=utf-8'),
                      '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                      '/style.css': ('style.css', 'text/css; charset=utf-8')}
             if self.path not in files:
@@ -49,11 +52,17 @@ def handler_for(database):
             db = connect(database)
             try:
                 length = int(self.headers.get('Content-Length', '0'))
-                if not 0 < length <= 16384:
-                    raise ValidationError('Request must contain 1–16384 bytes')
+                limit = 6_100_000 if self.path.startswith('/api/data/') else 16384
+                if not 0 < length <= limit:
+                    raise ValidationError(f'Request must contain 1–{limit} bytes')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
+                data_routes = {'/api/data/profile':data_apps.profile, '/api/data/clean':data_apps.clean,
+                               '/api/data/sales':data_apps.sales}
+                if self.path in data_routes:
+                    self.reply(200, data_routes[self.path](data))
+                    return
                 routes = {'/api/tickets': services.ticket_create, '/api/products': services.product_create,
                           '/api/movements': services.movement_create, '/api/experiments': services.experiment_create}
                 move = re.fullmatch(r'/api/tickets/(\d+)/status', self.path)
