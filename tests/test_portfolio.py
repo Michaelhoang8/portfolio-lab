@@ -1,3 +1,4 @@
+from http.client import HTTPConnection
 import json
 import csv
 import io
@@ -262,6 +263,39 @@ class HttpTests(unittest.TestCase):
             return urlopen(request,timeout=5)
         except HTTPError as error:
             return error
+
+    def test_only_unambiguous_loopback_hosts_are_accepted(self):
+        for host in ('localhost','LOCALHOST:8000','127.0.0.1:8000','[::1]:8000','localhost  '):
+            with self.subTest(host=host),self.request('/api/state',headers={'Host':host}) as response:
+                self.assertEqual(response.status,200)
+        for host in ('example.invalid','localhost.evil.invalid','user@localhost','127.0.0.1:0','localhost:99999','localhost,127.0.0.1'):
+            for path in ('/api/state','/api/v1/notes','/api/movements.csv','/'):
+                with self.subTest(host=host,path=path),self.request(path,headers={'Host':host}) as response:
+                    self.assertEqual(response.status,400)
+                    self.assertIn('loopback Host',json.load(response)['error'])
+
+    def test_untrusted_host_cannot_mutate_workspace(self):
+        with self.request('/api/state') as response:
+            before=json.load(response)['tickets']
+        headers={'Host':'untrusted.invalid','Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/tickets',b'{"title":"Blocked","description":"Fixture","priority":"low"}',headers) as response:
+            self.assertEqual(response.status,400)
+        with self.request('/api/state') as response:
+            self.assertEqual(json.load(response)['tickets'],before)
+
+    def test_missing_or_duplicate_host_is_rejected_before_dispatch(self):
+        for hosts in ([],['localhost','127.0.0.1']):
+            connection=HTTPConnection('127.0.0.1',self.server.server_port,timeout=5)
+            try:
+                connection.putrequest('GET','/api/state',skip_host=True)
+                for host in hosts:
+                    connection.putheader('Host',host)
+                connection.endheaders()
+                response=connection.getresponse()
+                self.assertEqual(response.status,400)
+                self.assertIn('loopback Host',json.loads(response.read())['error'])
+            finally:
+                connection.close()
 
     def test_static_assets_and_security_headers(self):
         for path in ['/', '/app.js', '/style.css', '/observatory.js', '/observatory.css', '/csv_columns.js']:

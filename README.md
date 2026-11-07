@@ -184,6 +184,8 @@ Browser: semantic HTML + responsive CSS + vanilla JavaScript
 
 Each HTTP request opens and closes its own database connection. Stock mutations acquire `BEGIN IMMEDIATE` before reading the ledger balance, so two withdrawals cannot both spend the same units. Failed mutations roll back. Inventory balances derive from the ledger rather than a second mutable counter. Issue status changes and audit entries commit together. Repeating the current status adds no extra event.
 
+All requests require one loopback Host header (`localhost`, `127.0.0.1`, or `[::1]`, with an optional valid port). Unrelated, missing, or duplicate Host headers are rejected before routes run. Forwarded host headers are not trusted; the server remains intended for direct loopback access.
+
 The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a complete snapshot, use the online backup command below; it includes committed WAL data and all persisted tables.
 
 ## API

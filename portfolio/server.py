@@ -20,6 +20,17 @@ def handler_for(database, api_key=None):
             super().setup()
             self.connection.settimeout(15)
 
+        def parse_request(self):
+            if not super().parse_request():
+                return False
+            hosts=self.headers.get_all('Host',[])
+            match=re.fullmatch(r'(?:localhost|127\.0\.0\.1|\[::1\])(?::([0-9]{1,5}))?',hosts[0].strip(),re.I) if len(hosts)==1 else None
+            if not match or match.group(1) is not None and not 1<=int(match.group(1))<=65535:
+                self.close_connection=True
+                self.reply(400, {'error':'Use one loopback Host header: localhost, 127.0.0.1, or [::1]'})
+                return False
+            return True
+
         def is_rest(self):
             return self.path.split('?',1)[0] == '/api/v1' or self.path.startswith('/api/v1/')
 
