@@ -131,3 +131,13 @@ test('large issue columns page independently and clamp after their data shrinks'
   assert.equal(vm.runInContext('boardPages.backlog',h.context),0);
   assert.equal((query('#board').innerHTML.match(/data-ticket=/g)||[]).length,1);
 });
+
+test('experiment context is collapsed, optional, and escapes submitted markup',()=>{
+  const h=harness();
+  assert.equal(h.context.experimentContext({}),'');
+  const markup=h.context.experimentContext({hypothesis:'<script>alert(1)</script>',primary_metric:'Purchases & returns'});
+  assert.match(markup,/<details><summary>Experiment context/);
+  assert.ok(!markup.includes('<script>'));
+  assert.match(markup,/&lt;script&gt;/);
+  assert.match(markup,/Purchases &amp; returns/);
+});

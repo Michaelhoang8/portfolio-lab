@@ -202,7 +202,9 @@ The original product endpoints below require `Content-Type: application/json` an
 | POST | `/api/products` | `name`, `sku`, `reorder_point` (integer ≥ 0) |
 | POST | `/api/products/{id}/details` | Partial `name`, `reorder_point`; required `expected_version` |
 | POST | `/api/movements` | `product_id`, `delta` (nonzero signed integer), `note`, optional `request_key` |
-| POST | `/api/experiments` | `name`, `a_visitors`, `a_conversions`, `b_visitors`, `b_conversions` |
+| POST | `/api/experiments` | `name`, `a_visitors`, `a_conversions`, `b_visitors`, `b_conversions`; optional `hypothesis`, `primary_metric` |
+
+Experiment Studio stores optional context alongside each analysis: a hypothesis (up to 2,000 characters) and primary conversion metric (up to 200). Both live behind collapsed disclosures in the form and results. Existing records migrate with empty context, and API clients may omit both fields. Context is descriptive, does not change calculations, and is not proof of a preregistered experiment. Tests cover migration, validation, unchanged statistics, API persistence, and safe rendering; a browser check verified persistence after reload ([capture](docs/design/experiment-context.png)).
 
 Counts must be integers; visitors must be positive and conversions cannot exceed visitors. Relative lift is undefined (`null`, shown as N/A) when baseline conversion is zero. Absolute difference is B minus A. Wilson intervals describe each proportion. The difference report adds a 95% Agresti–Caffo interval and a two-sided pooled z-test for equal proportions, with B minus A as the direction. The test is withheld when any pooled expected success/failure count is below 5. The interface explains fixed-horizon independent-group assumptions, the lack of multiple-testing correction, and why an inconclusive result does not establish equivalence.
 

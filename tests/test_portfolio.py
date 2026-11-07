@@ -264,6 +264,38 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
         self.assertIn('Balance after movement',rows[0])
 
+    def test_experiment_context_is_optional_validated_and_preserved(self):
+        base={'name':'Context','a_visitors':100,'a_conversions':10,'b_visitors':100,'b_conversions':12}
+        s.experiment_create(self.db,base)
+        original=s.snapshot(self.db)['experiments'][0]
+        self.assertEqual((original['hypothesis'],original['primary_metric']),('',''))
+        s.experiment_create(self.db,{**base,'hypothesis':'  Clearer copy improves checkout.  ','primary_metric':' Purchases per visitor '})
+        contextual=s.snapshot(self.db)['experiments'][0]
+        self.assertEqual(contextual['hypothesis'],'Clearer copy improves checkout.')
+        self.assertEqual(contextual['primary_metric'],'Purchases per visitor')
+        self.assertEqual(contextual['comparison'],original['comparison'])
+        for key,limit in (('hypothesis',2000),('primary_metric',200)):
+            for value in (None,42,[],{},'x'*(limit+1)):
+                with self.subTest(key=key,value=type(value)),self.assertRaises(ValidationError):
+                    s.experiment_create(self.db,{**base,key:value})
+        self.assertEqual(len(s.snapshot(self.db)['experiments']),2)
+
+    def test_experiment_context_migrates_existing_records_idempotently(self):
+        from portfolio.db import SCHEMA
+        legacy=Path(self.temp.name)/'legacy.db'
+        from contextlib import closing
+        with closing(connect(legacy)) as db, db:
+            db.executescript(SCHEMA)
+            db.execute("INSERT INTO experiments(name,a_visitors,a_conversions,b_visitors,b_conversions) VALUES ('Legacy',100,10,100,12)")
+        initialize(legacy)
+        initialize(legacy)
+        db=connect(legacy)
+        try:
+            row=s.snapshot(db)['experiments'][0]
+            self.assertEqual((row['name'],row['hypothesis'],row['primary_metric']),('Legacy','',''))
+            self.assertEqual(row['difference'],.12-.10)
+        finally:db.close()
+
     def test_experiment_rates_and_zero_baseline(self):
         s.experiment_create(self.db, {'name':'CTA','a_visitors':100,'a_conversions':0,'b_visitors':100,'b_conversions':10})
         result = s.snapshot(self.db)['experiments'][0]
@@ -459,6 +491,20 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(json.load(response),{'error':'Malformed JSON body'})
         with self.request('/api/extensions/experiment-plan',b'{}',headers) as response:
             self.assertEqual(response.status,200)
+
+    def test_experiment_context_http_round_trip_and_validation(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        body={'name':'HTTP context','a_visitors':100,'a_conversions':10,'b_visitors':100,'b_conversions':12,
+              'hypothesis':'Clearer labels improve completion.','primary_metric':'Completed checkouts per visitor'}
+        with self.request('/api/experiments',json.dumps(body).encode(),headers) as response:
+            self.assertEqual(response.status,201)
+            identifier=json.load(response)['id']
+        with self.request('/api/state') as response:
+            row=next(row for row in json.load(response)['experiments'] if row['id']==identifier)
+            self.assertEqual(row['hypothesis'],body['hypothesis'])
+            self.assertEqual(row['primary_metric'],body['primary_metric'])
+        with self.request('/api/experiments',json.dumps({**body,'hypothesis':[]}).encode(),headers) as response:
+            self.assertEqual(response.status,400)
 
     def test_archive_route_checks_versions_and_keeps_issues_in_snapshot(self):
         headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}

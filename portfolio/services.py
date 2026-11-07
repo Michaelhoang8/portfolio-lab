@@ -153,13 +153,19 @@ def experiment_summary(row):
 
 def experiment_create(db, data):
     name = text(data, 'name')
+    context=[]
+    for key,limit in (('hypothesis',2000),('primary_metric',200)):
+        value=data.get(key,'')
+        if not isinstance(value,str) or len(value.strip())>limit:
+            raise ValidationError(f'{key} must be text of at most {limit} characters')
+        context.append(value.strip())
     counts = [integer(data, key, 1 if key.endswith('visitors') else 0)
               for key in ('a_visitors', 'a_conversions', 'b_visitors', 'b_conversions')]
     if counts[1] > counts[0] or counts[3] > counts[2]:
         raise ValidationError('Conversions cannot exceed visitors')
     with db:
-        item_id = db.execute('INSERT INTO experiments(name,a_visitors,a_conversions,b_visitors,b_conversions) VALUES (?,?,?,?,?)',
-                             (name, *counts)).lastrowid
+        item_id = db.execute('INSERT INTO experiments(name,a_visitors,a_conversions,b_visitors,b_conversions,hypothesis,primary_metric) VALUES (?,?,?,?,?,?,?)',
+                             (name, *counts, *context)).lastrowid
     return {'id': item_id}
 
 def snapshot(db):

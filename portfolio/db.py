@@ -55,6 +55,10 @@ def initialize(path):
         product_columns={row['name'] for row in db.execute('PRAGMA table_info(products)')}
         if 'version' not in product_columns:
             db.execute("ALTER TABLE products ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+        experiment_columns={row['name'] for row in db.execute('PRAGMA table_info(experiments)')}
+        for name in ('hypothesis','primary_metric'):
+            if name not in experiment_columns:
+                db.execute(f"ALTER TABLE experiments ADD COLUMN {name} TEXT NOT NULL DEFAULT ''")
         db.commit()
         from .rest_api import SCHEMA as REST_SCHEMA
         db.executescript(REST_SCHEMA)
