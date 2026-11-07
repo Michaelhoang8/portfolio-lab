@@ -35,7 +35,7 @@ The three data apps are at **http://127.0.0.1:8000/data** after starting the ser
 
 ## Minimal workspaces
 
-Inspired by [Orennia's](https://orennia.com/) restrained navigation, spacing, and headline hierarchy, the apps use quiet surfaces, thin dividers, and a limited accent palette. Each retains its own layout and subtle identity. Decorative illustrations, textures, extra theme banners, and ambient animations have been removed.
+Inspired by [Orennia's](https://orennia.com/) restrained navigation, spacing, and headline hierarchy, the apps use quiet surfaces, thin dividers, and a limited accent palette. Each retains its own layout and subtle identity. Decorative illustrations, textures, extra theme banners, and ambient animations have been removed. Short headline entrances, one-time panel reveals, gentle disclosure transitions, and result feedback add motion without extra visual elements. Content remains visible without animation or JavaScript observation; the Motion control and system reduced-motion preference disable these effects.
 
 Secondary analysis settings, detailed reports and exports, product planning tools, and REST filters/headers expand on demand. Invalid fields reopen their containing section. The **Display & sound** menu holds optional synthesized feedback and motion preferences; sound remains off by default and system reduced-motion settings take precedence.
 

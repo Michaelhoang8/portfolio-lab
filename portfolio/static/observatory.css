@@ -108,3 +108,23 @@ body[data-app] .secondary-options{border:0;border-top:1px solid var(--line);padd
 body[data-app] .secondary-options>summary{padding:14px 0;cursor:pointer;font:500 13px/1.5 Arial,sans-serif;list-style-position:inside}
 
 @media(max-width:760px){body[data-app] header{position:relative;z-index:30}.observatory-controls{position:static}.observatory-controls>div{left:0;right:0;top:100%;width:auto;max-width:none;margin:0 18px}}
+
+/* Short, content-led motion: no looping decoration or hidden content dependency. */
+body[data-app] .quiet-arrival .eyebrow{animation:quiet-in .55s ease-out both}
+body[data-app] .quiet-arrival h1{animation:quiet-in .65s cubic-bezier(.2,.7,.3,1) .04s both}
+body[data-app] .quiet-arrival p:not(.eyebrow){animation:quiet-in .65s cubic-bezier(.2,.7,.3,1) .09s both}
+body[data-app] .quiet-reveal{animation:quiet-in .6s cubic-bezier(.2,.7,.3,1) both}
+body[data-app] .signal-complete{animation:result-settle .5s ease-out both}
+body[data-app] details[open]>:not(summary){animation:disclosure-in .24s ease-out both}
+body[data-app] button{transition:background-color .2s ease,color .2s ease,border-color .2s ease,translate .2s ease}
+body[data-app] nav button[data-mode]{transition:color .2s ease,border-color .25s ease}
+body[data-app] :is(input,textarea,select){transition:border-color .2s ease,box-shadow .2s ease}
+body[data-app] :is(input,textarea,select):focus{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 10%,transparent)}
+body[data-app] summary{transition:color .2s ease}
+body[data-app] summary:hover{color:var(--blue)}
+@media(hover:hover){body[data-app]:not(.still-life) button:not(:disabled):hover{translate:0 -1px}}
+body[data-app]:not(.still-life) button:not(:disabled):active{translate:0 0}
+@keyframes quiet-in{from{opacity:.25;translate:0 10px}to{opacity:1;translate:0 0}}
+@keyframes disclosure-in{from{opacity:.35;translate:0 4px}to{opacity:1;translate:0 0}}
+@keyframes result-settle{from{opacity:.65;translate:0 4px}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){body[data-app] button{translate:none!important}}

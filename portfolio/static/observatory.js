@@ -29,7 +29,25 @@
     if(soundButton){soundButton.textContent=sound?'♪ Sound on':'♪ Sound off';soundButton.setAttribute('aria-pressed',String(sound));}
     if(motionButton){motionButton.textContent=reduced.matches?'Motion: system reduced':motion?'Motion on':'Motion off';motionButton.setAttribute('aria-pressed',String(motion&&!reduced.matches));motionButton.disabled=reduced.matches;}
   }
-  function mount() { preferences(); }
+  // Content is always visible; observation only adds a one-time entrance effect.
+  const observed=new WeakSet();
+  const revealObserver='IntersectionObserver' in window?new IntersectionObserver(entries=>{
+    for(const entry of entries){if(!entry.isIntersecting)continue;
+      if(motion&&!reduced.matches&&!document.hidden)entry.target.classList.add('quiet-reveal');
+      revealObserver.unobserve(entry.target);
+    }
+  },{threshold:.08}):null;
+  function observePanels(){
+    document.querySelectorAll('.source,.results,.page:not([hidden]) .panel,.page:not([hidden]) .column').forEach(panel=>{
+      if(observed.has(panel))return;observed.add(panel);revealObserver?.observe(panel);
+    });
+  }
+  function mount() {
+    preferences();
+    const hero=document.querySelector('.intro')||document.querySelector('.page:not([hidden]) .heading');
+    if(hero){hero.classList.remove('quiet-arrival');void hero.offsetWidth;hero.classList.add('quiet-arrival');}
+    observePanels();
+  }
   document.addEventListener('DOMContentLoaded',()=>{
     const dock=document.createElement('details');dock.className='observatory-controls';dock.setAttribute('aria-label','Atmosphere preferences');
     dock.innerHTML='<summary>Display & sound</summary><div><button id="sound-switch" type="button" aria-pressed="false">♪ Sound off</button><button id="motion-switch" type="button" aria-pressed="true">Motion on</button></div>';
@@ -43,7 +61,7 @@
     const observer=new MutationObserver(records=>{
       const notices=new Set();
       for(const record of records){const node=record.target.nodeType===1?record.target:record.target.parentElement;const notice=node?.closest('[role=status]');if(notice)notices.add(notice);}
-      if(notices.size)preferences();
+      if(notices.size){preferences();observePanels();}
       for(const notice of notices){const text=notice.textContent.toLowerCase();if(notice.classList.contains('error')){tone('error');continue;}if(/complete|succeeded|saved|plan ready|predicted \d/.test(text)){tone('complete');const surface=document.querySelector('.results')||notice.closest('.panel');if(surface){surface.classList.remove('signal-complete');void surface.offsetWidth;surface.classList.add('signal-complete');}}}
     });
     observer.observe(document.querySelector('main'),{childList:true,subtree:true,characterData:true});
