@@ -45,6 +45,22 @@ class SecurityTests(unittest.TestCase):
         r=s.auth_logs({'text':'\n'.join([event(0),event(1),event(20),event(21)]),'threshold':2})
         self.assertEqual(sum(a['rule']=='Failure burst' for a in r['alerts']),2)
 
+    def test_distinct_user_counter_rearms_after_users_leave_window(self):
+        result=s.auth_logs({'text':'\n'.join([event(0,user='alice'),event(1,user='bob'),
+                                            event(11,user='bob'),event(12,user='charlie')]),
+                            'threshold':2,'window_minutes':10})
+        spray=[alert for alert in result['alerts'] if alert['rule']=='Multiple accounts targeted']
+        self.assertEqual([alert['line'] for alert in spray],[2,4])
+        self.assertEqual([alert['count'] for alert in spray],[2,2])
+
+    def test_distinct_user_counter_keeps_users_with_unexpired_failures(self):
+        result=s.auth_logs({'text':'\n'.join([event(0,user='alice'),event(5,user='alice'),
+                                            event(6,user='bob'),event(11,user='charlie')]),
+                            'threshold':3,'window_minutes':10})
+        spray=[alert for alert in result['alerts'] if alert['rule']=='Multiple accounts targeted']
+        self.assertEqual(len(spray),1)
+        self.assertEqual((spray[0]['line'],spray[0]['count']),(4,3))
+
     def test_headers_case_insensitive_and_cookie_values_omitted(self):
         r=s.inspect_headers({'text':"CONTENT-SECURITY-POLICY: default-src 'self'; frame-ancestors 'none'\nStrict-Transport-Security: max-age=31536000\nX-Content-Type-Options: nosniff\nReferrer-Policy: no-referrer\nSet-Cookie: session=DO_NOT_ECHO; Secure; HttpOnly; SameSite=Lax"})
         self.assertEqual(r['review_count'],0)

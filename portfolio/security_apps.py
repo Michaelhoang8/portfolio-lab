@@ -48,18 +48,24 @@ def auth_logs(data):
             rejected.append({'line':line, 'reason':'Expected timestamp with timezone, valid IP, nonempty user, and success/failure status'})
     events.sort(key=lambda e:(e['time'],e['line']))
     ip_windows, user_windows = defaultdict(deque), defaultdict(deque)
+    ip_users = defaultdict(Counter)
     alerts, active = [], set()
     failures = Counter()
     for event in events:
         ip, user, now = event['ip'],event['user'],event['time']
         recent = ip_windows[ip]
         account = user_windows[(ip,user)]
-        for queue in (recent, account):
-            while queue and (now-queue[0]['time']).total_seconds() > window*60:
-                queue.popleft()
+        source_users = ip_users[ip]
+        while recent and (now-recent[0]['time']).total_seconds() > window*60:
+            expired = recent.popleft()['user']
+            source_users[expired] -= 1
+            if not source_users[expired]:
+                del source_users[expired]
+        while account and (now-account[0]['time']).total_seconds() > window*60:
+            account.popleft()
         if len(recent) < threshold:
             active.discard(('burst',ip))
-        if len({e['user'] for e in recent}) < threshold:
+        if len(source_users) < threshold:
             active.discard(('spray',ip))
         def alert(rule, severity, count, detail):
             alerts.append({'rule':rule,'severity':severity,'ip':ip,'user':user,
@@ -67,11 +73,12 @@ def auth_logs(data):
         if event['status'] == 'failure':
             failures[ip] += 1
             recent.append(event)
+            source_users[user] += 1
             account.append(event)
             if len(recent) >= threshold and ('burst',ip) not in active:
                 alert('Failure burst','medium',len(recent),'Repeated failures from one source within the rolling window')
                 active.add(('burst',ip))
-            users = len({e['user'] for e in recent})
+            users = len(source_users)
             if users >= threshold and ('spray',ip) not in active:
                 alert('Multiple accounts targeted','high',users,'Failures against distinct accounts from one source; investigate possible spraying')
                 active.add(('spray',ip))

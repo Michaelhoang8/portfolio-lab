@@ -53,3 +53,9 @@ Success is 200; invalid top-level inputs are 400. Auth Watch reports invalid ind
 Security tests cover chronological sorting, inclusive window boundaries, success correlation, distinct-user thresholds, rearming, invalid events, report-only CSP, duplicate headers, cookie-value omission, overlapping secret matches, multiline key detection, size limits, API responses, and absence of credential values in serialized reports. Manual browser checks verified all three sample flows and secret input clearing. Automated mobile/accessibility and browser regression tests remain future work.
 
 Interview topics: explain false positives and false negatives, event-time versus ingestion-time processing, inclusive window boundaries, why a successful login does not establish compromise, and why secret scanners must avoid leaking findings. Useful follow-ups include configurable detection rules, deduplicated ingestion, synthetic benchmark datasets, additional token detectors, and integration with a real CSP parser. Do not claim production incident response or discovered vulnerabilities from fictional examples.
+
+## Reproducible rolling-window benchmark
+
+Auth Watch maintains per-source user counts as failures enter and leave the time window, avoiding repeated reconstruction of the user set. Existing alert rules and inclusive window boundaries are preserved.
+
+Run `python -m benchmarks.auth_logs --baseline ca152db --events 4000 --runs 5` from the repository root to compare with the prior implementation. The script checks report equality before timing. A local Windows / Python 3.13.17 run measured medians of 26.7 ms for the incremental implementation and 520.2 ms for the baseline. This measures the repeated-source synthetic fixture; other workloads and machines differ. An additional manual equivalence check compared 100 randomized batches with mixed sources, users, successes, and timestamps.
