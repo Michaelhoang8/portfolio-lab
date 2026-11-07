@@ -96,6 +96,16 @@ def experiment_create(db, data):
     return {'id': item_id}
 
 def snapshot(db):
+    # One read transaction keeps counts, balances, and ledgers from different
+    # concurrent commits out of the same workspace response.
+    if db.in_transaction:
+        return _snapshot_rows(db)
+    with db:
+        db.execute('BEGIN')
+        return _snapshot_rows(db)
+
+
+def _snapshot_rows(db):
     return {
         'tickets': rows(db.execute('SELECT * FROM tickets ORDER BY id DESC')),
         'events': rows(db.execute('SELECT * FROM events ORDER BY id DESC LIMIT 100')),

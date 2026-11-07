@@ -120,6 +120,32 @@ class DomainTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 s.experiment_create(self.db, {'name':'Invalid','a_visitors':visitors,'a_conversions':conversions,'b_visitors':10,'b_conversions':2})
 
+    def test_snapshot_is_consistent_during_concurrent_movement(self):
+        pid = self.product()
+        other = connect(self.path)
+        wrote = []
+        def concurrent_write(statement):
+            if statement.startswith('SELECT m.*') and not wrote:
+                s.movement_create(other,{'product_id':pid,'delta':5,'note':'Concurrent receipt'})
+                wrote.append(True)
+        self.db.set_trace_callback(concurrent_write)
+        try:
+            snapshot = s.snapshot(self.db)
+        finally:
+            self.db.set_trace_callback(None)
+            other.close()
+        self.assertEqual(wrote,[True])
+        self.assertEqual(snapshot['products'][0]['stock'],0)
+        self.assertEqual(snapshot['movements'],[])
+        self.assertEqual(s.snapshot(self.db)['products'][0]['stock'],5)
+
+    def test_snapshot_preserves_callers_uncommitted_transaction(self):
+        self.db.execute("INSERT INTO products(sku,name,reorder_point) VALUES ('UNCOMMITTED','Draft',0)")
+        self.assertEqual(len(s.snapshot(self.db)['products']),1)
+        self.assertTrue(self.db.in_transaction)
+        self.db.rollback()
+        self.assertEqual(s.snapshot(self.db)['products'],[])
+
     def test_persistence_across_connections_and_sql_input(self):
         title = "Robert'); DROP TABLE tickets; --"
         s.ticket_create(self.db, {'title':title,'description':'<script>alert(1)</script>','priority':'low'})
