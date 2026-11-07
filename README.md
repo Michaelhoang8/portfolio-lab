@@ -210,6 +210,8 @@ The adjusted interval adds one success and one failure to each group, uses the a
 
 ## Workspace reliability
 
+Both HTTP API adapters enforce a 15-second absolute request-body read deadline, as well as a socket inactivity timeout. Partial bytes cannot extend the deadline. Tests use deterministic clocks for trickle reads and real HTTP connections for 408 responses; partial reads are assembled without consuming bytes beyond the declared length. The body deadline is separate from analysis, database, and browser response deadlines.
+
 Workspace reads and saves share the REST transport’s 30-second complete-response deadline. A lost write response explains that the operation may have completed and requires checking current data before retrying; stock movements retain their request key for safe same-input retries. Pending issue editors and status controls remain locked across unrelated board refreshes. A delayed-save browser check created another issue during an edit, verified the draft stayed disabled and intact, and confirmed controls recovered after completion ([capture](docs/design/issue-concurrent-save.png)).
 
 Issue Desk status changes now send `expected_version`. Changed statuses from stale snapshots return 409 without writing an event; the browser refreshes the board and asks the user to review before choosing again. Repeating the already-saved status remains a no-op. Direct API callers may omit the version for backward-compatible unconditional updates; clients that need concurrency protection should always supply it. Tests cover detail/status conflicts, stale no-ops, and concurrent status writers with one winner. A two-tab browser check verified the saved status survived a stale change ([capture](docs/design/issue-status-conflict.png)).

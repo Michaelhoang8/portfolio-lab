@@ -1,4 +1,5 @@
 import json
+from http.client import HTTPConnection
 import os
 import subprocess
 import sys
@@ -59,6 +60,26 @@ class RestTests(unittest.TestCase):
         self.assertIn(': 204',result.stdout)
         self.assertNotIn(self.key,result.stdout+result.stderr)
         self.assertEqual(self.request()[2]['total'],before)
+
+    def test_rest_body_deadline_returns_problem_details(self):
+        class FastBodyHandler(handler_for(self.path,api_key=self.key)):
+            body_timeout=.05
+        server=ThreadingHTTPServer(('127.0.0.1',0),FastBodyHandler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            connection=HTTPConnection(*server.server_address,timeout=2)
+            try:
+                connection.putrequest('POST','/api/v1/notes')
+                connection.putheader('X-API-Key',self.key)
+                connection.putheader('Content-Type','application/json')
+                connection.putheader('Content-Length','20')
+                connection.endheaders(b'{}')
+                response=connection.getresponse()
+                self.assertEqual(response.status,408)
+                self.assertEqual(response.headers['Content-Type'],'application/problem+json')
+                self.assertEqual(json.loads(response.read())['detail'],'Request body timed out')
+            finally:connection.close()
+        finally:server.shutdown();server.server_close();thread.join()
 
     def test_nonstandard_json_is_a_parse_error(self):
         for body in [b'{"title":"a","title":"b"}', b'{"title":NaN}',

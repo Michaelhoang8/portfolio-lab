@@ -47,7 +47,7 @@ Collection GET supports `page` (default 1, maximum 100,000), `page_size` (defaul
 
 Responses contain `items`, `page`, `page_size`, `total`, and a relative `next` link or null. Ordering is `created_at DESC, id DESC`. Count and rows are read in one database transaction. This is offset pagination: records inserted or deleted between requests can shift page boundaries. It is not a cross-request snapshot or cursor pagination implementation.
 
-HEAD supports the same resources, authentication, and query validation as GET, with matching response metadata and no body. Request-body reads time out after 15 seconds; truncated bodies and duplicate length headers are rejected.
+HEAD supports the same resources, authentication, and query validation as GET, with matching response metadata and no body. Request-body reads have a 15-second absolute deadline in addition to the socket inactivity timeout. Receiving partial chunks does not restart that deadline. Truncated bodies and duplicate length headers are rejected. Both API adapters return 408 when body reading times out; this deadline does not cover application computation or SQLite writes.
 
 ### Conditional updates
 

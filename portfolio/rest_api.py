@@ -158,7 +158,7 @@ def handle(handler,database,api_key):
             if not 1<=length<=65536:
                 raise Problem(413,'JSON body must contain 1–65536 bytes')
             try:
-                payload=decode(read_exact(handler.rfile,length))
+                payload=decode(read_exact(handler.rfile,length,handler.connection,handler.body_timeout))
             except (ValueError,UnicodeError,RecursionError):
                 raise Problem(400,'Malformed JSON body') from None
             payload=validate(payload,partial=handler.command=='PATCH')

@@ -16,6 +16,8 @@ STATIC = Path(__file__).parent / 'static'
 def handler_for(database, api_key=None):
     api_key = os.environ.get('PORTFOLIO_API_KEY','') if api_key is None else api_key
     class Handler(BaseHTTPRequestHandler):
+        body_timeout=15
+
         def setup(self):
             super().setup()
             self.connection.settimeout(15)
@@ -151,7 +153,7 @@ def handler_for(database, api_key=None):
                 limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/','/api/devops/','/api/extensions/')) else 16384
                 if not 0 < length <= limit:
                     raise ValidationError(f'Request must contain 1–{limit} bytes')
-                data = decode(read_exact(self.rfile,length))
+                data = decode(read_exact(self.rfile,length,self.connection,self.body_timeout))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
                 extensions={'/api/extensions/model':capabilities.load_model,'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}

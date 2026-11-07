@@ -428,9 +428,7 @@ class HttpTests(unittest.TestCase):
 
     def test_slow_request_body_returns_timeout_error(self):
         class FastTimeoutHandler(self.server.RequestHandlerClass):
-            def setup(self):
-                super().setup()
-                self.connection.settimeout(.05)
+            body_timeout=.05
         server=ThreadingHTTPServer(('127.0.0.1',0),FastTimeoutHandler)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         try:

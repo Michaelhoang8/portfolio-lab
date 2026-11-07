@@ -1,6 +1,7 @@
 """Strict JSON decoding shared by local and versioned HTTP APIs."""
 import json
 import math
+import time
 
 
 def decode(raw):
@@ -44,8 +45,26 @@ def decode(raw):
         raise ValueError('Malformed JSON body') from None
 
 
-def read_exact(stream, length):
-    raw = stream.read(length)
-    if len(raw) != length:
-        raise ValueError('Incomplete request body')
-    return raw
+def read_exact(stream, length, connection=None, timeout=15):
+    """Read a bounded body with one absolute deadline, even if bytes keep arriving."""
+    deadline=time.monotonic()+timeout
+    original_timeout=connection.gettimeout() if connection is not None else None
+    read=getattr(stream,'read1',stream.read)
+    data=bytearray()
+    try:
+        while len(data)<length:
+            remaining=deadline-time.monotonic()
+            if remaining<=0:
+                raise TimeoutError('Request body timed out')
+            if connection is not None:
+                connection.settimeout(min(remaining,original_timeout) if original_timeout is not None else remaining)
+            chunk=read(min(65536,length-len(data)))
+            if time.monotonic()>deadline:
+                raise TimeoutError('Request body timed out')
+            if not chunk:
+                raise ValueError('Incomplete request body')
+            data.extend(chunk)
+        return bytes(data)
+    finally:
+        if connection is not None:
+            connection.settimeout(original_timeout)
