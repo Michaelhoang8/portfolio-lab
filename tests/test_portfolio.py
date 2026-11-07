@@ -121,6 +121,18 @@ class HttpTests(unittest.TestCase):
         with self.request('/api/tickets',b'{}') as response:
             self.assertEqual(response.status,403)
 
+    def test_strict_json_rejects_ambiguous_and_nonfinite_input(self):
+        headers = {'Content-Type':'application/json; charset=utf-8','X-Portfolio-Client':'browser'}
+        invalid = [b'{"baseline":0.1,"baseline":0.2}', b'{"baseline":NaN}',
+                   b'{"baseline":Infinity}', b'{"baseline":1e999}',
+                   b'{"nested":' + b'[' * 1500 + b'0' + b']' * 1500 + b'}']
+        for body in invalid:
+            with self.subTest(body=body[:50]), self.request('/api/extensions/experiment-plan',body,headers) as response:
+                self.assertEqual(response.status,400)
+                self.assertEqual(json.load(response),{'error':'Malformed JSON body'})
+        with self.request('/api/extensions/experiment-plan',b'{}',headers) as response:
+            self.assertEqual(response.status,200)
+
     def test_http_create_and_duplicate_sku(self):
         headers = {'Content-Type':'application/json','X-Portfolio-Client':'browser'}
         body = json.dumps({'name':'Mouse','sku':'MOUSE','reorder_point':2}).encode()

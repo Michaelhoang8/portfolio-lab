@@ -44,6 +44,15 @@ class RestTests(unittest.TestCase):
     def create(self,title=None,headers=None):
         return self.request('POST',body={'title':title or str(uuid.uuid4()),'content':'Test content','status':'draft'},headers=headers)
 
+    def test_nonstandard_json_is_a_parse_error(self):
+        for body in [b'{"title":"a","title":"b"}', b'{"title":NaN}',
+                     b'{"title":1e999}', b'{"title":' + b'['*1500+b'0'+b']'*1500+b'}']:
+            with self.subTest(body=body[:50]):
+                status, headers, problem = self.request('POST',body=body)
+                self.assertEqual(status,400)
+                self.assertEqual(problem['detail'],'Malformed JSON body')
+                self.assertEqual(headers['Content-Type'],'application/problem+json')
+
     def test_create_location_get_and_persistence(self):
         status,headers,note=self.create()
         self.assertEqual(status,201)

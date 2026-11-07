@@ -8,6 +8,7 @@ import uuid
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode, urlsplit
 from .db import connect
+from .json_input import decode
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS api_notes (
@@ -116,8 +117,8 @@ def handle(handler,database,api_key):
         if handler.command in ('POST','PUT','PATCH'):
             if handler.headers.get_content_type()!='application/json':
                 raise Problem(415,'Content-Type must be application/json')
-            if handler.headers.get('Transfer-Encoding'):
-                raise Problem(400,'Chunked request bodies are not supported')
+            if handler.headers.get('Transfer-Encoding') or len(handler.headers.get_all('Content-Length', [])) != 1:
+                raise Problem(400,'Provide one Content-Length; transfer encoding is not supported')
             raw_length=handler.headers.get('Content-Length','')
             if not re.fullmatch(r'[0-9]{1,8}',raw_length):
                 raise Problem(400,'A valid Content-Length is required')
@@ -125,14 +126,7 @@ def handle(handler,database,api_key):
             if not 1<=length<=65536:
                 raise Problem(413,'JSON body must contain 1–65536 bytes')
             try:
-                def unique(pairs):
-                    result={}
-                    for key,value in pairs:
-                        if key in result:
-                            raise ValueError('Duplicate JSON keys')
-                        result[key]=value
-                    return result
-                payload=json.loads(handler.rfile.read(length),object_pairs_hook=unique)
+                payload=decode(handler.rfile.read(length))
             except (ValueError,UnicodeError,RecursionError):
                 raise Problem(400,'Malformed JSON body') from None
             payload=validate(payload,partial=handler.command=='PATCH')

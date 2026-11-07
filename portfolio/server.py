@@ -9,6 +9,7 @@ from pathlib import Path
 from .db import connect, initialize
 from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api, capabilities
 from .validation import ValidationError, NotFoundError
+from .json_input import decode
 
 STATIC = Path(__file__).parent / 'static'
 
@@ -86,16 +87,21 @@ def handler_for(database, api_key=None):
                 rest_api.handle(self,database,api_key)
                 return
             # Custom header + JSON prevent browser cross-origin form submissions.
-            if self.headers.get('X-Portfolio-Client') != 'browser' or self.headers.get('Content-Type') != 'application/json':
+            if self.headers.get('X-Portfolio-Client') != 'browser' or self.headers.get_content_type() != 'application/json':
                 self.reply(403, {'error': 'JSON requests require X-Portfolio-Client: browser'})
                 return
             db = connect(database)
             try:
-                length = int(self.headers.get('Content-Length', '0'))
+                if self.headers.get('Transfer-Encoding') or len(self.headers.get_all('Content-Length', [])) != 1:
+                    raise ValidationError('Provide one Content-Length; transfer encoding is not supported')
+                raw_length = self.headers.get('Content-Length', '')
+                if not re.fullmatch(r'[0-9]{1,8}', raw_length):
+                    raise ValidationError('A valid Content-Length is required')
+                length = int(raw_length)
                 limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/','/api/devops/','/api/extensions/')) else 16384
                 if not 0 < length <= limit:
                     raise ValidationError(f'Request must contain 1–{limit} bytes')
-                data = json.loads(self.rfile.read(length))
+                data = decode(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
                 extensions={'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}
