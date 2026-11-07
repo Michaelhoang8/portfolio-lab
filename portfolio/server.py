@@ -1,18 +1,33 @@
 """Local-only HTTP adapter; no third-party runtime dependencies."""
 import argparse
 import json
+import os
 import re
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .db import connect, initialize
-from . import services, data_apps, security_apps, ml_apps, devops_apps
+from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api
 from .validation import ValidationError, NotFoundError
 
 STATIC = Path(__file__).parent / 'static'
 
-def handler_for(database):
+def handler_for(database, api_key=None):
+    api_key = os.environ.get('PORTFOLIO_API_KEY','') if api_key is None else api_key
     class Handler(BaseHTTPRequestHandler):
+        def is_rest(self):
+            return self.path.split('?',1)[0] == '/api/v1' or self.path.startswith('/api/v1/')
+
+        def do_PATCH(self):
+            if self.is_rest():
+                rest_api.handle(self,database,api_key)
+            else:
+                self.reply(404, {'error':'Not found'})
+
+        do_PUT = do_PATCH
+        do_DELETE = do_PATCH
+        do_OPTIONS = do_PATCH
+
         def reply(self, status, body, content_type='application/json; charset=utf-8'):
             raw = json.dumps(body).encode() if content_type.startswith('application/json') else body
             self.send_response(status)
@@ -25,6 +40,9 @@ def handler_for(database):
             self.wfile.write(raw)
 
         def do_GET(self):
+            if self.is_rest():
+                rest_api.handle(self,database,api_key)
+                return
             if self.path == '/api/state':
                 db = connect(database)
                 try:
@@ -33,6 +51,10 @@ def handler_for(database):
                     db.close()
                 return
             files = {'/': ('index.html', 'text/html; charset=utf-8'),
+                     '/rest': ('rest.html', 'text/html; charset=utf-8'),
+                     '/rest.js': ('rest.js', 'text/javascript; charset=utf-8'),
+                     '/rest.css': ('rest.css', 'text/css; charset=utf-8'),
+                     '/openapi.json': ('openapi.json', 'application/json; charset=utf-8'),
                      '/devops': ('devops.html', 'text/html; charset=utf-8'),
                      '/devops.js': ('devops.js', 'text/javascript; charset=utf-8'),
                      '/devops.css': ('devops.css', 'text/css; charset=utf-8'),
@@ -51,9 +73,13 @@ def handler_for(database):
                 self.reply(404, {'error': 'Not found'})
                 return
             name, mime = files[self.path]
-            self.reply(200, (STATIC / name).read_bytes(), mime)
+            raw=(STATIC / name).read_bytes()
+            self.reply(200, json.loads(raw) if name=='openapi.json' else raw, mime)
 
         def do_POST(self):
+            if self.is_rest():
+                rest_api.handle(self,database,api_key)
+                return
             # Custom header + JSON prevent browser cross-origin form submissions.
             if self.headers.get('X-Portfolio-Client') != 'browser' or self.headers.get('Content-Type') != 'application/json':
                 self.reply(403, {'error': 'JSON requests require X-Portfolio-Client: browser'})

@@ -39,6 +39,8 @@ def initialize(path):
     with closing(connect(path)) as db:
         db.execute('PRAGMA journal_mode=WAL')
         db.executescript(SCHEMA)
+        from .rest_api import SCHEMA as REST_SCHEMA
+        db.executescript(REST_SCHEMA)
 
 def rows(cursor):
     return [dict(row) for row in cursor.fetchall()]
