@@ -140,3 +140,7 @@ body[data-app=clean] #cancel-analysis{grid-column:2}
 
 .issue-view-options{margin:0 0 16px;font-size:13px}
 .issue-view-options>.two-col{margin-top:16px;max-width:620px}
+
+.conflict-review{margin:16px 0;padding-top:12px;border-top:1px solid var(--line)}
+.conflict-values dt{font-size:11px;color:var(--muted);margin-top:12px}
+.conflict-values dd{margin:3px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}

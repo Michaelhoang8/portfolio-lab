@@ -67,7 +67,7 @@ function render() {
 async function post(path, data) {
   const response = await fetch(path, {method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(data)});
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Request failed');
+  if (!response.ok) {const error=new Error(result.error || 'Request failed');error.status=response.status;throw error;}
   return result;
 }
 function wireForm(id, path, numbers) {
@@ -159,6 +159,33 @@ $('#board').addEventListener('input',event=>{
  const dirty=editFields.some(key=>{const field=panel.querySelector(`[data-${key}]`);const initial=field.tagName==='SELECT'?[...field.options].find(option=>option.defaultSelected)?.value:field.defaultValue;return field.value!==initial;});
  if(dirty)ticketDrafts.set(id,{values,version:panel.dataset.version});else ticketDrafts.delete(id);
 });
+function reviewIssueConflict(id,details) {
+  const feedback=details.querySelector('.assignment-feedback');
+  details.querySelector('.conflict-review')?.remove();
+  const review=document.createElement('div');review.className='conflict-review';
+  review.innerHTML='<p>Review the latest saved values without changing your draft.</p><button type="button" class="review-latest">Review latest version</button><div class="conflict-values"></div>';
+  details.append(review);
+  review.querySelector('.review-latest').addEventListener('click',async event=>{
+    const button=event.currentTarget,save=details.querySelector('[data-save-assignment]');button.disabled=true;save.disabled=true;
+    try {
+      const response=await fetch('/api/state');
+      if(!response.ok)throw Error('Could not fetch the latest version. Your draft is preserved.');
+      const latestState=await response.json(),latest=latestState.tickets.find(ticket=>String(ticket.id)===id);
+      if(!latest)throw Error('This issue is no longer available. Your draft is preserved.');
+      if(!details.isConnected)return;
+      const names={title:'Title',description:'Description',priority:'Priority',assignee:'Assignee',due:'Due date'};
+      const values=review.querySelector('.conflict-values');
+      values.innerHTML=`<p>Saved version ${latest.version}. Your draft remains in the fields above.</p><dl>${editFields.map(key=>`<dt>${names[key]}</dt><dd>${escape(latest[key==='due'?'due_date':key] || 'Not set')}</dd>`).join('')}</dl><button type="button" class="load-latest">Discard this draft and load saved values</button><p class="help">This replaces only your unsaved edits for this issue. Nothing is written to the server.</p>`;
+      values.querySelector('.load-latest').addEventListener('click',()=>{
+        ticketDrafts.delete(id);state=latestState;render();notice('Latest saved values loaded. You can edit and save from this version.');
+        const panel=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+        if(panel){panel.open=true;panel.querySelector('[data-title]').focus();}
+      });
+      feedback.textContent='Latest version ready to review. Your draft is unchanged.';
+    } catch(error) {feedback.textContent=error.message;}
+    finally {button.disabled=false;save.disabled=false;}
+  });
+}
 $('#board').addEventListener('click',async event=>{
  const id=event.target.dataset.saveAssignment;if(!id)return;
  const details=event.target.closest('details');
@@ -168,11 +195,16 @@ $('#board').addEventListener('click',async event=>{
  const invalid=fields.find(field=>field.checkValidity&&!field.checkValidity());
  if(invalid){invalid.reportValidity();return;}
  fields.forEach(field=>field.disabled=true);feedback.textContent='Saving issue…';
+ let saved=false;
  try{
   await post(`/api/tickets/${id}/details`,{title:details.querySelector('[data-title]').value,description:details.querySelector('[data-description]').value,priority:details.querySelector('[data-priority]').value,assignee:details.querySelector('[data-assignee]').value,due_date:details.querySelector('[data-due]').value,expected_version:Number(details.dataset.version)});
-  ticketDrafts.delete(id);
+  saved=true;ticketDrafts.delete(id);
   await refresh();notice('Issue details saved.');
   const updated=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
   if(updated){updated.open=true;updated.querySelector('.assignment-feedback').textContent='Issue details saved.';updated.querySelector('summary').focus();}
- }catch(error){notice(error.message,true);feedback.textContent=error.message;fields.forEach(field=>field.disabled=false);}
+ }catch(error){
+  const message=saved?'Issue details saved, but the workspace could not refresh. Reload to see the saved version.':error.message;
+  notice(message,true);feedback.textContent=message;fields.forEach(field=>field.disabled=false);
+  if(!saved && error.status===409)reviewIssueConflict(id,details);
+ }
 });
