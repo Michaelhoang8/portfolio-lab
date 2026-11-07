@@ -307,6 +307,26 @@ class PersistentCapabilities(unittest.TestCase):
         self.assertEqual((item['daily_demand'],item['target'],item['order_quantity']),(3,42,32))
         self.assertEqual(services.snapshot(self.db)['products'][0]['stock'],10)
 
+    def test_replenishment_csv_preserves_assumptions_and_escapes_product_names(self):
+        from datetime import datetime,timedelta
+        services.product_create(self.db,{'name':'=SYNTHETIC()','sku':'+PLAN','reorder_point':3})
+        result=c.stock_plan(self.db,{'lead_days':5,'safety_days':2})
+        window=result['demand_window']
+        self.assertEqual(datetime.fromisoformat(window['end'])-datetime.fromisoformat(window['start']),timedelta(days=30))
+        exported=list(csv.DictReader(io.StringIO(result['csv'])))
+        self.assertEqual(len(exported),1)
+        row=exported[0]
+        self.assertEqual((row['sku'],row['product']),("'+PLAN","'=SYNTHETIC()"))
+        self.assertEqual((row['lead_days'],row['safety_days'],row['order_quantity']),('5','2','4'))
+        self.assertEqual(row['days_cover'],'')
+        self.assertEqual((row['window_start_utc'],row['window_end_utc']),(window['start'],window['end']))
+
+    def test_replenishment_empty_workspace_exports_a_header(self):
+        report=c.stock_plan(self.db,{})
+        self.assertEqual(report['items'],[])
+        self.assertEqual(report['demand_window']['days'],30)
+        self.assertEqual(len(list(csv.reader(io.StringIO(report['csv'])))),1)
+
     def test_replenishment_zero_demand_has_undefined_coverage(self):
         services.product_create(self.db,{'name':'New','sku':'NEW','reorder_point':3})
         item=c.stock_plan(self.db,{})['items'][0]

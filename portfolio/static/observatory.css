@@ -148,3 +148,6 @@ body[data-app=clean] #cancel-analysis{grid-column:2}
 /* Keep workspace export actions aligned with each app palette. */
 body[data-app] .panel .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 body[data-app] .panel .section-head a{color:var(--blue);font-size:12px;text-underline-offset:3px}
+
+body[data-app] button.report-export{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:9px 13px;font:600 12px/1.5 Arial,sans-serif}
+body[data-app] button.report-export:hover:not(:disabled){background:var(--bg);border-color:var(--blue)}

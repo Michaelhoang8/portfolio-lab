@@ -54,7 +54,7 @@
   }
   window.utilityRequest=request;
   function exportButton(parent,label,name,text,type) {
-    const button=document.createElement('button');button.type='button';button.textContent=label;
+    const button=document.createElement('button');button.type='button';button.className='report-export';button.textContent=label;
     button.addEventListener('click',()=>download(name,text,type));parent.append(button);
   }
   window.renderCapabilities = result => {
@@ -138,8 +138,8 @@
     },true);
     q('#clear')?.addEventListener('click',()=>{const baseline=q('#cap-baseline_text');if(baseline)baseline.value='';});
     panel('#inventory','Replenishment planner', '<label>Lead time · days<input name="lead_days" type="number" min="1" max="365" value="7" required></label><label>Safety coverage · days<input name="safety_days" type="number" min="0" max="365" value="7" required></label>',async(values,output)=>{
-      const plan=await request('/api/extensions/stock-plan',values);const headers=['SKU','Stock','30-day withdrawals','Daily demand','Days cover','Target','Order quantity'];const rows=plan.items.map(p=>[p.sku,p.stock,p.withdrawals_30d,p.daily_demand,p.days_cover??'N/A',p.target,p.order_quantity]);
-      output.innerHTML=table(headers,rows)+`<p class="hint">${escape(plan.note)}</p>`;exportButton(output,'Export replenishment plan','replenishment-plan.json',JSON.stringify(plan,null,2));
+      const plan=await request('/api/extensions/stock-plan',values);const headers=['SKU','Product','Stock','30-day withdrawals','Daily demand','Days cover','Target','Order quantity'];const rows=plan.items.map(p=>[p.sku,p.name,p.stock,p.withdrawals_30d,p.daily_demand,p.days_cover??'N/A',p.target,p.order_quantity]);
+      output.innerHTML=`<p class="hint">Demand window (UTC): ${escape(plan.demand_window.start)} to ${escape(plan.demand_window.end)}</p>`+table(headers,rows)+`<p class="hint">${escape(plan.note)}</p>`;exportButton(output,'Export replenishment plan','replenishment-plan.json',JSON.stringify(plan,null,2));exportButton(output,'Export replenishment CSV','replenishment-plan.csv',plan.csv,'text/csv;charset=utf-8');
     });
     panel('#experiments','Plan an experiment before collecting data','<label>Baseline rate · 0.10 = 10%<input name="baseline" type="number" min="0.0001" max="0.9999" step="0.0001" value="0.10" required></label><label>Absolute lift · 0.02 = 2 points<input name="absolute_lift" type="number" min="0.0001" max="0.99" step="0.0001" value="0.02" required></label><label>Statistical power<input name="power" type="number" min="0.5" max="0.99" step="0.01" value="0.8" required></label><label>Two-sided alpha<input name="alpha" type="number" min="0.001" max="0.2" step="0.001" value="0.05" required></label>',async(values,output)=>{
       const plan=await request('/api/extensions/experiment-plan',values);output.innerHTML=table(['Per variant','Total visitors','Detectable rate'],[[plan.per_variant,plan.total,(plan.detectable_rate*100).toFixed(2)+'%']])+`<p class="hint">${escape(plan.note)}</p>`;exportButton(output,'Export experiment design','experiment-plan.json',JSON.stringify(plan,null,2));
