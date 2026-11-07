@@ -18,6 +18,7 @@ def enrich(path, data, result):
         headers, rows = data_apps.parse(data)
         numeric = {}
         outliers = []
+        outlier_records=[];outlier_locations=[]
         for col in result['columns']:
             if col['type'] != 'numeric':
                 continue
@@ -29,6 +30,9 @@ def enrich(path, data, result):
                 low, high = q1-1.5*(q3-q1), q3+1.5*(q3-q1)
                 flagged = [i+2 for i, v in enumerate(values) if v is not None and (v < low or v > high)]
                 outliers.append([col['name'], q1, q3, len(flagged), ', '.join(map(str, flagged[:20])) or 'None'])
+                outlier_records.append({'column':col['name'],'column_index':index+1,'lower_fence':low,
+                                        'upper_fence':high,'records':flagged})
+                outlier_locations.extend([str(index+1),str(record)] for record in flagged)
             numeric[col['name']] = values
         correlations = []
         names = list(numeric)[:12]
@@ -49,9 +53,12 @@ def enrich(path, data, result):
                     except statistics.StatisticsError:
                         pass
                 correlations.append([left,right,len(pairs),round(value,5) if value is not None else 'Undefined'])
+        result['outlier_records']=outlier_records
+        if outlier_locations:
+            result['outlier_locations_csv']=data_apps.safe_csv(['column_index','source_record'],outlier_locations)
         tables = [table('IQR outlier diagnostics', ['Column','Q1','Q3','Flagged rows','First 20 record numbers'], outliers),
                   table('Pairwise Pearson correlations', ['Column A','Column B','Complete pairs','Correlation'],correlations)]
-        notes = ['Outliers use inclusive quartiles and 1.5×IQR fences; they are not automatically errors. Correlations use pairwise complete records, at least three pairs, and the first 12 numeric columns. Constant columns are undefined.']
+        notes = ['Outliers use inclusive quartiles and 1.5×IQR fences; they are not automatically errors. Correlations use pairwise complete records, at least three pairs, and the first 12 numeric columns. Constant columns are undefined. The full report preserves every flagged record; the outlier CSV identifies columns by their one-based position in the source header, avoiding repeated very long column names.']
     elif path == '/api/data/clean':
         headers, rows = data_apps.parse(data)
         options = data.get('options',{})

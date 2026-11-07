@@ -33,3 +33,9 @@ Data tests cover malformed CSV, multiline quoting, BOMs, missing values, duplica
 Useful follow-ups: schema contracts with per-column validation rules, saved pipeline configurations, Parquet support, source-to-output lineage, large-file streaming, SQL transformations, and scheduled ingestion. For interviews, explain the distinction between row rejection and whole-file rejection, why Decimal is used for monetary aggregation, and why missing values are not automatically filled.
 
 Large Revenue Lens charts show 20 months or categories at a time. Chart scales use the full series, so paging does not change the meaning of bar lengths; the JSON report still contains every group. Rejected rows can be downloaded directly as spreadsheet-safe CSV under Detailed analysis & exports. A 45-category browser fixture verified 20/20/5 page boundaries, signed values, the final disabled Next button, and a rejected formula-like value exported as text ([capture](design/revenue-pagination.png)).
+
+### Complete outlier locations
+
+Dataset Explorer keeps the first 20 flagged record numbers in its IQR preview and includes every flagged record in JSON under `outlier_records`, along with the column name, one-based source column position, and lower/upper fences. **Export outlier locations** downloads all `(column_index, source_record)` pairs. Column positions refer to the original header order; record numbers count the header as 1 and skip blank physical rows. The CSV contains locations, not source values or repeated column names.
+
+The diagnostic still requires at least four nonblank numeric values and uses inclusive quartiles with 1.5×IQR fences. Flags are investigation leads, not automatic data errors. Tests cover a 1,000-location export, sparse/constant columns, and very long headers without output multiplication. A browser fixture verified 25 exported locations beyond the 20-row preview ([capture](design/dataset-outlier-export.png)).

@@ -74,6 +74,29 @@ class AnalysisCapabilities(unittest.TestCase):
         r=c.predict({'model':model,'csv':'"quoted,feature"\n0'})
         self.assertEqual(r['predictions'][0]['score'],.5)
 
+    def test_outlier_locations_are_complete_and_use_source_column_positions(self):
+        data={'csv':'name,amount,constant\n'+'\n'.join(f'row{i},{1 if i<4000 else 99},7' for i in range(5000))}
+        result=enhanced('/api/data/profile',data,d.profile)
+        amount=result['outlier_records'][0]
+        self.assertEqual((amount['column'],amount['column_index']),('amount',2))
+        self.assertEqual(amount['records'],list(range(4002,5002)))
+        self.assertEqual((amount['lower_fence'],amount['upper_fence']),(1,1))
+        exported=list(csv.DictReader(io.StringIO(result['outlier_locations_csv'])))
+        self.assertEqual(len(exported),1000)
+        self.assertEqual(exported[-1],{'column_index':'2','source_record':'5001'})
+        self.assertEqual(result['outlier_records'][1]['records'],[])
+        self.assertEqual(len(result['capabilities']['tables'][0]['rows'][0][-1].split(', ')),20)
+
+    def test_outlier_locations_do_not_repeat_large_headers_or_invent_sparse_diagnostics(self):
+        name='PRIVATE_COLUMN_'+'x'*10000
+        result=enhanced('/api/data/profile',{'csv':name+'\n1\n1\n1\n1\n1\n1\n1\n99'},d.profile)
+        self.assertEqual(result['outlier_records'][0]['records'],[9])
+        self.assertNotIn(name,result['outlier_locations_csv'])
+        self.assertLess(len(result['outlier_locations_csv']),100)
+        sparse=enhanced('/api/data/profile',{'csv':'x\n1\n2\n3'},d.profile)
+        self.assertEqual(sparse['outlier_records'],[])
+        self.assertNotIn('outlier_locations_csv',sparse)
+
     def test_profile_correlation_is_stable_for_tiny_and_mixed_units(self):
         for left_scale,right_scale in [(1e-200,1e-200),(1e99,1e-200),(1e-310,1e99)]:
             data={'csv':'left,right,constant\n'+'\n'.join(
