@@ -2,7 +2,7 @@
 
 Sixteen working applications in a shared, dependency-free Python workspace: product, data, defensive security, machine-learning, cloud/DevOps, and REST API collections. Browser interfaces, JSON APIs, SQLite persistence, stateless analysis, and regression tests are included.
 
-![Experiment Studio browser preview](docs/experiment-studio.png)
+![Experiment Studio browser preview](docs/design/experiment-studio.png)
 
 | App | What it does | Engineering focus |
 | --- | --- | --- |
@@ -33,6 +33,31 @@ The security apps are at **http://127.0.0.1:8000/security**. See [Security Lab d
 
 The three data apps are at **http://127.0.0.1:8000/data** after starting the server. Use **Load sample** for fictional data containing deliberate quality problems. See [Data Lab documentation](docs/DATA_LAB.md).
 
+## Individual visual identities
+
+Each application has its own typography, navigation treatment, layout, and information hierarchy. Shared API behavior and accessible native controls remain in place. Select an app name below to view its working browser screenshot.
+
+| App | Design direction |
+| --- | --- |
+| [Issue Desk](docs/design/issue-desk.png) | Compact indigo navigation, soft kanban lanes, inline counters |
+| [Stockroom](docs/design/stockroom.png) | Yellow warehouse masthead, serif title, full-width movement ledger |
+| [Experiment Studio](docs/design/experiment-studio.png) | Dark research bench, narrow configuration pane, large comparison metrics |
+| [Dataset Explorer](docs/design/dataset-explorer.png) | Dense blue workstation, tab strip, monospace data tables |
+| [Pipeline Studio](docs/design/pipeline-studio.png) | Charcoal process station, orange controls, side-by-side source and steps |
+| [Revenue Lens](docs/design/revenue-lens.png) | Cream editorial report, serif typography, report-first layout |
+| [Auth Watch](docs/design/auth-watch.png) | Green event console, terminal typography, wide log editor |
+| [Header Review](docs/design/header-review.png) | Centered field guide, blue checklist, compact input sidebar |
+| [Secret Sentinel](docs/design/secret-sentinel.png) | Plum private review desk, spacious source area, findings below |
+| [Classifier Lab](docs/design/classifier-lab.png) | Ruled scientific notebook, margin controls, chart-led results |
+| [Retrieval Studio](docs/design/retrieval-studio.png) | Warm reading library, prominent query bar, editorial result list |
+| [Model Observatory](docs/design/model-observatory.png) | Monochrome instrument panel, lime metrics, right-hand controls |
+| [Manifest Review](docs/design/manifest-review.png) | Dark configuration editor paired with a light findings inspector |
+| [Pipeline Planner](docs/design/pipeline-planner.png) | Violet planning canvas, horizontal input station, wide timeline |
+| [Reliability Desk](docs/design/reliability-desk.png) | Teal service-status masthead, large budget metrics, settings sidebar |
+| [REST Studio](docs/design/rest-studio.png) | Red HTTP workbench, split request/response panes, dark JSON inspector |
+
+Browser QA exercised all twelve analysis samples and the authenticated Notes list request. All sixteen interfaces were checked at 390px width without horizontal page overflow; analysis samples were also run at that width. [Mobile example](docs/design/mobile-reliability.png). These are manual checks, not an automated visual regression suite.
+
 ## Run locally
 
 Requires Python 3.11 or later. No pip packages required. Run from this repository:
@@ -61,7 +86,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 73 tests: nine original domain/API tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, and fifteen REST tests. CI also checks JavaScript syntax for all six interfaces.
+The full suite now contains 73 tests: nine original domain/API tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, and fifteen REST tests. CI also checks JavaScript syntax for all six interfaces and the shared identity controller.
 
 ## Architecture
 

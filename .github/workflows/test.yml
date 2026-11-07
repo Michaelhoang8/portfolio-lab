@@ -23,3 +23,4 @@ jobs:
       - run: node --check portfolio/static/ml.js
       - run: node --check portfolio/static/devops.js
       - run: node --check portfolio/static/rest.js
+      - run: node --check portfolio/static/identities.js

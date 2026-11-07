@@ -63,6 +63,7 @@ $('#priority-filter').addEventListener('change', renderTickets);
 const titles = {tickets:'Issue Desk',inventory:'Stockroom',experiments:'Experiment Studio'};
 function navigate(page) {
   if (!titles[page]) page = 'tickets';
+  window.designIdentity(page);
   document.querySelectorAll('.page').forEach(section => section.hidden = section.id !== page);
   document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('selected',button.dataset.page === page));
   $('#breadcrumb').textContent = `Workspace / ${titles[page]}`;

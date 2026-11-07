@@ -68,6 +68,8 @@ def handler_for(database, api_key=None):
                      '/data.js': ('data.js', 'text/javascript; charset=utf-8'),
                      '/data.css': ('data.css', 'text/css; charset=utf-8'),
                      '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                     '/identities.js': ('identities.js', 'text/javascript; charset=utf-8'),
+                     '/identities.css': ('identities.css', 'text/css; charset=utf-8'),
                      '/style.css': ('style.css', 'text/css; charset=utf-8')}
             if self.path not in files:
                 self.reply(404, {'error': 'Not found'})
