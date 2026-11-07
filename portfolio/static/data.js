@@ -30,7 +30,7 @@ $('#file').addEventListener('change',async()=>{
   message(`Reading ${file.name}…`);
   const buffer=await file.arrayBuffer();
   if(revision!==fileRevision||busy)return;
-  $('#source').value=new TextDecoder('utf-8',{fatal:true}).decode(buffer);invalidate();message(`Loaded ${file.name}`);
+  $('#source').value=new TextDecoder('utf-8',{fatal:true}).decode(buffer);invalidate();message(`Loaded ${file.name}`);document.dispatchEvent(new Event('source-loaded'));
  }catch(error){if(revision===fileRevision)message(error.message,true);}
  finally{if(revision===fileRevision)$('#file').value='';}
 });

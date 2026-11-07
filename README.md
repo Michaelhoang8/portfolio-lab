@@ -62,7 +62,7 @@ Browser QA exercised all twelve analysis samples and the authenticated Notes lis
 
 ## Everyday interactions
 
-Use **All collections** to move between workspaces. Each analysis app offers a task-specific starting state and **Load an example** action. Run with **Ctrl+Enter** (or **Command+Enter**), then use **View results** to move keyboard focus directly to the report. Editing an input clears its previous report and prompts a rerun.
+Use **All collections** to move between workspaces. CSV column mappings and the training target offer suggestions from the loaded header, including quoted column names. Each analysis app offers a task-specific starting state and **Load an example** action. Run with **Ctrl+Enter** (or **Command+Enter**), then use **View results** to move keyboard focus directly to the report. Editing an input clears its previous report and prompts a rerun.
 
 Issue Desk shows filtered counts and a clear-filters action. Search matches title, description, assignee, or #ID; search and priority filters are stored in the page URL so reloads and bookmarks retain the view. Expand **Edit issue** on a card to update its title, description, priority, assignee, and deadline. Edits are audited, repeated unchanged saves add no duplicate event, and version checks reject stale edits from another tab. Product forms keep save feedback beside the submit button. REST Studio labels the last request with its method, URL, status, and completion time, locks request controls while sending, and supports copying the response body. API keys remain unsaved. Previous/Next controls follow the displayed list response and retain its filters. Wide data tables are keyboard-focusable for horizontal scrolling.
 
@@ -197,4 +197,4 @@ Stockroom generates a request key for each movement. Retrying the unchanged form
 
 The twelve stateless analysis apps expose **Cancel analysis** while a request is active. Switching modes cancels the previous request, and a 60-second timeout restores the controls instead of leaving a page busy indefinitely. Cancellation stops the browser waiting for a result; an already-running server computation may still finish. Input remains in memory after cancellation. File reads discard stale completions when newer input or a sample has been chosen. No request is retried automatically.
 
-Run the frontend lifecycle checks with `node --test tests/ui_requests.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.
+Run the frontend checks with `node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.

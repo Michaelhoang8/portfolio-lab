@@ -233,7 +233,7 @@ class HttpTests(unittest.TestCase):
             return error
 
     def test_static_assets_and_security_headers(self):
-        for path in ['/', '/app.js', '/style.css', '/observatory.js', '/observatory.css']:
+        for path in ['/', '/app.js', '/style.css', '/observatory.js', '/observatory.css', '/csv_columns.js']:
             with self.request(path) as response:
                 self.assertEqual(response.status,200)
                 self.assertIn("frame-ancestors 'none'", response.headers['Content-Security-Policy'])
