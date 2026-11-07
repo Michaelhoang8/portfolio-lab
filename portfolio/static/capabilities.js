@@ -14,10 +14,11 @@
     if (!source || !q('#run')) return;
     q('#capability-options')?.remove();
     if (!controls[app]) return;
-    const fieldset=document.createElement('fieldset'); fieldset.id='capability-options';
-    fieldset.innerHTML='<legend>Analysis settings</legend>'+controls[app];
+    const fieldset=document.createElement('details'); fieldset.id='capability-options';
+    fieldset.innerHTML='<summary>Analysis settings</summary><div class="disclosure-body">'+controls[app]+'</div>';
     fieldset.querySelectorAll('input[type=number]').forEach(input=>input.required=true);
     source.insertBefore(fieldset,q('#run'));
+    fieldset.addEventListener('invalid',()=>{fieldset.open=true;},true);
     fieldset.addEventListener('input',()=>{window.invalidate();window.message('Settings changed. Run again to update the report.');});
     fieldset.addEventListener('change',()=>{window.invalidate();window.message('Settings changed. Run again to update the report.');});
   };
@@ -36,7 +37,7 @@
     button.addEventListener('click',()=>download(name,text,type));parent.append(button);
   }
   window.renderCapabilities = result => {
-    const section=document.createElement('section');section.className='extension-report';section.setAttribute('aria-label','Additional analysis');
+    const section=document.createElement('details');section.className='extension-report';section.setAttribute('aria-label','Additional analysis');
     const extra=result.capabilities;
     if(extra) section.innerHTML=extra.tables.map(t=>`<h3>${escape(t.title)}</h3>${table(t.headers,t.rows)}`).join('')+extra.notes.map(n=>`<p class="hint">${escape(n)}</p>`).join('');
     for(const [key,label,name] of [['audit_csv','Export full row audit','cleaning-audit.csv'],['findings_csv','Export redacted findings','secret-findings.csv']]){
@@ -60,12 +61,12 @@
       });
       section.append(panel);
     }
-    if(section.childNodes.length) q('#result').append(section);
+    if(section.childNodes.length){section.insertAdjacentHTML('afterbegin','<summary>Detailed analysis & exports</summary>');q('#result').append(section);}
   };
   function panel(sectionId,title,formHtml,handler) {
     const section=q(sectionId);if(!section)return;
-    const container=document.createElement('section');container.className='panel extension-report';
-    container.innerHTML=`<h2>${title}</h2><form class="extension-form">${formHtml}<button class="primary">Calculate plan</button></form><p class="extension-message" role="status"></p><div class="extension-output"></div>`;
+    const container=document.createElement('details');container.className='panel extension-report';
+    container.innerHTML=`<summary>${title}</summary><form class="extension-form">${formHtml}<button class="primary">Calculate plan</button></form><p class="extension-message" role="status"></p><div class="extension-output"></div>`;
     const form=container.querySelector('form'),message=container.querySelector('.extension-message'),output=container.querySelector('.extension-output');
     let revision=0;
     const invalidatePlan = text => {revision++;output.replaceChildren();message.textContent=text;};
