@@ -33,30 +33,30 @@ The security apps are at **http://127.0.0.1:8000/security**. See [Security Lab d
 
 The three data apps are at **http://127.0.0.1:8000/data** after starting the server. Use **Load sample** for fictional data containing deliberate quality problems. See [Data Lab documentation](docs/DATA_LAB.md).
 
-## The Observatory
+## Sixteen independent themes
 
-A retro-futurist research station ties the collection together: printed-paper textures, numbered instrument plates, original vector illustrations, and field-note captions. Each app keeps its own palette, typography, and workspace layout, from a green radar console to a warm reading library. Select an app name below to view its working browser screenshot.
+Each app has its own visual world, illustration, typography, materials, and panel treatment. There is no shared Observatory branding. Shared responsive and accessibility mechanics keep the workspaces usable while the individual themes stay distinct.
 
-Orbiting diagrams, radar sweeps, line tracing, tactile buttons, and completion highlights add movement. **Sound** enables short, locally synthesized click and result tones; it starts off and never needs audio files or network requests. **Motion** pauses the effects. Both preferences persist locally, system reduced-motion settings take precedence, and background tabs pause animation and audio.
+**Sound** enables short locally synthesized tones, with a different pitch and voice for each app. It starts off and needs no audio files or network requests. **Motion** pauses animations; system reduced-motion settings take precedence. Both preferences persist locally, and background tabs pause animation and audio.
 
-| App | Design direction |
+| App | Theme |
 | --- | --- |
-| [Issue Desk](docs/design/issue-desk.png) | Paper mission board, constellation diagram, indigo navigation |
-| [Stockroom](docs/design/stockroom.png) | Yellow warehouse masthead, serif title, full-width movement ledger |
-| [Experiment Studio](docs/design/experiment-studio.png) | Dark research bench, narrow configuration pane, large comparison metrics |
-| [Dataset Explorer](docs/design/dataset-explorer.png) | Pale specimen archive, grid illustration, monospace data tables |
-| [Pipeline Studio](docs/design/pipeline-studio.png) | Charcoal process station, orange controls, side-by-side source and steps |
-| [Revenue Lens](docs/design/revenue-lens.png) | Cream editorial report, serif typography, report-first layout |
-| [Auth Watch](docs/design/auth-watch.png) | Green event console, terminal typography, wide log editor |
-| [Header Review](docs/design/header-review.png) | Sage field guide, shield illustration, compact input sidebar |
-| [Secret Sentinel](docs/design/secret-sentinel.png) | Plum private review desk, spacious source area, findings below |
-| [Classifier Lab](docs/design/classifier-lab.png) | Ruled scientific notebook, margin controls, chart-led results |
-| [Retrieval Studio](docs/design/retrieval-studio.png) | Warm reading library, prominent query bar, editorial result list |
-| [Model Observatory](docs/design/model-observatory.png) | Monochrome instrument panel, lime metrics, right-hand controls |
-| [Manifest Review](docs/design/manifest-review.png) | Dark configuration editor paired with a light findings inspector |
-| [Pipeline Planner](docs/design/pipeline-planner.png) | Violet planning canvas, horizontal input station, wide timeline |
-| [Reliability Desk](docs/design/reliability-desk.png) | Teal service-status masthead, large budget metrics, settings sidebar |
-| [REST Studio](docs/design/rest-studio.png) | Red HTTP workbench, split request/response panes, dark JSON inspector |
+| [Issue Desk](docs/design/issue-desk.png) | Sticker desk: playful notes, warm paper, rounded cards, rocking stickers |
+| [Stockroom](docs/design/stockroom.png) | Industrial loading dock: stencil type, hazard stripes, warehouse ledger |
+| [Experiment Studio](docs/design/experiment-studio.png) | Bauhaus studio: primary-color geometry, bold type, asymmetric panels |
+| [Dataset Explorer](docs/design/dataset-explorer.png) | Topographic atlas: contour lines, map grid, forest-green tables |
+| [Pipeline Studio](docs/design/pipeline-studio.png) | Aquatic wash cycle: bubbles, soft blue gradients, rounded white panels |
+| [Revenue Lens](docs/design/revenue-lens.png) | Financial newspaper: serif masthead, print rules, editorial columns |
+| [Auth Watch](docs/design/auth-watch.png) | Phosphor terminal: scan lines, green radar sweep, console typography |
+| [Header Review](docs/design/header-review.png) | Architectural perimeter: cobalt shield, crisp white cards, blue dividers |
+| [Secret Sentinel](docs/design/secret-sentinel.png) | Noir dossier: stamped heading, redacted folder, charcoal and parchment |
+| [Classifier Lab](docs/design/classifier-lab.png) | Botanical notebook: swaying leaves, ruled paper, moss and terracotta |
+| [Retrieval Studio](docs/design/retrieval-studio.png) | Literary reading room: book arch, warm wood texture, serif typography |
+| [Model Observatory](docs/design/model-observatory.png) | Precision test bench: circular calibration dial, fine grid, lime accents |
+| [Manifest Review](docs/design/manifest-review.png) | Cyanotype drafting office: blueprints, dimension lines, technical grid |
+| [Pipeline Planner](docs/design/pipeline-planner.png) | Metro transit: moving route dashes, station diagram, rounded route corners |
+| [Reliability Desk](docs/design/reliability-desk.png) | Coastal weather station: drifting tides, sea-glass panels, sandy gradients |
+| [REST Studio](docs/design/rest-studio.png) | Packet arcade: neon cabinet, blinking prompt, pixel grid, offset shadows |
 
 Browser QA exercised all twelve analysis samples and the authenticated Notes list request. All sixteen interfaces were checked at 390px width without horizontal page overflow; analysis samples were also run at that width. [Mobile example](docs/design/mobile-reliability.png). These are manual checks, not an automated visual regression suite.
 

@@ -1,22 +1,22 @@
 /* Original vector instruments + optional synthesized interface sounds. No external assets. */
 (() => {
   const instruments={
-    tickets:['01','MISSION CONTROL','A small constellation of things to ship.','constellation'],
-    inventory:['02','SUPPLY DEPOT','Keep the expedition moving.','stack'],
-    experiments:['03','HYPOTHESIS CHAMBER','Every discovery begins with a comparison.','orbit'],
-    profile:['04','SAMPLE ARCHIVE','Look closer. There is structure in the noise.','grid'],
-    clean:['05','REFINERY','Raw material. Deliberate transformation.','flow'],
-    sales:['06','THE ALMANAC','A field report on the movement of value.','sun'],
-    logs:['07','NIGHT WATCH','Listen for the signal that does not belong.','radar'],
-    headers:['08','SHIELD ARRAY','Small controls. A stronger perimeter.','shield'],
-    secrets:['09','SEALED ARCHIVE','Some discoveries should stay contained.','lock'],
-    train:['10','LEARNING ENGINE','A line becomes a model of the world.','curve'],
-    search:['11','SIGNAL LIBRARY','A question sends a ripple through the archive.','books'],
-    evaluate:['12','CALIBRATION ROOM','Measure the instrument, not just the result.','target'],
-    manifest:['13','BLUEPRINT ROOM','Trace the shape of a system before it exists.','blueprint'],
-    pipeline:['14','LAUNCH SEQUENCE','Many small steps. One coordinated departure.','flow'],
-    reliability:['15','LIFE SUPPORT','Watch the margins that keep a system alive.','wave'],
-    rest:['16','TRANSMISSION DESK','Send a signal. Read the response.','transmit']
+    tickets:['STICKER DESK','Make room for the next good idea.','stickers',330,'triangle'],
+    inventory:['DOCK 02','Goods in. Goods out. Nothing lost.','stack',180,'sine'],
+    experiments:['FORM & CHANCE','Two versions. One considered comparison.','bauhaus',440,'triangle'],
+    profile:['DATA ATLAS','Map the terrain before the journey.','contours',520,'sine'],
+    clean:['THE WASH CYCLE','A fresh start for messy data.','bubbles',660,'sine'],
+    sales:['THE REVENUE EDITION','Follow the figures. Find the story.','press',350,'triangle'],
+    logs:['AFTER HOURS','Keep an eye on the unexpected.','radar',240,'sine'],
+    headers:['PERIMETER','A stronger web starts at the edges.','shield',580,'sine'],
+    secrets:['RESTRICTED FILES','Review carefully. Leave no secrets behind.','dossier',200,'triangle'],
+    train:['THE MODEL GARDEN','Small observations. Growing understanding.','plant',740,'sine'],
+    search:['THE READING ROOM','The right passage is waiting.','books',392,'sine'],
+    evaluate:['CALIBRATION / 12','Trust the measurement. Question the model.','target',880,'sine'],
+    manifest:['STRUCTURE OFFICE','Draw the system before you build it.','blueprint',294,'triangle'],
+    pipeline:['DEPLOYMENT TRANSIT','Every job has a destination.','transit',494,'sine'],
+    reliability:['TIDELINE','Stay steady through changing conditions.','tide',262,'sine'],
+    rest:['PACKET ARCADE','Request sent. Your move.','arcade',784,'triangle']
   };
   const read=(key,fallback)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};
   const save=(key,value)=>{try{localStorage.setItem(key,value);}catch{/* Preferences are optional. */}};
@@ -29,10 +29,11 @@
     try{
       audio ||= new (window.AudioContext||window.webkitAudioContext)();
       if(audio.state==='suspended')audio.resume().catch(()=>{});
-      const notes=kind==='complete'?[523.25,783.99]:kind==='error'?[220,174.61]:[392];
+      const voice=instruments[document.body.dataset.app],base=voice?.[3]||392;
+      const notes=kind==='complete'?[base,base*1.5]:kind==='error'?[base*.65,base*.5]:[base];
       notes.forEach((frequency,i)=>{
         const start=audio.currentTime+i*.09,osc=audio.createOscillator(),gain=audio.createGain();
-        osc.type='sine';osc.frequency.value=frequency;gain.gain.setValueAtTime(0,start);
+        osc.type=voice?.[4]||'sine';osc.frequency.value=frequency;gain.gain.setValueAtTime(0,start);
         gain.gain.linearRampToValueAtTime(.025,start+.012);gain.gain.exponentialRampToValueAtTime(.0001,start+.18);
         osc.connect(gain);gain.connect(audio.destination);osc.start(start);osc.stop(start+.2);
         osc.onended=()=>{osc.disconnect();gain.disconnect();};
@@ -42,21 +43,22 @@
   function illustration(kind) {
     const ring='<circle cx="130" cy="105" r="72"/><circle cx="130" cy="105" r="48"/><path d="M43 105h174M130 18v174"/>';
     const drawings={
-      constellation:'<path d="M45 135 88 58 142 94 201 37 225 150 142 94 110 173 45 135"/><g class="ink-fill"><circle cx="45" cy="135" r="6"/><circle cx="88" cy="58" r="10"/><circle cx="142" cy="94" r="7"/><circle cx="201" cy="37" r="5"/><circle cx="225" cy="150" r="9"/><circle cx="110" cy="173" r="5"/></g>',
+      stickers:'<g class="sticker-bob"><rect x="28" y="40" width="95" height="110" rx="8" fill="#f4cd57"/><path d="m45 80 15 15 40-35M45 115h55" stroke="#272335" stroke-width="5"/></g><g transform="rotate(12 177 115)"><rect x="132" y="66" width="100" height="105" rx="9" fill="#f49bb3"/><circle cx="182" cy="115" r="30" stroke="#272335"/><path d="M168 119q14 22 28 0" stroke="#272335"/><circle cx="171" cy="106" r="3" fill="#272335"/><circle cx="193" cy="106" r="3" fill="#272335"/></g>',
+      bauhaus:'<circle cx="95" cy="80" r="52" fill="#e65036" stroke="none"/><path d="M125 35h92v92h-92z" fill="#e9b73c" stroke="none"/><path d="m35 175 82-100 82 100z" fill="#245ba5" stroke="none"/><circle class="pulse-dot" cx="205" cy="166" r="15" fill="#252525" stroke="none"/>',
+      contours:'<g class="contour-lines"><path d="M15 140Q30 10 130 30T245 140M30 143Q44 32 130 50T230 142M48 145Q56 54 130 69T211 141M67 146Q73 77 130 86T192 140M87 145Q92 99 130 104T172 140M108 140q22-43 44 0"/><path d="M20 173q70-40 117 0t105-10"/></g><circle cx="130" cy="125" r="5" class="ink-fill"/>',
+      bubbles:'<circle cx="130" cy="105" r="76" fill="#e3f9f8"/><circle cx="130" cy="105" r="55"/><path class="wash-wave" d="M79 111q25-25 51 0t51 0M80 126q25-25 51 0t48 0"/><g class="bubble-rise"><circle cx="67" cy="42" r="15"/><circle cx="205" cy="47" r="10"/><circle cx="207" cy="157" r="18"/></g><path d="m108 83 14 14 31-33" stroke-width="5"/>',
+      press:'<path d="M42 25h176v165H42zM60 48h140M60 58h140"/><path d="M60 78h60v65H60z" fill="currentColor"/><path d="M137 80h63m-63 14h63m-63 14h63m-63 14h63m-63 14h63M60 161h140M60 174h140"/>',
+      dossier:'<path d="M45 54h65l18 17h90v110H45z" fill="#d6c5a8"/><g transform="rotate(-9 130 95)"><path d="M73 28h111v126H73z" fill="#eee4cf"/><path d="M89 52h78M89 69h78M89 87h49" stroke="#302c28" stroke-width="9"/><path d="M89 120h78" stroke="#a42d29" stroke-width="13"/></g>',
+      plant:'<path d="M130 175V70" stroke-width="4"/><path class="leaf-sway" d="M129 124Q57 126 55 67q72 0 74 57M132 98q70 0 74-56-68 0-74 56" fill="#9eb897"/><path d="M92 166h76l-12 30h-52z" fill="#b67d58"/><circle cx="60" cy="36" r="12" fill="#e6c568" stroke="none"/>',
+      transit:'<path d="M35 30v100q0 45 45 45h145" stroke="#ed7865" stroke-width="10"/><path class="train-line" d="M25 65h130q35 0 35 35v90" stroke="#73bfc9" stroke-width="10"/><g fill="#fff" stroke="#292d43" stroke-width="4"><circle cx="35" cy="65" r="10"/><circle cx="105" cy="65" r="8"/><circle cx="190" cy="130" r="8"/><circle cx="110" cy="175" r="8"/><circle cx="190" cy="175" r="10"/></g>',
+      tide:'<circle cx="177" cy="55" r="28" fill="#e5c590" stroke="none"/><g class="tide-drift"><path d="M10 108q30-30 60 0t60 0t60 0t60 0M10 137q30-30 60 0t60 0t60 0t60 0M10 166q30-30 60 0t60 0t60 0t60 0" stroke-width="5"/></g>',
+      arcade:'<path d="M60 22h140l18 122-18 48H60l-18-48z" fill="#24233f"/><path d="M77 42h106v75H77z" fill="#121226"/><path class="packet-blink" d="m99 66 16 13-16 13m29 0h28" stroke="#73f6ca" stroke-width="6"/><path d="M59 143h142"/><circle cx="93" cy="158" r="10" fill="#ff8ac6"/><circle cx="162" cy="157" r="6" fill="#f2d66d"/><circle cx="181" cy="157" r="6" fill="#73f6ca"/>',
       stack:'<path d="m130 32 85 45-85 45-85-45Zm-85 72 85 45 85-45M45 132l85 45 85-45M130 122v55"/><path class="heavy" d="M65 64v58m130-58v58"/>',
-      orbit:'<circle cx="130" cy="105" r="16" class="ink-fill"/><g class="orbit-spin"><ellipse cx="130" cy="105" rx="100" ry="37"/><ellipse cx="130" cy="105" rx="100" ry="37" transform="rotate(60 130 105)"/><ellipse cx="130" cy="105" rx="100" ry="37" transform="rotate(120 130 105)"/><circle cx="230" cy="105" r="7" class="ink-fill"/></g>',
-      grid:'<path d="M55 35h150v140H55zM55 70h150M55 105h150M55 140h150M92 35v140M130 35v140M168 35v140"/><path class="ink-fill" d="M92 70h38v35H92zm38 35h38v35h-38zM168 140h37v35h-37z"/>',
-      flow:'<path d="M24 105h45m40 0h40m40 0h45M69 105V50h80v55M109 105v55h80v-55"/><circle cx="89" cy="105" r="20"/><circle cx="169" cy="105" r="20"/><circle cx="24" cy="105" r="6" class="ink-fill"/><path class="ink-fill" d="m234 96 12 9-12 9z"/><circle class="pulse-dot" cx="149" cy="50" r="6"/>',
-      sun:'<g class="orbit-spin"><path d="M130 17v28m0 120v28M42 105h28m120 0h28M68 43l20 20m84 84 20 20M68 167l20-20m84-84 20-20"/></g><circle cx="130" cy="105" r="48"/><path d="M85 118h90M89 129h82M99 140h62M116 151h28"/><path class="ink-fill" d="M84 105a46 46 0 0 1 92 0z"/>',
       radar:ring+'<g class="radar-sweep"><path class="heavy" d="m130 105 51-51"/></g><circle cx="157" cy="77" r="6" class="ink-fill pulse-dot"/><circle cx="101" cy="135" r="4" class="ink-fill"/>',
       shield:'<path d="m130 25 70 26v50q0 55-70 87-70-32-70-87V51z"/><path d="m130 46 49 19v37q0 38-49 62-49-24-49-62V65z"/><path class="heavy" d="m103 102 19 19 38-44"/>',
-      lock:'<rect x="68" y="85" width="124" height="93" rx="8"/><path d="M92 85V62a38 38 0 0 1 76 0v23M105 85V63a25 25 0 0 1 50 0v22"/><circle cx="130" cy="123" r="12"/><path class="heavy" d="M130 135v20"/>',
-      curve:'<path d="M42 30v145h180M42 139h180M42 103h180M42 67h180"/><path class="heavy draw-line" d="M45 154C95 154 88 58 141 58s40-23 77-24"/><circle cx="141" cy="58" r="6" class="ink-fill"/>',
       books:'<path d="M47 45h35v125H47zM90 30h38v140H90zM140 55l32-9 33 119-32 9zM35 182h190M47 67h35M90 54h38M156 124l32-9"/><circle cx="207" cy="46" r="22"/><path class="heavy" d="m223 62 18 18"/>',
       target:ring+'<path class="heavy" d="M83 153 177 57"/><circle cx="130" cy="105" r="8" class="ink-fill"/><path d="m165 57 12 0v12"/>',
       blueprint:'<path d="M58 28h145v155H58zM80 54h100v100H80zM80 90h100M130 54v100M35 28v155m-5-155h10m-10 155h10M58 199h145"/><circle cx="105" cy="123" r="13"/><path class="heavy" d="M151 109h17v30h-17z"/>',
-      wave:'<path d="M28 65h204M28 105h204M28 145h204"/><path class="heavy draw-line" d="M28 105h44l12-25 20 66 25-111 25 104 16-34h62"/><circle cx="232" cy="105" r="6" class="ink-fill pulse-dot"/>',
-      transmit:'<path d="M30 60h125m-20-20 20 20-20 20M230 150H105m20-20-20 20 20 20"/><circle cx="55" cy="150" r="25"/><circle cx="205" cy="60" r="25"/><circle cx="55" cy="150" r="8" class="ink-fill"/><circle cx="205" cy="60" r="8" class="ink-fill"/>'
     };
     return `<svg viewBox="0 0 260 210" aria-hidden="true"><g class="plate-guide"><path d="M10 20V10h10m220 0h10v10M10 190v10h10m220 0h10v-10"/><path d="M15 105h5m220 0h5M130 10v5m0 180v5"/></g><g class="plate-drawing">${drawings[kind]}</g></svg>`;
   }
@@ -72,11 +74,12 @@
     const hero=document.querySelector('.intro')||document.querySelector(`.page:not([hidden]) .heading`);
     // Product navigation sets hidden flags after changing the identity.
     const target=document.querySelector(`#${app} .heading`)||hero;if(!target)return;
-    const plate=document.createElement('figure');plate.className='instrument-plate';plate.setAttribute('aria-hidden','true');plate.dataset.serial=settings[0];
-    plate.innerHTML=illustration(settings[3])+`<figcaption>FIG. ${settings[0]} / ${settings[1]}</figcaption><span class="plate-stamp">OBSERVATORY<br>FIELD INSTRUMENTS</span>`;
+    const plate=document.createElement('figure');plate.className='instrument-plate';plate.setAttribute('aria-hidden','true');
+    plate.innerHTML=illustration(settings[2]);
+    document.querySelector(".observatory-wordmark").textContent=settings[0];
     target.append(plate);
     const caption=document.createElement('div');caption.className='observatory-caption';
-    caption.innerHTML=`<span class="edition-number">${settings[0]} / 16</span><span>${settings[2]}</span><span class="edition-mark" aria-hidden="true">✳</span>`;
+    caption.textContent=settings[1];
     target.after(caption);
     document.body.classList.remove('instrument-arrival');void document.body.offsetWidth;document.body.classList.add('instrument-arrival');
     clearTimeout(arrivalTimer);arrivalTimer=setTimeout(()=>document.body.classList.remove('instrument-arrival'),800);
@@ -84,7 +87,7 @@
   }
   document.addEventListener('DOMContentLoaded',()=>{
     const dock=document.createElement('div');dock.className='observatory-controls';dock.setAttribute('aria-label','Atmosphere preferences');
-    dock.innerHTML='<span class="observatory-wordmark">✳ THE OBSERVATORY <small>SOFTWARE / FIELD STUDIES</small></span><div><button id="sound-switch" type="button" aria-pressed="false">♪ Sound off</button><button id="motion-switch" type="button" aria-pressed="true">Motion on</button></div>';
+    dock.innerHTML='<span class="observatory-wordmark"></span><div><button id="sound-switch" type="button" aria-pressed="false">♪ Sound off</button><button id="motion-switch" type="button" aria-pressed="true">Motion on</button></div>';
     document.querySelector('main').prepend(dock);
     document.querySelector('#sound-switch').addEventListener('click',()=>{sound=!sound;save('observatory-sound',sound?'on':'off');preferences();if(sound)tone('complete');});
     document.querySelector('#motion-switch').addEventListener('click',()=>{motion=!motion;save('observatory-motion',motion?'on':'off');preferences();});

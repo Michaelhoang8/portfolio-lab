@@ -1,4 +1,4 @@
-/* The Observatory: screen-printed field instruments from an imagined research station. */
+/* Sixteen independent themes; shared responsive and accessibility mechanics. */
 body[data-app]{--art:var(--blue,var(--accent,#b65b32));background-image:radial-gradient(var(--line) .65px,transparent .65px);background-size:8px 8px}
 body[data-app] main{position:relative}
 body[data-app] .intro,body[data-app] .heading{position:relative;min-height:255px;isolation:isolate;overflow:hidden;align-items:center;padding-top:20px;padding-bottom:20px;gap:24px}
@@ -45,37 +45,129 @@ body[data-app] .empty>span{font-size:54px;color:var(--art);animation:float-mark 
 .observatory-controls>div{display:flex;gap:8px}
 body[data-app] .observatory-controls button{font:11px ui-monospace,monospace;padding:10px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 body[data-app] .observatory-controls button[aria-pressed=true]{border-color:var(--art)}
-/* Individual rooms retain their own palette and visual vocabulary. */
-body[data-app=tickets]{--ink:#292c42;--paper:#f1efe6;--line:#d5d3c9;--accent:#5951a5;--surface:#fffdf6;--field:#fffdf8}
-body[data-app=tickets] .column{background:#e7e6ed;border-radius:3px}
-body[data-app=tickets] .card{border-radius:3px!important}
-body[data-app=inventory]{--art:#82531b}
-body[data-app=inventory] .instrument-plate{transform:rotate(3deg)}
-body[data-app=experiments]{--art:#b5a2ff}
-body[data-app=profile]{--bg:#eef0e7;--surface:#fcfcf5;--field:#fffef8;--blue:#326e82;--line:#cbd9d6}
-body[data-app=profile] .intro h1{font-family:ui-monospace,monospace;font-size:48px;letter-spacing:-3px}
-body[data-app=clean]{--art:#eea36e}
-body[data-app=clean] .intro h1{font-family:Impact,'Arial Narrow',sans-serif;letter-spacing:1px;font-size:64px}
-body[data-app=sales] .instrument-plate{color:#b46c35}
-body[data-app=sales] .intro{border-bottom:0}
-body[data-app=logs]{--art:#8dd4b0}
-body[data-app=logs] .intro h1{font-family:ui-monospace,monospace;font-size:54px}
-body[data-app=logs] .source{background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,#0000000a 3px,#0000000a 4px)}
-body[data-app=headers]{--bg:#edf1ee;--surface:#fbfdf7;--blue:#396e79}
-body[data-app=headers] .intro{display:flex;text-align:left}
-body[data-app=secrets] .instrument-plate{transform:rotate(7deg)}
-body[data-app=train] .instrument-plate{transform:rotate(0deg);color:#547aa7}
-body[data-app=search] .intro{display:flex;text-align:left}
+/* Independent art direction for each application. Shared selectors only supply mechanics. */
+body[data-app]{background-image:none}
+body[data-app] .instrument-plate{transform:none}
+.instrument-plate:before,.instrument-plate:after,.plate-guide{display:none}
+body[data-app] .section-head h2:before{content:none}
+.observatory-controls{border-bottom:0}
+.observatory-wordmark{font-weight:800;letter-spacing:3px}
+.observatory-caption{border:0;font-style:normal;font-family:inherit;padding:8px 0;margin-bottom:24px}
+body[data-app] .intro h1,body[data-app] .heading h1{font-family:var(--display,Georgia);font-weight:var(--weight,400);letter-spacing:var(--tracking,-2px)}
+/* 01: a playful desk covered in sticky notes. */
+body[data-app=tickets]{--ink:#302637;--paper:#f8eedd;--line:#dbccbb;--accent:#7346b1;--art:#7346b1;--surface:#fffaf1;--field:#fffdf7;--display:'Trebuchet MS',sans-serif;--weight:900;background-image:radial-gradient(#c7b49a 1px,transparent 1px);background-size:24px 24px}
+body[data-app=tickets] .column{background:#eadff3;border:0;border-radius:18px}
+body[data-app=tickets] .card{border-radius:2px 2px 16px 2px!important;box-shadow:3px 4px 0 #d6c8a9;background:#fff8c5}
+body[data-app=tickets] .panel{border-radius:18px;border:2px solid var(--line)}
+body[data-app=tickets] .observatory-wordmark{background:#efabc3;color:#302637;padding:9px 16px;rotate:-2deg;letter-spacing:1px}
+.sticker-bob{animation:sticker-rock 5s ease-in-out infinite;transform-origin:75px 95px}
+/* 02: industrial loading dock, stencilled signs and ledger rules. */
+body[data-app=inventory]{--art:#352f20;--display:Impact,'Arial Narrow',sans-serif;--tracking:1px;background-image:repeating-linear-gradient(0deg,transparent 0 47px,#bba67730 47px 48px)}
+body[data-app=inventory] .heading{border-bottom:12px solid transparent;border-image:repeating-linear-gradient(120deg,#262821 0 12px,#eacb4d 12px 24px) 12}
+body[data-app=inventory] .panel{border-radius:0;border:2px solid #6d6652;box-shadow:5px 5px 0 #cabe9e}
+body[data-app=inventory] .observatory-wordmark{font-size:20px;border:2px solid currentColor;padding:5px 12px}
+body[data-app=inventory] .plate-drawing{stroke-width:3}
+/* 03: Bauhaus geometry and primary-color blocks. */
+body[data-app=experiments]{--paper:#f5f0df;--surface:#fffdf2;--field:#fffdf7;--ink:#282a2c;--muted:#60615c;--line:#ccc7b6;--accent:#245ba5;--art:#e65036;--display:'Arial Black',sans-serif;--weight:900;--tracking:-3px}
+body[data-app=experiments] aside{background:#245ba5;color:#fff}
+body[data-app=experiments] .panel{border-radius:0;border:0;border-left:8px solid #e65036;box-shadow:0 4px 0 #e9b73c}
+body[data-app=experiments] .heading h1{max-width:650px}
+body[data-app=experiments] .observatory-caption{border-bottom:4px solid #282a2c;text-transform:uppercase;font-size:11px;letter-spacing:2px}
+/* 04: topographic atlas. */
+body[data-app=profile]{--bg:#eaf0de;--surface:#f8faee;--field:#fffef6;--ink:#293d34;--muted:#5a6d60;--blue:#35634e;--line:#c3d1b7;--art:#548568;--display:Georgia;background-image:linear-gradient(#65836112 1px,transparent 1px),linear-gradient(90deg,#65836112 1px,transparent 1px);background-size:40px 40px}
+body[data-app=profile] .source,body[data-app=profile] .results{border:1px solid #9fae92;border-radius:0}
+body[data-app=profile] .intro h1{font-style:italic}
+.contour-lines{stroke-width:2;animation:contour-breathe 8s ease-in-out infinite}
+/* 05: soft aquatic wash cycle. */
+body[data-app=clean]{--bg:#e9f9fc;--surface:#fff;--field:#f6fdff;--ink:#153e53;--muted:#4b7183;--line:#b5dae3;--blue:#187486;--art:#208b9d;--display:'Trebuchet MS',sans-serif;--weight:700;--tracking:-2px;background-image:radial-gradient(ellipse at top right,#b8e9ec,transparent 65%)}
+body[data-app=clean] .intro h1{text-transform:none}
+body[data-app=clean] :is(.source,.results){border:0;border-radius:28px;box-shadow:0 10px 30px #18697b12}
+body[data-app=clean] button,body[data-app=clean] textarea{border-radius:18px}
+.bubble-rise{animation:bubble-rise 5s ease-in-out infinite}
+/* 06: financial newspaper. */
+body[data-app=sales]{--bg:#f1e8d6;--surface:#faf3e5;--field:#fffaf0;--ink:#302c26;--muted:#706457;--blue:#8d3a26;--art:#302c26;--line:#cfc2ac;--display:Georgia;background-image:repeating-linear-gradient(0deg,transparent 0 3px,#35281205 3px 4px)}
+body[data-app=sales] .intro{border-top:5px double var(--ink);border-bottom:5px double var(--ink)}
+body[data-app=sales] .intro h1{font-weight:900}
+body[data-app=sales] :is(.source,.results){border-top:1px solid var(--ink);border-radius:0;box-shadow:none}
+body[data-app=sales] .observatory-wordmark{font-family:Georgia;font-size:18px;letter-spacing:1px}
+/* 07: phosphor surveillance terminal. */
+body[data-app=logs]{--art:#8dd4b0;--display:Consolas,monospace;--weight:700;--tracking:-2px;background-image:repeating-linear-gradient(0deg,transparent 0 3px,#8dd4b006 3px 4px)}
+body[data-app=logs] .intro h1{text-shadow:0 0 22px #8dd4b044}
+body[data-app=logs] .instrument-plate{filter:drop-shadow(0 0 6px #8dd4b066)}
+body[data-app=logs] :is(.source,.results){border:1px solid #477b60;box-shadow:inset 0 0 20px #8dd4b009}
+/* 08: bright architectural perimeter. */
+body[data-app=headers]{--bg:#edf3ff;--surface:#fff;--field:#f8faff;--ink:#172e60;--muted:#53688e;--blue:#2457c6;--art:#2457c6;--line:#cbd7ee;--display:Arial,sans-serif;--weight:800;--tracking:-2px}
+body[data-app=headers] .intro{display:flex;text-align:left;border-bottom:8px solid #2457c6}
+body[data-app=headers] .instrument-plate{background:#dbe6ff;border-radius:50%;padding:12px}
+body[data-app=headers] :is(.source,.results){border-top:0;border-radius:14px;box-shadow:0 4px 20px #1d479012}
+/* 09: a noir case dossier. */
+body[data-app=secrets]{--bg:#262522;--surface:#33312b;--field:#22211e;--ink:#eee4cf;--muted:#baae98;--line:#575144;--blue:#e8b59a;--art:#c5b18e;--display:'Courier New',monospace;--weight:700;--tracking:-2px}
+body[data-app=secrets] .observatory-wordmark{color:#f6b2a7;border:2px solid #b86155;rotate:-3deg;padding:7px 12px}
+body[data-app=secrets] :is(.source,.results){border-top:1px solid #8f8068;border-radius:0;box-shadow:6px 6px 0 #171715}
+body[data-app=secrets] .intro h1{text-transform:uppercase}
+/* 10: botanical field notebook. */
+body[data-app=train]{--bg:#f2f3e7;--surface:#fcfcf3;--field:#fffef7;--ink:#344d36;--muted:#687861;--blue:#486d43;--art:#557c48;--line:#cdd5bd;--display:Georgia;background-image:repeating-linear-gradient(0deg,transparent 0 31px,#4a763818 31px 32px)}
+body[data-app=train] .intro h1{font-style:italic}
+body[data-app=train] :is(.source,.results){border-top:0;border-radius:3px;box-shadow:0 3px 12px #354b2212}
+.leaf-sway{transform-origin:130px 150px;animation:leaf-sway 7s ease-in-out infinite}
+/* 11: a quiet literary reading room. */
+body[data-app=search]{--display:Georgia;--art:#94523f;background-image:linear-gradient(90deg,#dcc5aa20 1px,transparent 1px);background-size:9px 100%}
+body[data-app=search] .intro{display:flex;text-align:left;border-bottom:1px solid #b19780}
 body[data-app=search] .intro h1{font-size:60px}
-body[data-app=evaluate] .intro h1{font-family:ui-monospace,monospace;font-size:48px}
-body[data-app=manifest] .instrument-plate{background:#20344a;color:#c5d5e8;border-radius:3px;transform:rotate(-3deg);padding:7px}
-body[data-app=manifest] .plate-stamp{background:#20344a}
-body[data-app=pipeline] .intro h1{font-style:italic}
-body[data-app=reliability] .instrument-plate{color:#bee7ce}
-body[data-app=reliability] .intro h1{font-family:Georgia,serif}
-body[data-app=rest] .intro h1{font-family:Impact,'Arial Narrow',sans-serif;font-size:80px;letter-spacing:0;font-weight:400}
-body[data-app=rest] .instrument-plate{transform:rotate(0deg)}
-body[data-app=rest] .intro{border-bottom:0}
+body[data-app=search] .observatory-wordmark{font-family:Georgia;font-style:italic;letter-spacing:1px;font-size:18px}
+body[data-app=search] .instrument-plate{background:#eee0cd;border-radius:50% 50% 0 0;padding:12px}
+/* 12: precision audio/electronics test bench. */
+body[data-app=evaluate]{--display:Consolas,monospace;--weight:700;--art:#cce36a;background-image:radial-gradient(#a6ad9820 1px,transparent 1px);background-size:6px 6px}
+body[data-app=evaluate] .intro h1{text-transform:uppercase;font-size:48px}
+body[data-app=evaluate] .instrument-plate{border:1px solid #6d765a;border-radius:50%;background:#131711}
+body[data-app=evaluate] .plate-drawing{stroke-width:1}
+body[data-app=evaluate] :is(.source,.results){border-top:0;border:1px solid #687057;border-radius:4px}
+/* 13: cyanotype drafting office. */
+body[data-app=manifest]{--bg:#183653;--surface:#21425f;--field:#122c45;--ink:#e1edf6;--muted:#aec6da;--line:#50708b;--blue:#a9d7f5;--art:#cce7fa;--display:'Arial Narrow',Arial,sans-serif;--weight:300;--tracking:1px;background-image:linear-gradient(#b2d6f016 1px,transparent 1px),linear-gradient(90deg,#b2d6f016 1px,transparent 1px);background-size:24px 24px}
+body[data-app=manifest] .instrument-plate{border:1px solid #6487a5;padding:8px}
+body[data-app=manifest] :is(.source,.results){background:#21425f;border:1px solid #7795ae;color:var(--ink);border-radius:0}
+body[data-app=manifest] .intro h1{text-transform:uppercase}
+/* 14: a metro diagram for deployment journeys. */
+body[data-app=pipeline]{--bg:#f3f0e9;--surface:#fffdf7;--field:#fff;--ink:#292d43;--muted:#656779;--line:#d6d6dc;--blue:#344c88;--art:#344c88;--display:Arial,sans-serif;--weight:800;--tracking:-2px}
+body[data-app=pipeline] .observatory-wordmark{border-left:12px solid #ed7865;padding-left:12px}
+body[data-app=pipeline] .intro{border-bottom:6px solid #73bfc9}
+body[data-app=pipeline] :is(.source,.results){border-top:0;border-radius:0 22px 0 22px}
+.train-line{stroke-dasharray:12 5;animation:transit-travel 6s linear infinite}
+/* 15: coastal weather station. */
+body[data-app=reliability]{--bg:#eaf1f0;--surface:#f8fbf7;--field:#fff;--ink:#214e59;--muted:#5d7d82;--line:#bed2d2;--blue:#286c7b;--art:#418a99;--display:Georgia;background-image:linear-gradient(160deg,#e9e1cd,transparent 45%,#c9e2e6)}
+body[data-app=reliability] .intro{background:#214e59;color:#f5f1e5;padding:24px;border-radius:8px 8px 70px 8px}
+body[data-app=reliability] .intro :is(p,.eyebrow){color:#d0e4e3}
+body[data-app=reliability] .instrument-plate{color:#9dd4dc}
+body[data-app=reliability] :is(.source,.results){border:0;border-radius:16px}
+.tide-drift{animation:tide-drift 6s ease-in-out infinite}
+/* 16: neon packet arcade. */
+body[data-app=rest]{--bg:#17162c;--surface:#23213d;--field:#141326;--ink:#eeecff;--muted:#b6b1d3;--line:#484266;--blue:#f5a3cf;--art:#73f6ca;--display:Consolas,monospace;--weight:900;--tracking:-3px;background-image:linear-gradient(#a18cdb0b 1px,transparent 1px),linear-gradient(90deg,#a18cdb0b 1px,transparent 1px);background-size:32px 32px}
+body[data-app=rest] .intro h1{font-size:72px;text-shadow:3px 3px 0 #854f93}
+body[data-app=rest] :is(.source,.results){background:#23213d;color:var(--ink);border:2px solid #685589;box-shadow:5px 5px 0 #0e0c1c}
+body[data-app=rest] .primary{background:#73f6ca;color:#17162c;border-color:#73f6ca}
+body[data-app=rest] .observatory-wordmark{color:#f5a3cf}
+.packet-blink{animation:instrument-pulse 2s steps(2,end) infinite}
+/* Reconcile inherited chrome with the new light/dark palettes. */
+body[data-app=clean],body[data-app=experiments]{color-scheme:light}
+body[data-app=secrets],body[data-app=manifest],body[data-app=rest]{color-scheme:dark}
+body[data-app=clean],body[data-app=reliability],body[data-app=inventory],body[data-app=train],body[data-app=sales],body[data-app=logs]{background-size:auto}
+body[data-app=clean] header{background:#d8f0f4;border-bottom:1px solid var(--line);color:var(--ink)}
+body[data-app=clean] :is(header span,.local,.text-button){color:#187486!important}
+body[data-app=clean] :is(.eyebrow,#notice,.stat strong){color:#187486}
+body[data-app=experiments] .primary{background:#245ba5;color:#fff}
+body[data-app=experiments] .result-bottom strong{color:#245ba5}
+body[data-app=experiments] #experiment-results .panel{border-top:0}
+body[data-app=experiments] nav button.selected{background:#e9b73c;color:#282a2c}
+body[data-app=experiments] :is(.brand small,.nav-label,.aside-bottom small){color:#d7e5ff}
+body[data-app=manifest] .primary{color:#17334d}
+body[data-app=secrets] .primary{color:#262522}
+body[data-app=manifest] nav button[data-mode][aria-pressed=true],body[data-app=rest] nav button[data-mode][aria-pressed=true]{color:#172b3f}
+@keyframes sticker-rock{50%{transform:rotate(-5deg) translateY(-3px)}}
+@keyframes contour-breathe{50%{opacity:.55}}
+@keyframes bubble-rise{50%{transform:translateY(-9px)}}
+@keyframes leaf-sway{50%{transform:rotate(4deg)}}
+@keyframes transit-travel{to{stroke-dashoffset:-102}}
+@keyframes tide-drift{50%{transform:translateX(8px)}}
 @keyframes orbit-turn{to{transform:rotate(360deg)}}
 @keyframes instrument-pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes trace-line{from{stroke-dashoffset:340}to{stroke-dashoffset:0}}
