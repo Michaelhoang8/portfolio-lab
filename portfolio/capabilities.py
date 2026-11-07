@@ -39,7 +39,13 @@ def enrich(path, data, result):
                 if len(pairs) >= 3:
                     x,y = zip(*pairs)
                     try:
-                        value = statistics.correlation(x,y)
+                        # Pearson correlation is unchanged by translation and positive
+                        # scaling; normalize first to avoid underflow for tiny units.
+                        centered_x=[v-x[0] for v in x];centered_y=[v-y[0] for v in y]
+                        scale_x=max(map(abs,centered_x)) or 1
+                        scale_y=max(map(abs,centered_y)) or 1
+                        value = statistics.correlation([v/scale_x for v in centered_x],
+                                                       [v/scale_y for v in centered_y])
                     except statistics.StatisticsError:
                         pass
                 correlations.append([left,right,len(pairs),round(value,5) if value is not None else 'Undefined'])

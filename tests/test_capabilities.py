@@ -37,6 +37,15 @@ class AnalysisCapabilities(unittest.TestCase):
         r=c.predict({'model':model,'csv':'"quoted,feature"\n0'})
         self.assertEqual(r['predictions'][0]['score'],.5)
 
+    def test_profile_correlation_is_stable_for_tiny_and_mixed_units(self):
+        for left_scale,right_scale in [(1e-200,1e-200),(1e99,1e-200),(1e-310,1e99)]:
+            data={'csv':'left,right,constant\n'+'\n'.join(
+                f'{index*left_scale},{-index*right_scale},1e-200' for index in range(1,5))}
+            rows=enhanced('/api/data/profile',data,d.profile)['capabilities']['tables'][1]['rows']
+            self.assertEqual(rows[0],['left','right',4,-1.0])
+            self.assertEqual(rows[1][-1],'Undefined')
+            self.assertEqual(rows[2][-1],'Undefined')
+
     def test_profile_correlation_outlier_and_constant(self):
         data={'csv':'x,y,constant\n1,2,5\n2,4,5\n3,6,5\n4,8,5\n100,200,5\n'}
         r=enhanced('/api/data/profile',data,d.profile)['capabilities']['tables']
