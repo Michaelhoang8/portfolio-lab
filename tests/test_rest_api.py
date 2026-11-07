@@ -1,4 +1,7 @@
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -43,6 +46,19 @@ class RestTests(unittest.TestCase):
 
     def create(self,title=None,headers=None):
         return self.request('POST',body={'title':title or str(uuid.uuid4()),'content':'Test content','status':'draft'},headers=headers)
+
+    def test_command_line_demo_exercises_protocol_and_cleans_up_its_note(self):
+        before=self.request()[2]['total']
+        result=subprocess.run([sys.executable,'-m','portfolio.rest_client','--base-url',self.url],
+                              cwd=Path(__file__).resolve().parents[1],
+                              env={**os.environ,'PORTFOLIO_API_KEY':self.key},
+                              capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('HEAD /api/v1/notes/',result.stdout)
+        self.assertIn(': 304',result.stdout)
+        self.assertIn(': 204',result.stdout)
+        self.assertNotIn(self.key,result.stdout+result.stderr)
+        self.assertEqual(self.request()[2]['total'],before)
 
     def test_nonstandard_json_is_a_parse_error(self):
         for body in [b'{"title":"a","title":"b"}', b'{"title":NaN}',

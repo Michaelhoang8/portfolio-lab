@@ -22,7 +22,7 @@ In another terminal configured with the same `PORTFOLIO_API_KEY`, run:
 python -m portfolio.rest_client
 ```
 
-The client creates its own temporary note, retries creation with the same idempotency key, lists notes, gets the resource, updates it, and deletes its temporary note. `--base-url http://127.0.0.1:8765` supports a different local port. The client sends its key to the selected base URL, so choose that destination deliberately.
+The client creates its own temporary note, retries creation with the same idempotency key, lists notes, retrieves the resource, checks HEAD metadata, validates an unchanged version with a 304, updates it, verifies the old validator now returns the changed representation, and deletes its temporary note. An integration test runs this complete CLI workflow against an isolated server and confirms that no demo note remains. `--base-url http://127.0.0.1:8765` supports a different local port. The client sends its key to the selected base URL, so choose that destination deliberately.
 
 ## Resource model and routes
 

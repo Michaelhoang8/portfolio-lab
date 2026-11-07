@@ -21,8 +21,11 @@ def main():
         try:
             response=urlopen(Request(args.base_url.rstrip('/')+path,data=raw,headers=head,method=method),timeout=10)
         except HTTPError as error:
-            with error:
-                raise RuntimeError(f'{error.code}: {error.read().decode()}') from None
+            if error.code==304:
+                response=error
+            else:
+                with error:
+                    raise RuntimeError(f'{error.code}: {error.read().decode()}') from None
         with response:
             text=response.read()
             print(f'{method} {path}: {response.status}')
@@ -36,8 +39,15 @@ def main():
         assert replay['id']==note['id']
         request('GET','/api/v1/notes?page_size=2')
         headers,_=request('GET',path)
-        request('PATCH',path,{'status':'published'},{'If-Match':headers['ETag']})
-        print('Create, replay, pagination, retrieval, and update succeeded.')
+        current_tag=headers['ETag']
+        head,body=request('HEAD',path)
+        assert body is None and head['ETag']==current_tag
+        unchanged,body=request('GET',path,headers={'If-None-Match':current_tag})
+        assert body is None and unchanged['ETag']==current_tag
+        _,updated=request('PATCH',path,{'status':'published'},{'If-Match':current_tag})
+        changed,body=request('GET',path,headers={'If-None-Match':current_tag})
+        assert body==updated and changed['ETag']!=current_tag
+        print('Create, replay, pagination, retrieval, HEAD, conditional reads, and update succeeded.')
     finally:
         if path:
             headers,_=request('GET',path)
