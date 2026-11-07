@@ -24,7 +24,7 @@ def ticket_move(db, ticket_id, data):
         if old is None:
             raise NotFoundError('Ticket not found')
         if old['status'] != status:
-            db.execute('UPDATE tickets SET status=? WHERE id=?', (status, ticket_id))
+            db.execute('UPDATE tickets SET status=?,version=version+1 WHERE id=?', (status, ticket_id))
             db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',
                        (ticket_id, f'{old["status"]} → {status}'))
     return {'id': ticket_id, 'status': status}
@@ -129,13 +129,29 @@ def assignment(data):
     return assignee.strip(),due
 
 
-def ticket_details(db,ticket_id,data):
-    assignee,due=assignment(data)
+def ticket_details(db, ticket_id, data):
+    allowed = {'title','description','priority','assignee','due_date','expected_version'}
+    if set(data) - allowed:
+        raise ValidationError('Unsupported issue detail field')
+    if 'expected_version' in data:
+        integer(data,'expected_version',1)
     with db:
         db.execute('BEGIN IMMEDIATE')
-        old=db.execute('SELECT assignee,due_date FROM tickets WHERE id=?',(ticket_id,)).fetchone()
-        if old is None: raise NotFoundError('Ticket not found')
-        if (old['assignee'],old['due_date'])!=(assignee,due):
-            db.execute('UPDATE tickets SET assignee=?,due_date=? WHERE id=?',(assignee,due,ticket_id))
-            db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',(ticket_id,f"Assignment: {assignee or 'unassigned'}; due: {due or 'none'}"))
-    return {'id':ticket_id,'assignee':assignee,'due_date':due}
+        row = db.execute('SELECT * FROM tickets WHERE id=?',(ticket_id,)).fetchone()
+        if row is None:
+            raise NotFoundError('Ticket not found')
+        old = dict(row)
+        merged = {**old, **data}
+        assignee, due = assignment(merged)
+        values = {'title':text(merged,'title'), 'description':text(merged,'description',4000),
+                  'priority':choice(merged,'priority',('low','medium','high')),
+                  'assignee':assignee, 'due_date':due}
+        changed = [name for name,value in values.items() if old[name] != value]
+        if changed:
+            if 'expected_version' in data and data['expected_version'] != old['version']:
+                raise ConflictError('This issue changed since you opened it. Refresh and review the latest version before saving.')
+            db.execute('UPDATE tickets SET title=?,description=?,priority=?,assignee=?,due_date=?,version=version+1 WHERE id=?',
+                       (*values.values(),ticket_id))
+            db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',
+                       (ticket_id,'Updated '+', '.join(name.replace('_',' ') for name in changed)))
+        return {'id':ticket_id, **values, 'version':old['version'] + bool(changed)}

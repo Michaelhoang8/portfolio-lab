@@ -34,6 +34,33 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(state['tickets'][0]['status'], 'done')
         self.assertEqual(len(state['events']), 3)
 
+    def test_issue_edit_preserves_omitted_fields_and_audits_once(self):
+        ticket=s.ticket_create(self.db,{'title':'Original','description':'Context','priority':'medium',
+                                      'assignee':'Ada','due_date':'2026-12-01'})['id']
+        first=s.ticket_details(self.db,ticket,{'title':'Revised','expected_version':1})
+        self.assertEqual(first['version'],2)
+        self.assertEqual((first['assignee'],first['due_date'],first['description']),('Ada','2026-12-01','Context'))
+        replay=s.ticket_details(self.db,ticket,{'title':'Revised','expected_version':1})
+        self.assertEqual(first,replay)
+        self.assertEqual(len(s.snapshot(self.db)['events']),2)
+        with self.assertRaises(ValidationError):
+            s.ticket_details(self.db,ticket,{'description':'','priority':'high','expected_version':2})
+        self.assertEqual(s.snapshot(self.db)['tickets'][0]['priority'],'medium')
+
+    def test_stale_issue_edits_cannot_overwrite_newer_details_or_status(self):
+        ticket=s.ticket_create(self.db,{'title':'Original','description':'Context','priority':'medium'})['id']
+        s.ticket_move(self.db,ticket,{'status':'active'})
+        with self.assertRaises(ConflictError):
+            s.ticket_details(self.db,ticket,{'title':'Stale','expected_version':1})
+        latest=s.ticket_details(self.db,ticket,{'title':'Current','expected_version':2})
+        self.assertEqual(latest['version'],3)
+        with self.assertRaises(ConflictError):
+            s.ticket_details(self.db,ticket,{'assignee':'Lost update','expected_version':2})
+        with self.assertRaises(ValidationError):
+            s.ticket_details(self.db,ticket,{'expected_version':True})
+        current=s.snapshot(self.db)['tickets'][0]
+        self.assertEqual((current['title'],current['assignee'],current['status']),('Current','','active'))
+
     def test_stock_rejects_overdraw_without_writing_ledger(self):
         pid = self.product()
         s.movement_create(self.db, {'product_id':pid,'delta':5,'note':'Receive'})

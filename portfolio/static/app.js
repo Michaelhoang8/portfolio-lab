@@ -16,7 +16,10 @@ async function refresh() {
   if (stockChanged) document.dispatchEvent(new Event('stock-updated'));
 }
 function localToday() { const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
+const ticketDrafts = new Map();
+const editFields = ['title','description','priority','assignee','due'];
 function renderTickets() {
+  const opened = new Set([...document.querySelectorAll('.ticket-assignment[open]')].map(panel=>panel.querySelector('[data-save-assignment]').dataset.saveAssignment));
   stats('#ticket-stats', [['Total issues', state.tickets.length], ['In progress', state.tickets.filter(t => t.status === 'active').length], ['Completed', state.tickets.filter(t => t.status === 'done').length]]);
   const search = $('#search').value.toLowerCase(), priority = $('#priority-filter').value;
   const filtered = state.tickets.filter(t => `${t.title} ${t.description}`.toLowerCase().includes(search) && (!priority || t.priority === priority));
@@ -24,8 +27,13 @@ function renderTickets() {
   $('#reset-filters').hidden = !search && !priority;
   $('#board').innerHTML = ['backlog', 'active', 'done'].map(status => {
     const tickets = filtered.filter(t => t.status === status);
-    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment"><summary>${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save assignment</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
+    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment" data-version="${t.version}"><summary>Edit issue · ${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Title<input data-title="${t.id}" value="${escape(t.title)}" maxlength="200" required></label><label>Description<textarea data-description="${t.id}" maxlength="4000" required>${escape(t.description)}</textarea></label><label>Priority<select data-priority="${t.id}">${["low","medium","high"].map(p=>`<option ${p===t.priority?"selected":""}>${p}</option>`).join("")}</select></label><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save changes</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
   }).join('');
+  document.querySelectorAll('.ticket-assignment').forEach(panel=>{
+    const id=panel.querySelector('[data-save-assignment]').dataset.saveAssignment,draft=ticketDrafts.get(id);
+    panel.open=opened.has(id);
+    if(draft){for(const key of editFields)panel.querySelector(`[data-${key}]`).value=draft.values[key];panel.dataset.version=draft.version;panel.querySelector('.assignment-feedback').textContent='Unsaved changes preserved.';}
+  });
   $('#activity').innerHTML = state.events.slice(0, 8).map(e => `<div class="activity">#${e.ticket_id} · ${escape(e.detail)}<small>${escape(new Date(e.created_at).toLocaleString())}</small></div>`).join('') || empty('Create an issue to start the activity trail.');
 }
 function render() {
@@ -104,19 +112,27 @@ $('#export').addEventListener('click', () => {
 navigate(location.hash.slice(1));
 refresh().catch(error => notice(error.message,true));
 
+$('#board').addEventListener('input',event=>{
+ const panel=event.target.closest('.ticket-assignment');if(!panel)return;
+ const id=panel.querySelector('[data-save-assignment]').dataset.saveAssignment;
+ const values=Object.fromEntries(editFields.map(key=>[key,panel.querySelector(`[data-${key}]`).value]));
+ const dirty=editFields.some(key=>{const field=panel.querySelector(`[data-${key}]`);const initial=field.tagName==='SELECT'?[...field.options].find(option=>option.defaultSelected)?.value:field.defaultValue;return field.value!==initial;});
+ if(dirty)ticketDrafts.set(id,{values,version:panel.dataset.version});else ticketDrafts.delete(id);
+});
 $('#board').addEventListener('click',async event=>{
  const id=event.target.dataset.saveAssignment;if(!id)return;
  const details=event.target.closest('details');
- const fields=[...details.querySelectorAll('input,button')];
+ const fields=[...details.querySelectorAll('input,textarea,select,button')];
  const feedback=details.querySelector('.assignment-feedback');
  if(fields.some(field=>field.disabled))return;
  const invalid=fields.find(field=>field.checkValidity&&!field.checkValidity());
  if(invalid){invalid.reportValidity();return;}
- fields.forEach(field=>field.disabled=true);feedback.textContent='Saving assignment…';
+ fields.forEach(field=>field.disabled=true);feedback.textContent='Saving issue…';
  try{
-  await post(`/api/tickets/${id}/details`,{assignee:details.querySelector('[data-assignee]').value,due_date:details.querySelector('[data-due]').value});
-  await refresh();notice('Assignment and deadline saved.');
+  await post(`/api/tickets/${id}/details`,{title:details.querySelector('[data-title]').value,description:details.querySelector('[data-description]').value,priority:details.querySelector('[data-priority]').value,assignee:details.querySelector('[data-assignee]').value,due_date:details.querySelector('[data-due]').value,expected_version:Number(details.dataset.version)});
+  ticketDrafts.delete(id);
+  await refresh();notice('Issue details saved.');
   const updated=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
-  if(updated){updated.open=true;updated.querySelector('.assignment-feedback').textContent='Assignment and deadline saved.';updated.querySelector('summary').focus();}
+  if(updated){updated.open=true;updated.querySelector('.assignment-feedback').textContent='Issue details saved.';updated.querySelector('summary').focus();}
  }catch(error){notice(error.message,true);feedback.textContent=error.message;fields.forEach(field=>field.disabled=false);}
 });

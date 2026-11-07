@@ -2,7 +2,7 @@
 
 These are proposed milestones, not claims of completed work. Make future commits when each change is actually implemented and verified.
 
-1. **Issue Desk:** add issue editing and archival, then test that audit history remains intact. Add pagination and URL-backed filters for larger datasets.
+1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. Next, add archival, pagination, and URL-backed filters for larger datasets.
 2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. Next, add a complete ledger CSV export.
 3. **Experiment Studio:** add experiment hypotheses and guardrail metrics. Implement a documented two-proportion comparison with tests against an independent reference. Keep sample-size planning separate from observed outcomes.
 4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and API contract tests.

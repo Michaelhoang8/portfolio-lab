@@ -48,6 +48,8 @@ def initialize(path):
         for name in ('assignee','due_date'):
             if name not in columns:
                 db.execute(f"ALTER TABLE tickets ADD COLUMN {name} TEXT NOT NULL DEFAULT ''")
+        if 'version' not in columns:
+            db.execute("ALTER TABLE tickets ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
         db.commit()
         from .rest_api import SCHEMA as REST_SCHEMA
         db.executescript(REST_SCHEMA)
