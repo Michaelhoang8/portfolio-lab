@@ -17,11 +17,11 @@ Sixteen working applications in a shared, dependency-free Python workspace: prod
 | Secret Sentinel | Identify credential patterns without returning raw secret values | Pattern matching, overlap deduplication, report redaction |
 | Classifier Lab | Train, export, reload, and run batch inference with logistic regression models | Reproducible splits, training-only scaling, validated model portability |
 | Retrieval Studio | Rank documents with explainable TF-IDF similarity | Sparse vectors, cosine similarity, term contributions |
-| Model Observatory | Inspect classification metrics and threshold tradeoffs | Tied-rank AUC, calibration bins, probability losses |
+| Model Observatory | Inspect classification metrics, threshold tradeoffs, and row-level errors | Tied-rank AUC, calibration bins, complete prediction audits |
 | Manifest Review | Review selected Kubernetes Deployment policies | Structured configuration checks, scoped findings |
 | Pipeline Planner | Simulate dependency graphs, workers, and retries | Discrete-event scheduling, cycle detection, failure propagation |
-| Reliability Desk | Calculate request-based SLO budgets and burn rates | Weighted aggregation, gap detection, explicit reporting windows |
-| REST Studio / Notes API | Authenticated CRUD, search, pagination, and request inspection | OpenAPI, ETags, idempotency, transaction-safe concurrent writes |
+| Reliability Desk | Calculate SLO budgets, burn rates, and missing monitoring coverage | Weighted aggregation, compact gap ranges, explicit reporting windows |
+| REST Studio / Notes API | Authenticated CRUD, pagination, conditional reads, and request inspection | OpenAPI, ETags/304, idempotency, transaction-safe writes |
 
 The REST explorer is at **http://127.0.0.1:8000/rest**. Follow [REST API setup](docs/REST_API.md) to configure `PORTFOLIO_API_KEY` before starting the server. The OpenAPI contract is served at `/openapi.json`.
 
@@ -97,7 +97,7 @@ The new analysis fields are included in existing JSON report downloads. Cleaning
 
 All extension routes require `Content-Type: application/json` and `X-Portfolio-Client: browser`, like the existing local APIs:
 
-- `POST /api/tickets/{id}/details`: `{ "assignee": "Review team", "due_date": "2026-12-01" }`. Empty strings clear assignment/deadline. Changes are audited; repeating identical values adds no event.
+- `POST /api/tickets/{id}/details`: `{ "assignee": "Review team", "due_date": "2026-12-01", "expected_version": 1 }`. Empty strings clear assignment/deadline. Changes are audited; repeating identical values adds no event.
 - `POST /api/extensions/stock-plan`: `{ "lead_days": 7, "safety_days": 7 }`. Reads persisted stock movements; writes no purchase orders.
 - `POST /api/extensions/experiment-plan`: `{ "baseline": 0.1, "absolute_lift": 0.02, "power": 0.8, "alpha": 0.05 }`. Returns 3,841 visitors per variant for this example.
 - `POST /api/extensions/predict`: `{ "model": <model object from training report>, "csv": "feature_a,feature_b\n1,2", "threshold": 0.5 }`. Matches feature names, validates vector lengths/scales, and reuses the fitted preprocessing.
@@ -118,11 +118,11 @@ Avoid claiming production deployments, real business impact, or forecast accurac
 
 ### Feature polish verification
 
-The latest pass verified every populated workspace at 390px width without horizontal page overflow. All twelve analysis apps rejected empty input, recovered with samples, and exported parseable reports. Cleaning audits retained all 12 sample source records while cleaned CSV contained 10 output records; secret finding exports omitted matched values. REST checks covered 401-to-200 recovery, ten-entry history truncation, replay preparation without sending, credential-free collection export, and clearing key/history on reload.
+An earlier visual pass verified every populated workspace at 390px width without horizontal page overflow. All twelve analysis apps rejected empty input, recovered with samples, and exported parseable reports. Cleaning audits retained all 12 sample source records while cleaned CSV contained 10 output records; secret finding exports omitted matched values. REST checks covered 401-to-200 recovery, ten-entry history truncation, replay preparation without sending, credential-free collection export, and clearing key/history on reload.
 
 Regression fixes include stock-plan invalidation after inventory changes (including results from an in-flight calculation), context-aware Ctrl/Command+Enter for prediction and planning, required numeric settings, quoted CSV feature names in prediction examples, plain-decimal revenue validation, and date-aware replenishment windows that exclude future/old withdrawals. Assignment saves now retain local feedback and keyboard focus. Diagnostic tables use bounded scrolling, keyboard focus, and readable numeric formatting; exports preserve full precision.
 
-The automated suite covers 101 domain/API cases. Interaction, download, and responsive checks above are manual browser checks, not an automated cross-browser compatibility guarantee.
+The automated suites cover domain/API behavior and JavaScript request, import, and state handling. Interaction, download, and responsive checks above are manual browser checks, not an automated cross-browser compatibility guarantee.
 
 ## Run locally
 
@@ -208,29 +208,7 @@ Counts must be integers; visitors must be positive and conversions cannot exceed
 
 The adjusted interval adds one success and one failure to each group, uses the adjusted proportions and sample sizes, and clips bounds to [-1, 1]. The p-value uses `erfc(abs(z)/sqrt(2))` to avoid tail cancellation. These are different methods and may disagree near a cutoff. Regression tests reproduce published [NIST z-test results](https://www.itl.nist.gov/div898/software/dataplot/refman1/auxillar/binotest.htm) and [NIST Agresti–Caffo interval results](https://www.itl.nist.gov/div898/software/dataplot/refman1/auxillar/diffprop.htm), with signs reversed for B minus A. Neither method supports repeated peeking or guarantees practical value.
 
-## Scope and limitations
-
-This is a local, single-user portfolio demo, not an internet-ready service. It binds to loopback and uses Python's development HTTP server. The Notes API has shared-key authentication and pagination; the original apps remain unauthenticated. There is no multi-user authorization, rate limiting, migration runner, or cloud deployment. The custom JSON header and content security policy are limited defense-in-depth measures, not substitutes for production security. Data refreshes after local actions or page reload; there is no live collaboration.
-
-The initial implementation was created with AI assistance. Commit timestamps reflect actual development milestones; no historical activity is simulated. Demo records and experiment outcomes are fictional. See [DEVELOPMENT.md](DEVELOPMENT.md) for practical follow-up work and interview preparation.
-
-### Retry-safe stock movements
-
-Stockroom generates a request key for each movement. Retrying the unchanged form after a network failure reuses that key for the lifetime of the page. The server records the key and ledger entry in the same transaction, so concurrent retries write only once. A replay returns the original movement ID and balance with `replayed: true`; the current balance is available from `/api/state`. Reusing a key with different movement data returns HTTP 409. Rejected movements do not consume keys. API callers should retain and reuse their own key when retrying. Reloading the browser clears its pending key.
-
-### Analysis request lifecycle
-
-The twelve stateless analysis apps expose **Cancel analysis** while a request is active. Switching modes cancels the previous request, and a 60-second timeout restores the controls instead of leaving a page busy indefinitely. Cancellation stops the browser waiting for a result; an already-running server computation may still finish. Input remains in memory after cancellation. File reads discard stale completions when newer input or a sample has been chosen. No request is retried automatically.
-
-Run the frontend checks with `node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs`; they run in CI alongside the Python tests and JavaScript syntax checks.
-
-## Product metadata editing
-
-Stockroom’s **Edit product details** disclosure loads an existing product name and reorder threshold. Saving requires the loaded metadata version; stale edits return 409 and remain in the form. **Discard edits and load saved values** explicitly reloads the current version. SKU stays the stable identity, stock continues to derive from movements, and metadata edits do not create stock movements. Ledger views use the current product name. Metadata does not have a separate audit trail.
-
-## Recent workflow captures
-
-These screenshots use synthetic QA data: [model export and inference](docs/design/saved-model-workflow.png), [experiment comparison](docs/design/experiment-comparison.png), [REST cancellation](docs/design/rest-cancellation.png), [invalid-file recovery](docs/design/ml-file-recovery.png), [pipeline timing diagnostics](docs/design/pipeline-timing.png), and [product metadata editing](docs/design/stockroom-metadata.png). They supplement the automated tests; they are not automated visual regression coverage.
+## Workspace reliability
 
 Workspace reads and saves share the REST transport’s 30-second complete-response deadline. A lost write response explains that the operation may have completed and requires checking current data before retrying; stock movements retain their request key for safe same-input retries. Pending issue editors and status controls remain locked across unrelated board refreshes. A delayed-save browser check created another issue during an edit, verified the draft stayed disabled and intact, and confirmed controls recovered after completion ([capture](docs/design/issue-concurrent-save.png)).
 
@@ -238,8 +216,43 @@ Issue Desk status changes now send `expected_version`. Changed statuses from sta
 
 Workspace refreshes apply only the most recently requested response. Superseded responses and failures cannot overwrite newer data or display stale errors. If the newest refresh fails, the last successfully applied snapshot stays visible. JavaScript regression tests explicitly complete concurrent requests out of order, simulate newer-request failures, and check malformed response recovery.
 
+### Retry-safe stock movements
+
+Stockroom generates a request key for each movement. Retrying the unchanged form after a network failure reuses that key for the lifetime of the page. The server records the key and ledger entry in the same transaction, so concurrent retries write only once. A replay returns the original movement ID and balance with `replayed: true`; the current balance is available from `/api/state`. Reusing a key with different movement data returns HTTP 409. Rejected movements do not consume keys. API callers should retain and reuse their own key when retrying. Reloading the browser clears its pending key.
+
+## Stockroom views and metadata
+
+Stockroom’s collapsed inventory filter searches product names/SKUs and selects reorder-needed, out-of-stock, or healthy items. Sorting supports product name, lowest stock, or largest shortfall below the reorder threshold. Filters are stored in the URL (`stock_q`, `stock_status`, `stock_sort`) and survive reloads; Reset removes them without touching Issue Desk parameters. Overview totals remain global, and filtering does not rebuild or clear the movement form. Tests cover combined filters, threshold boundaries, ordering, and non-mutating sorting. Browser checks verified a preserved movement draft, reload persistence, empty results, and reset ([capture](docs/design/stockroom-filters.png)).
+
+Stockroom’s **Edit product details** disclosure loads an existing product name and reorder threshold. Saving requires the loaded metadata version; stale edits return 409 and remain in the form. **Discard edits and load saved values** explicitly reloads the current version. SKU stays the stable identity, stock continues to derive from movements, and metadata edits do not create stock movements. Ledger views use the current product name. Metadata does not have a separate audit trail.
+
+## Analysis lifecycle and local files
+
+The twelve stateless analysis apps expose **Cancel analysis** while a request is active. Switching modes cancels the previous request, and a 60-second timeout restores the controls instead of leaving a page busy indefinitely. Cancellation stops the browser waiting for a result; an already-running server computation may still finish. Input remains in memory after cancellation. File reads discard stale completions when newer input or a sample has been chosen. No request is retried automatically.
+
 All twelve stateless analysis apps now accept local UTF-8 files appropriate to their input format. A shared decoder enforces each tool’s byte limit and consistent recovery messages. Eleven JavaScript tests cover byte limits, BOM/Unicode decoding, unreadable files, invalid encoding, and stale-file completions across the data, ML, security, and DevOps collections. Files load into the editor first; analysis requires an explicit run.
 
 The shared JSON decoder rejects unpaired Unicode surrogate escapes in values and object keys before data reaches SQLite or analysis functions. Valid paired escapes and ordinary Unicode remain supported; malformed-input errors do not echo submitted content.
 
-Stockroom’s collapsed inventory filter searches product names/SKUs and selects reorder-needed, out-of-stock, or healthy items. Sorting supports product name, lowest stock, or largest shortfall below the reorder threshold. Filters are stored in the URL (`stock_q`, `stock_status`, `stock_sort`) and survive reloads; Reset removes them without touching Issue Desk parameters. Overview totals remain global, and filtering does not rebuild or clear the movement form. Tests cover combined filters, threshold boundaries, ordering, and non-mutating sorting. Browser checks verified a preserved movement draft, reload persistence, empty results, and reset ([capture](docs/design/stockroom-filters.png)).
+Run the JavaScript checks with `node --test`. Test discovery includes request cancellation, response deadlines, workspace ordering, inventory filtering, CSV headers, and file-import recovery; CI runs them alongside Python tests and JavaScript syntax checks.
+
+## Workflow evidence
+
+These captures use synthetic QA data and supplement automated tests. They are manual browser evidence, not automated visual regression coverage.
+
+| Workflow | Capture |
+| --- | --- |
+| Issue concurrency | [Pending save](docs/design/issue-concurrent-save.png), [status conflict](docs/design/issue-status-conflict.png) |
+| Stockroom | [Metadata editing](docs/design/stockroom-metadata.png), [inventory filters](docs/design/stockroom-filters.png) |
+| Experiment comparison | [Difference interval and evidence](docs/design/experiment-comparison.png) |
+| Data reports | [Paged revenue breakdown](docs/design/revenue-pagination.png) |
+| Security inputs and results | [Local file import](docs/design/security-file-import.png), [finding pagination](docs/design/security-pagination.png) |
+| Machine learning | [Saved models](docs/design/saved-model-workflow.png), [file recovery](docs/design/ml-file-recovery.png), [prediction audit](docs/design/prediction-audit.png) |
+| DevOps diagnostics | [Pipeline timing](docs/design/pipeline-timing.png), [monitoring gaps](docs/design/reliability-coverage.png), [metrics import](docs/design/devops-file-import.png) |
+| REST requests | [Cancellation](docs/design/rest-cancellation.png), [conditional read](docs/design/rest-conditional-read.png) |
+
+## Scope and limitations
+
+This is a local, single-user portfolio demo, not an internet-ready service. It binds to loopback and uses Python's development HTTP server. The Notes API has shared-key authentication and pagination; the original apps remain unauthenticated. There is no multi-user authorization, rate limiting, migration runner, or cloud deployment. The custom JSON header and content security policy are limited defense-in-depth measures, not substitutes for production security. Data refreshes after local actions or page reload; there is no live collaboration.
+
+The initial implementation was created with AI assistance. Commit timestamps reflect actual development milestones; no historical activity is simulated. Demo records and experiment outcomes are fictional. See [DEVELOPMENT.md](DEVELOPMENT.md) for practical follow-up work and interview preparation.

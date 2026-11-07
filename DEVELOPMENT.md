@@ -2,12 +2,14 @@
 
 These are proposed milestones, not claims of completed work. Make future commits when each change is actually implemented and verified.
 
-1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. On conflict, users can inspect the newest saved values alongside their untouched draft and explicitly load them before editing again. Search, priority, and open due-date filters persist in the URL, along with ordering by newest, priority, or due date. Next, add archival and pagination for larger datasets.
-2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. A streamed full-ledger CSV export includes running balances. Product names and reorder thresholds are editable with version checks; SKU remains stable. Next, add receiving documents and supplier lead-time history.
+1. **Issue Desk:** issue details and browser status changes preserve audit history and reject stale versions. On conflict, users can inspect the newest saved values alongside their untouched draft and explicitly load them before editing again. Search, priority, and open due-date filters persist in the URL, along with ordering by newest, priority, or due date. Next, add archival and pagination for larger datasets.
+2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. A streamed full-ledger CSV export includes running balances. Product names and reorder thresholds are editable with version checks; SKU remains stable. Product/SKU search and stock-status filters survive reloads without clearing movement drafts. Next, add receiving documents and supplier lead-time history.
 3. **Experiment Studio:** a direct difference interval and pooled two-proportion test are implemented and checked against published NIST examples. Next, add experiment hypotheses and guardrail metrics. Sample-size planning remains separate from observed outcomes.
-4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and API contract tests.
+4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and external schema validation. Domain and HTTP contract tests already run in CI, including concurrent writes, conditional reads, and CLI cleanup.
 5. **Multi-user deployment:** add authentication, ownership checks on every record, CSRF protection, and secrets management before exposing the service publicly. Local online snapshots and recovery verification are implemented; encrypted off-device backups and retention remain deployment work.
 6. **Frontend quality:** automate browser flows, add screenshot regression checks at desktop and mobile widths, and conduct a keyboard/screen-reader accessibility review.
+
+Automated JavaScript checks (`node --test`) cover file-import races, complete-response deadlines, cancellation, stale workspace refreshes, and inventory filtering. Manual browser checks cover the current end-to-end workflows; broad visual regression and assistive-technology testing remain future work.
 
 ## Interview walkthrough
 
