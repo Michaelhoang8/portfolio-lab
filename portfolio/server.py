@@ -104,6 +104,7 @@ def handler_for(database, api_key=None):
                      '/data': ('data.html', 'text/html; charset=utf-8'),
                      '/data.js': ('data.js', 'text/javascript; charset=utf-8'),
                      '/data.css': ('data.css', 'text/css; charset=utf-8'),
+                     '/rest_transport.js': ('rest_transport.js', 'text/javascript; charset=utf-8'),
                      '/csv_columns.js': ('csv_columns.js', 'text/javascript; charset=utf-8'),
                      '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                      '/observatory.js': ('observatory.js', 'text/javascript; charset=utf-8'),

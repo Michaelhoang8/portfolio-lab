@@ -146,7 +146,7 @@ python -m portfolio.server --port 8080 --database data/another.db
 ```sh
 python -m unittest discover -s tests -v
 node --check portfolio/static/app.js
-node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs tests/ui_utilities.test.cjs
+node --test tests/ui_requests.test.cjs tests/ui_csv_columns.test.cjs tests/ui_utilities.test.cjs tests/ui_rest_transport.test.cjs
 ```
 
 Node is optional for running the apps; it is used for JavaScript syntax and lifecycle checks. CI runs the Python tests on 3.11, 3.12, and 3.13. The original nine tests cover real HTTP behavior, persistence, validation, SQL-like input, duplicate SKUs, audit events, Wilson boundaries, rollback on overdraw, and simultaneous withdrawals through separate connections.

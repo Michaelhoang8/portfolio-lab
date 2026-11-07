@@ -1,13 +1,16 @@
 'use strict';
 const $=s=>document.querySelector(s);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let pageResult=null;
+let pageResult=null,activeRequest=null;
+$('#cancel-request').addEventListener('click',()=>activeRequest?.abort());
+window.addEventListener('pagehide',()=>activeRequest?.abort());
 const methods={list:'GET',create:'POST',get:'GET',replace:'PUT',update:'PATCH',delete:'DELETE'};
 function view(){const op=$('#operation').value;$('#filters').hidden=op!=='list';$('#id-label').hidden=['list','create'].includes(op);$('#etag-label').hidden=!['replace','update','delete'].includes(op);$('#idem-label').hidden=op!=='create';$('#body-label').hidden=!['create','replace','update'].includes(op);}
 function notice(text,error=false){$('#notice').textContent=text;$('#notice').className=error?'error':'';}
 $('#operation').addEventListener('change',view);
 $('#sample').addEventListener('click',()=>{$('#operation').value='create';$('#body').value=JSON.stringify({title:'API design review',content:'Verify pagination, optimistic concurrency, and idempotent retries.',status:'draft'},null,2);$('#idem').value=crypto.randomUUID();view();notice('Sample ready. Send it to create a real note.');});
 $('#run').addEventListener('click',async()=>{
+ if(activeRequest)return;
  const op=$('#operation').value,method=methods[op];let path='/api/v1/notes';const headers={'X-API-Key':$('#key').value};
  if(!headers['X-API-Key']){notice('Enter the key configured on your server.',true);return;}
  if(!['list','create'].includes(op)){const id=$('#note-id').value.trim();if(!/^[0-9a-f-]{36}$/.test(id)){notice('Enter a note UUID.',true);return;}path+='/'+id;}
@@ -17,7 +20,8 @@ $('#run').addEventListener('click',async()=>{
  const options={method,headers};if(['create','replace','update'].includes(op)){headers['Content-Type']='application/json';options.body=$('#body').value;}
  const snapshot=Object.fromEntries(historyFields.map(id=>[id,$('#'+id).value]));
  const controls=[...document.querySelectorAll('input,select,textarea,button')];const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);$('#copy-response').textContent='Copy body';document.querySelector('.results').setAttribute('aria-busy','true');$('#request-caption').textContent=`${method} ${path} · Sending…`;const start=performance.now();notice('Sending request…');
- try{const response=await fetch(path,options);const text=await response.text();let data;try{data=text?JSON.parse(text):null;}catch{data=text;}
+ const controller=new AbortController();activeRequest=controller;$('#cancel-request').hidden=false;$('#cancel-request').disabled=false;
+ try{const {response,text}=await window.restTransport.send(path,options,{signal:controller.signal});let data;try{data=text?JSON.parse(text):null;}catch{data=text;}
  $('#summary').innerHTML=[['HTTP status',response.status],['Method',method],['Elapsed',`${Math.round(performance.now()-start)} ms`]].map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('');
  $('#headers').textContent=['content-type','location','etag','idempotency-replayed','x-request-id','allow'].filter(h=>response.headers.has(h)).map(h=>`${h}: ${response.headers.get(h)}`).join('\n');
  recordHistory({method,path,status:response.status,elapsed_ms:Math.round(performance.now()-start),body:options.body||null,headers:Object.fromEntries(Object.entries(headers).filter(([key])=>key!=='X-API-Key')),form:snapshot});
@@ -27,7 +31,7 @@ $('#run').addEventListener('click',async()=>{
  pageResult=response.ok&&op==='list'&&Array.isArray(data?.items)?{data,form:snapshot}:null;renderPagination();
  if(response.ok&&data?.id){$('#note-id').value=data.id;if(response.headers.has('etag'))$('#etag').value=response.headers.get('etag');}
  notice(response.ok?'Request succeeded. Inspect the status, headers, and body below.':data?.detail||'Request failed.',!response.ok);
- }catch(error){notice(error.message,true);$('#request-caption').textContent=`${method} ${path} · Network failure; any response below is from the previous request.`;}finally{controls.forEach((c,i)=>c.disabled=disabled[i]);$('#copy-response').disabled=$('#response').textContent==='No request sent.';document.querySelector('.results').setAttribute('aria-busy','false');renderPagination();$('#export-requests').disabled=!requestHistory.length;}
+ }catch(error){notice(window.restTransport.recoveryMessage(error,method,!!headers['Idempotency-Key']),true);$('#request-caption').textContent=`${method} ${path} · No complete response; any response below is from the previous request.`;}finally{activeRequest=null;$('#cancel-request').hidden=true;controls.forEach((c,i)=>c.disabled=disabled[i]);$('#copy-response').disabled=$('#response').textContent==='No request sent.';document.querySelector('.results').setAttribute('aria-busy','false');renderPagination();$('#export-requests').disabled=!requestHistory.length;}
 });
 $('#notes').addEventListener('click',event=>{const id=event.target.dataset.id;if(!id)return;$('#note-id').value=id;$('#etag').value='';$('#operation').value='get';view();notice('Note selected. Send GET to retrieve its current ETag.');});
 $('#body').value=JSON.stringify({title:'Example note',content:'Created through the versioned REST API.',status:'draft'},null,2);view();
