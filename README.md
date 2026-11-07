@@ -1,6 +1,6 @@
 # Portfolio Lab
 
-Three working full-stack applications in a shared, dependency-free Python workspace. Browser interfaces, JSON APIs, SQLite persistence, transactional domain logic, and regression tests are included.
+Six working applications in a shared, dependency-free Python workspace: three product apps and three data apps. Browser interfaces, JSON APIs, SQLite persistence for product records, stateless CSV processing, and regression tests are included.
 
 ![Experiment Studio browser preview](docs/experiment-studio.png)
 
@@ -9,6 +9,11 @@ Three working full-stack applications in a shared, dependency-free Python worksp
 | Issue Desk | Create, search, prioritize, and move issues across a three-stage board | Audit events, validation, idempotent status updates |
 | Stockroom | Track products, receipts, withdrawals, and reorder thresholds | Immutable movement ledger, concurrent-write correctness |
 | Experiment Studio | Save A/B conversion counts and compare rates with 95% Wilson intervals | Numeric validation, statistical edge cases, uncertainty presentation |
+| Dataset Explorer | Profile uploaded CSVs, missingness, duplicates, frequent values, and numeric distributions | Bounded parsing, type inference, descriptive statistics |
+| Pipeline Studio | Trim cells, drop blank rows, deduplicate, and export cleaned CSVs | Ordered transformations, idempotence, safe exports |
+| Revenue Lens | Map sales columns, aggregate month/category totals, and inspect rejected records | Decimal arithmetic, validation, transparent data quality reporting |
+
+The three data apps are at **http://127.0.0.1:8000/data** after starting the server. Use **Load sample** for fictional data containing deliberate quality problems. See [Data Lab documentation](docs/DATA_LAB.md).
 
 ## Run locally
 

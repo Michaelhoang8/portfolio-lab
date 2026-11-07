@@ -2,6 +2,7 @@
 import csv
 import io
 import math
+import re
 import statistics
 from collections import Counter, defaultdict
 from datetime import date
@@ -61,6 +62,8 @@ def profile(data):
 def safe_csv(headers, records):
     # Export text cannot become a spreadsheet formula when opened in Excel.
     def safe(value):
+        if re.fullmatch(r'-[0-9]+(?:\.[0-9]+)?', value):
+            return value
         return "'" + value if value.lstrip().startswith(('=', '+', '-', '@')) or value.startswith(('\t','\r')) else value
     output = io.StringIO(newline='')
     writer = csv.writer(output)
@@ -113,7 +116,10 @@ def sales(data):
     for number, row in enumerate(records,2):
         try:
             day_text = row[fields['date']].strip()
-            day = date.fromisoformat(day_text)
+            try:
+                day = date.fromisoformat(day_text)
+            except ValueError:
+                raise ValueError('Date must be a valid YYYY-MM-DD date') from None
             if day.isoformat() != day_text:
                 raise ValueError('Date must be YYYY-MM-DD')
             category = row[fields['category']].strip()
@@ -125,7 +131,10 @@ def sales(data):
                 raise ValueError('Amount must be finite and within ±1 billion')
             if amount != amount.quantize(Decimal('.01')):
                 raise ValueError('Amount must have at most two decimal places')
-        except (ValueError, InvalidOperation) as error:
+        except InvalidOperation:
+            rejected.append({'record':number, 'reason':'Amount must be a plain number with at most two decimals', 'values':row})
+            continue
+        except ValueError as error:
             rejected.append({'record':number, 'reason':str(error) or 'Invalid amount', 'values':row})
             continue
         accepted += 1
