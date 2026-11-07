@@ -1,6 +1,6 @@
 # Portfolio Lab
 
-Twelve working applications in a shared, dependency-free Python workspace: three product apps, three data apps, three defensive security apps, and three machine-learning apps. Browser interfaces, JSON APIs, SQLite persistence for product records, stateless analysis, and regression tests are included.
+Fifteen working applications in a shared, dependency-free Python workspace: product, data, defensive security, machine-learning, and cloud/DevOps collections. Browser interfaces, JSON APIs, SQLite persistence for product records, stateless analysis, and regression tests are included.
 
 ![Experiment Studio browser preview](docs/experiment-studio.png)
 
@@ -18,6 +18,11 @@ Twelve working applications in a shared, dependency-free Python workspace: three
 | Classifier Lab | Train and export a binary logistic regression model | Reproducible splits, training-only scaling, held-out evaluation |
 | Retrieval Studio | Rank documents with explainable TF-IDF similarity | Sparse vectors, cosine similarity, term contributions |
 | Model Observatory | Inspect classification metrics and threshold tradeoffs | Tied-rank AUC, calibration bins, probability losses |
+| Manifest Review | Review selected Kubernetes Deployment policies | Structured configuration checks, scoped findings |
+| Pipeline Planner | Simulate dependency graphs, workers, and retries | Discrete-event scheduling, cycle detection, failure propagation |
+| Reliability Desk | Calculate request-based SLO budgets and burn rates | Weighted aggregation, gap detection, explicit reporting windows |
+
+The cloud/DevOps apps are at **http://127.0.0.1:8000/devops**. See [DevOps Lab documentation](docs/DEVOPS_LAB.md). These are local review and simulation tools; no cloud resources are created.
 
 The ML apps are at **http://127.0.0.1:8000/ml**. See [ML Lab documentation](docs/ML_LAB.md) for algorithms, API contracts, and limitations. Retrieval uses a lexical baseline, not neural semantic embeddings.
 
@@ -53,7 +58,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 45 tests: nine original domain/API tests, ten data tests, thirteen security tests, and thirteen ML tests. CI also checks JavaScript syntax for all four interfaces.
+The full suite now contains 58 tests: nine original domain/API tests, ten data tests, thirteen security tests, thirteen ML tests, and thirteen DevOps tests. CI also checks JavaScript syntax for all five interfaces.
 
 ## Architecture
 

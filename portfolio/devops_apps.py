@@ -160,7 +160,7 @@ def reliability(data):
         requests=sum(b['total'] for b in selected)
         return float(Decimal(sum(b['bad'] for b in selected))/requests/allowance) if requests else None
     last=buckets[-1]['timestamp']
-    recent=[b for b in buckets if b['timestamp']>=last-timedelta(hours=5)]
+    recent=[b for b in buckets if last-b['timestamp']<=timedelta(hours=5)]
     gaps=int((last-buckets[0]['timestamp']).total_seconds()/3600)+1-len(buckets)
     return {'target':target,'total':total,'bad':bad,'success_rate':(total-bad)/total if total else None,
             'allowed_bad':float(budget),'remaining_bad':float(budget-bad),
