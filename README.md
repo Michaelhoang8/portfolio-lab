@@ -58,6 +58,14 @@ Each application has its own typography, navigation treatment, layout, and infor
 
 Browser QA exercised all twelve analysis samples and the authenticated Notes list request. All sixteen interfaces were checked at 390px width without horizontal page overflow; analysis samples were also run at that width. [Mobile example](docs/design/mobile-reliability.png). These are manual checks, not an automated visual regression suite.
 
+## Everyday interactions
+
+Use **All collections** to move between workspaces. Each analysis app offers a task-specific starting state and **Load an example** action. Run with **Ctrl+Enter** (or **Command+Enter**), then use **View results** to move keyboard focus directly to the report. Editing an input clears its previous report and prompts a rerun.
+
+Issue Desk shows filtered counts and a clear-filters action. Product forms keep save feedback beside the submit button. REST Studio labels the last request with its method, URL, status, and completion time, locks request controls while sending, and supports copying the response body. API keys remain unsaved.
+
+The refinement pass manually verified example loading across all twelve analysis apps, result focus, input invalidation, keyboard execution, skip navigation, issue filtering, response copying, and collection-menu layouts across all sixteen apps at 390px width.
+
 ## Run locally
 
 Requires Python 3.11 or later. No pip packages required. Run from this repository:

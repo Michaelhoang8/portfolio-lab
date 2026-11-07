@@ -8,8 +8,8 @@ body[data-app] input:not([type=checkbox]){background:var(--field);color:var(--in
 :where(body[data-app]) :is(.matrix div,.tag){background:var(--bg);color:var(--ink)}
 :where(body[data-app]) .matrix .error-cell{border-left:4px solid #d5804e;background:var(--surface)}
 :where(body[data-app]) .finding .action{color:var(--muted)}
-:where(body[data-app]) nav button[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
-:where(body[data-app]) nav button[aria-pressed=true] :is(small,b){color:inherit;opacity:.85}
+:where(body[data-app]) nav button[data-mode][aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+:where(body[data-app]) nav button[data-mode][aria-pressed=true] :is(small,b){color:inherit;opacity:.85}
 :where(body[data-app]) nav button:focus-visible,:where(body[data-app]) :focus-visible{outline:3px solid var(--blue,var(--accent));outline-offset:3px}
 :where(body[data-app]) .intro h1{overflow-wrap:anywhere}
 :where(body[data-app]) .primary{font-weight:700}
@@ -106,7 +106,7 @@ body[data-app=sales]{--ink:#343b2e;--muted:#757b6d;--blue:#496347;--line:#d6d5c4
 [data-app=sales] .eyebrow{font:11px system-ui;letter-spacing:4px}
 [data-app=sales] nav{display:flex;gap:28px}
 [data-app=sales] nav button{border:0;border-bottom:1px solid var(--line);padding:8px 0;font-weight:400}
-[data-app=sales] nav button[aria-pressed=true]{background:transparent;color:var(--ink);border-bottom:3px solid var(--blue)}
+[data-app=sales] nav button[data-mode][aria-pressed=true]{background:transparent;color:var(--ink);border-bottom:3px solid var(--blue)}
 [data-app=sales] nav :is(small,b){display:none}
 [data-app=sales] .workspace{grid-template-columns:minmax(0,1fr) 275px;gap:35px}
 [data-app=sales] .results{grid-column:1;grid-row:1;border:0;padding:0;background:transparent}
@@ -285,8 +285,8 @@ body[data-app=rest]{--ink:#222;--muted:#6e6e6e;--blue:#b62e35;--line:#cfcfcd;--b
 [data-app=rest] .contract a{color:#ff9ca2}
 [data-app=rest] #run{padding:16px;font-size:15px}
 /* Narrow screens retain identities but put source before results for keyboard order. */
-body[data-app] nav button[aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}
-body[data-app=sales] nav button[aria-pressed=true]{background:transparent;color:var(--ink);border-bottom:3px solid var(--blue)}
+body[data-app] nav button[data-mode][aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}
+body[data-app=sales] nav button[data-mode][aria-pressed=true]{background:transparent;color:var(--ink);border-bottom:3px solid var(--blue)}
 @media(max-width:900px){
  body[data-app] .workspace{display:grid;grid-template-columns:1fr;gap:20px}
  body[data-app] .workspace>.source,body[data-app] .workspace>.results{grid-column:1;grid-row:auto;min-height:0}
@@ -322,3 +322,58 @@ body[data-app=sales] nav button[aria-pressed=true]{background:transparent;color:
 
 [data-app=manifest] #notice{color:#a3c2f8}
 [data-app=inventory] .table-wrap h2{padding:18px 15px;margin:0}
+
+/* Refinements: readable supporting text, reachable actions, and consistent feedback. */
+.collection-menu{position:relative;flex-shrink:0;font:12px/1.5 system-ui;z-index:20}
+.filter-feedback{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:-8px 0 18px;font-size:12px;color:var(--muted)}
+.form-feedback{font-size:12px;line-height:1.6}
+.form-feedback:empty{display:none}
+.collection-menu summary{cursor:pointer;padding:9px 12px;border:1px solid currentColor;border-radius:5px;list-style-position:inside}
+.collection-links{position:absolute;right:0;top:calc(100% + 10px);width:215px;padding:7px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 35px #0002}
+body[data-app] header .collection-links a{display:block;padding:11px 13px;font:13px/1.5 system-ui;text-decoration:none;border-radius:4px;color:var(--ink)}
+.collection-links a:hover,.collection-links a[aria-current=page]{background:var(--bg,var(--paper));text-decoration:underline}
+.skip-link{position:fixed;top:10px;left:10px;transform:translateY(-150%);z-index:100;background:var(--surface);color:var(--ink);padding:12px 20px;border:2px solid currentColor}
+.skip-link:focus{transform:translateY(0)}
+body[data-app] :is(.hint,.help){font-size:12px;line-height:1.7}
+body[data-app] .empty{min-height:290px;padding:35px 22px;gap:10px}
+body[data-app] .empty h3{font-size:21px;max-width:440px;line-height:1.3}
+body[data-app] .empty p{max-width:390px;margin:4px 0 12px;font-size:14px;line-height:1.7}
+body[data-app] .empty small{font-size:11px;margin-top:4px}
+body[data-app] .empty button{padding:10px 18px;border:1px solid var(--line)}
+body[data-app] button.view-results{display:block;margin-top:10px;padding:8px 12px;font-size:12px;border:1px solid var(--line)}
+body[data-app] #notice:empty{display:none}
+body[data-app] #notice.error{color:#a92c35;background:#fff0f0;border-left:3px solid #c3414b;padding:12px;line-height:1.6}
+body[data-app] #result-title{scroll-margin-top:24px}
+body[data-app] .stat strong{font-variant-numeric:tabular-nums}
+body[data-app] :is(.table-scroll,.table-wrap){overscroll-behavior-x:contain}
+body[data-app] .is-working{cursor:progress}
+body[data-app] .is-working:before{content:'';display:inline-block;width:10px;height:10px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;margin-right:10px;animation:working .8s linear infinite}
+@keyframes working{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){body[data-app] .is-working:before{animation:none}}
+[data-app=rest] .response-caption{font-size:12px;overflow-wrap:anywhere;border-bottom:1px solid var(--line);padding:14px 0;color:var(--muted)}
+[data-app=rest] .response-tools{display:flex;align-items:center;justify-content:space-between;gap:15px}
+[data-app=inventory] td:nth-child(2){font-weight:700;font-variant-numeric:tabular-nums;font-size:17px}
+[data-app=inventory] .warning{font-weight:700}
+[data-app=experiments] .result-bottom{flex-wrap:wrap}
+[data-app=search] .result-card small{font:12px system-ui;white-space:nowrap}
+@media(min-width:901px){
+ [data-app=secrets] .intro,[data-app=search] .intro,[data-app=pipeline] .intro{margin-top:28px;margin-bottom:22px}
+ [data-app=secrets] .source,[data-app=search] .source{padding:22px 28px}
+ [data-app=secrets] textarea{height:160px}
+ [data-app=pipeline] #source{height:190px}
+}
+@media(max-width:760px){
+ body[data-app] header{height:auto;min-height:65px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px}
+ body[data-app] header>span:not(#breadcrumb){display:none}
+ body[data-app] .collection-menu{margin-left:auto}
+ body[data-app] .collection-menu summary{padding:8px;font-size:11px}
+ body[data-app] input:not([type=checkbox]),body[data-app] select{font-size:16px;min-height:44px}
+ body[data-app] textarea{font-size:13px}
+ body[data-app] button{min-height:40px}
+ body[data-app] nav button{min-height:44px}
+ body[data-app] .stats{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+ body[data-app] footer{flex-wrap:wrap;gap:18px}
+ body[data-app] .empty{min-height:240px;padding:22px 12px}
+ body[data-app] .finding h3,body[data-app] .result-card h3{flex-wrap:wrap}
+ body[data-app=reliability] .intro{margin-top:0}
+}

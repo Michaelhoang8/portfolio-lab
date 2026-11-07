@@ -16,6 +16,8 @@ function renderTickets() {
   stats('#ticket-stats', [['Total issues', state.tickets.length], ['In progress', state.tickets.filter(t => t.status === 'active').length], ['Completed', state.tickets.filter(t => t.status === 'done').length]]);
   const search = $('#search').value.toLowerCase(), priority = $('#priority-filter').value;
   const filtered = state.tickets.filter(t => `${t.title} ${t.description}`.toLowerCase().includes(search) && (!priority || t.priority === priority));
+  $('#filter-summary').textContent = `${filtered.length} of ${state.tickets.length} issues shown`;
+  $('#reset-filters').hidden = !search && !priority;
   $('#board').innerHTML = ['backlog', 'active', 'done'].map(status => {
     const tickets = filtered.filter(t => t.status === status);
     return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
@@ -39,13 +41,17 @@ async function post(path, data) {
   return result;
 }
 function wireForm(id, path, numbers) {
+  const feedback = document.createElement('p'); feedback.className = 'form-feedback'; feedback.setAttribute('role','status'); $(id).append(feedback);
   $(id).addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget, button = form.querySelector('button');
     const data = Object.fromEntries(new FormData(form)); numbers.forEach(key => data[key] = Number(data[key]));
-    button.disabled = true;
-    try { await post(path,data); form.reset(); await refresh(); notice('Saved to your workspace.'); }
-    catch(error) { notice(error.message,true); }
-    finally { button.disabled = false; }
+    const originalLabel = button.textContent;
+    const feedback = form.querySelector('.form-feedback');
+    feedback.textContent = 'Saving…';
+    button.disabled = true; button.textContent = 'Saving…';
+    try { await post(path,data); form.reset(); await refresh(); notice('Saved to your workspace.'); feedback.textContent = 'Saved to your workspace.'; }
+    catch(error) { notice(error.message,true); feedback.textContent = error.message; }
+    finally { button.disabled = false; button.textContent = originalLabel; }
   });
 }
 wireForm('#ticket-form','/api/tickets',[]);
@@ -58,6 +64,7 @@ $('#board').addEventListener('change', async event => {
   try { await post(`/api/tickets/${select.dataset.ticket}/status`,{status:select.value}); await refresh(); notice('Issue status updated.'); }
   catch(error) { renderTickets(); notice(error.message,true); }
 });
+$('#reset-filters').addEventListener('click',()=>{$('#search').value='';$('#priority-filter').value='';renderTickets();$('#search').focus();});
 $('#search').addEventListener('input', renderTickets);
 $('#priority-filter').addEventListener('change', renderTickets);
 const titles = {tickets:'Issue Desk',inventory:'Stockroom',experiments:'Experiment Studio'};
@@ -65,7 +72,7 @@ function navigate(page) {
   if (!titles[page]) page = 'tickets';
   window.designIdentity(page);
   document.querySelectorAll('.page').forEach(section => section.hidden = section.id !== page);
-  document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('selected',button.dataset.page === page));
+  document.querySelectorAll('[data-page]').forEach(button => {button.classList.toggle('selected',button.dataset.page === page);button.setAttribute('aria-pressed',String(button.dataset.page === page));});
   $('#breadcrumb').textContent = `Workspace / ${titles[page]}`;
   document.title = `${titles[page]} · Portfolio Lab`; notice('');
 }

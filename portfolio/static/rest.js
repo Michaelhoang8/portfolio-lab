@@ -14,15 +14,18 @@ $('#run').addEventListener('click',async()=>{
  if(['replace','update','delete'].includes(op))headers['If-Match']=$('#etag').value;
  if(op==='create'&&$('#idem').value)headers['Idempotency-Key']=$('#idem').value;
  const options={method,headers};if(['create','replace','update'].includes(op)){headers['Content-Type']='application/json';options.body=$('#body').value;}
- const button=$('#run');button.disabled=true;const start=performance.now();notice('Sending request…');
+ const controls=[...document.querySelectorAll('input,select,textarea,button')];const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);$('#copy-response').textContent='Copy body';document.querySelector('.results').setAttribute('aria-busy','true');$('#request-caption').textContent=`${method} ${path} · Sending…`;const start=performance.now();notice('Sending request…');
  try{const response=await fetch(path,options);const text=await response.text();let data;try{data=text?JSON.parse(text):null;}catch{data=text;}
  $('#summary').innerHTML=[['HTTP status',response.status],['Method',method],['Elapsed',`${Math.round(performance.now()-start)} ms`]].map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('');
  $('#headers').textContent=['content-type','location','etag','idempotency-replayed','x-request-id','allow'].filter(h=>response.headers.has(h)).map(h=>`${h}: ${response.headers.get(h)}`).join('\n');
+ $('#request-caption').textContent=`${method} ${path} · ${response.status} · ${new Date().toLocaleTimeString()}`;
  $('#response').textContent=data===null?'(empty body)':typeof data==='string'?data:JSON.stringify(data,null,2);
  $('#notes').innerHTML=Array.isArray(data?.items)?data.items.map(n=>`<div class="note"><div><strong>${esc(n.title)}</strong><small>${esc(n.status)} · v${n.version}</small></div><button data-id="${esc(n.id)}">Select note</button></div>`).join(''):'';
  if(response.ok&&data?.id){$('#note-id').value=data.id;if(response.headers.has('etag'))$('#etag').value=response.headers.get('etag');}
  notice(response.ok?'Request succeeded. Inspect the status, headers, and body below.':data?.detail||'Request failed.',!response.ok);
- }catch(error){notice(error.message,true);}finally{button.disabled=false;}
+ }catch(error){notice(error.message,true);$('#request-caption').textContent=`${method} ${path} · Network failure; any response below is from the previous request.`;}finally{controls.forEach((c,i)=>c.disabled=disabled[i]);$('#copy-response').disabled=$('#response').textContent==='No request sent.';document.querySelector('.results').setAttribute('aria-busy','false');}
 });
 $('#notes').addEventListener('click',event=>{const id=event.target.dataset.id;if(!id)return;$('#note-id').value=id;$('#etag').value='';$('#operation').value='get';view();notice('Note selected. Send GET to retrieve its current ETag.');});
 $('#body').value=JSON.stringify({title:'Example note',content:'Created through the versioned REST API.',status:'draft'},null,2);view();
+
+$('#copy-response').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#response').textContent);$('#copy-response').textContent='Copied';}catch{notice('Clipboard unavailable. Select and copy the response body manually.',true);}});
