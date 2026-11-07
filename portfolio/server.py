@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .db import connect, initialize
 from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api, capabilities
-from .validation import ValidationError, NotFoundError
+from .validation import ValidationError, NotFoundError, ConflictError
 from .json_input import decode
 
 STATIC = Path(__file__).parent / 'static'
@@ -142,6 +142,8 @@ def handler_for(database, api_key=None):
                 self.reply(200 if move else 201, result)
             except NotFoundError as error:
                 self.reply(404, {'error': str(error)})
+            except ConflictError as error:
+                self.reply(409, {'error': str(error)})
             except sqlite3.IntegrityError:
                 self.reply(409, {'error': 'Record conflicts with existing data; SKUs must be unique'})
             except (ValueError, UnicodeError) as error:

@@ -19,6 +19,11 @@ CREATE TABLE IF NOT EXISTS movements (
  id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id),
  delta INTEGER NOT NULL CHECK(delta != 0), note TEXT NOT NULL,
  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE TABLE IF NOT EXISTS movement_requests (
+ request_key TEXT PRIMARY KEY, movement_id INTEGER NOT NULL REFERENCES movements(id),
+ product_id INTEGER NOT NULL REFERENCES products(id), delta INTEGER NOT NULL,
+ note TEXT NOT NULL, stock_after INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS movements_product ON movements(product_id);
 CREATE TABLE IF NOT EXISTS experiments (
  id INTEGER PRIMARY KEY, name TEXT NOT NULL,
  a_visitors INTEGER NOT NULL, a_conversions INTEGER NOT NULL,

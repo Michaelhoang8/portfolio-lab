@@ -45,17 +45,32 @@ async function post(path, data) {
   return result;
 }
 function wireForm(id, path, numbers) {
+  let pendingMovement = null;
   const feedback = document.createElement('p'); feedback.className = 'form-feedback'; feedback.setAttribute('role','status'); $(id).append(feedback);
   $(id).addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget, button = form.querySelector('button');
+    if (form.dataset.saving) return;
     const data = Object.fromEntries(new FormData(form)); numbers.forEach(key => data[key] = Number(data[key]));
+    if (path === '/api/movements') {
+      const signature = JSON.stringify(data);
+      if (!pendingMovement || pendingMovement.signature !== signature) pendingMovement = {signature, key:crypto.randomUUID()};
+      data.request_key = pendingMovement.key;
+    }
+    const controls = [...form.elements], disabled = controls.map(control => control.disabled);
+    form.dataset.saving = 'true'; form.setAttribute('aria-busy','true');
+    controls.forEach(control => control.disabled = true);
     const originalLabel = button.textContent;
     const feedback = form.querySelector('.form-feedback');
     feedback.textContent = 'Saving…';
     button.disabled = true; button.textContent = 'Saving…';
-    try { await post(path,data); form.reset(); await refresh(); notice('Saved to your workspace.'); feedback.textContent = 'Saved to your workspace.'; }
+    try {
+      const saved = await post(path,data); pendingMovement = null; form.reset();
+      const message = saved.replayed ? 'Previously saved movement confirmed. Stock was not changed twice.' : 'Saved to your workspace.';
+      try { await refresh(); notice(message); feedback.textContent = message; }
+      catch(error) { const message = 'Saved successfully, but the workspace could not refresh. Reload to see the latest data.'; notice(message,true); feedback.textContent = message; }
+    }
     catch(error) { notice(error.message,true); feedback.textContent = error.message; }
-    finally { button.disabled = false; button.textContent = originalLabel; }
+    finally { controls.forEach((control,i) => control.disabled = disabled[i]); button.textContent = originalLabel; delete form.dataset.saving; form.setAttribute('aria-busy','false'); }
   });
 }
 wireForm('#ticket-form','/api/tickets',[]);

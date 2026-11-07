@@ -10,7 +10,7 @@ from urllib.error import HTTPError
 from portfolio.db import initialize, connect
 from portfolio import services as s
 from portfolio.server import handler_for
-from portfolio.validation import ValidationError
+from portfolio.validation import ValidationError, ConflictError
 
 class DomainTests(unittest.TestCase):
     def setUp(self):
@@ -60,6 +60,50 @@ class DomainTests(unittest.TestCase):
             results = list(pool.map(lambda _: withdraw(), range(2)))
         self.assertEqual(sorted(results), [False,True])
         self.assertEqual(s.snapshot(self.db)['products'][0]['stock'],3)
+
+    def test_stock_retry_replays_original_result_after_other_movements(self):
+        pid = self.product()
+        request = {'product_id':pid,'delta':5,'note':'Receipt','request_key':'receipt-1'}
+        first = s.movement_create(self.db,request)
+        s.movement_create(self.db,{'product_id':pid,'delta':-2,'note':'Later shipment'})
+        other = connect(self.path)
+        try:
+            replay = s.movement_create(other,request)
+            self.assertEqual(replay, {**first,'replayed':True})
+            with self.assertRaises(ConflictError):
+                s.movement_create(other,{**request,'delta':6})
+        finally:
+            other.close()
+        self.assertEqual(s.snapshot(self.db)['products'][0]['stock'],3)
+        self.assertEqual(len(s.snapshot(self.db)['movements']),2)
+
+    def test_concurrent_duplicate_receipts_write_once(self):
+        pid = self.product()
+        barrier = threading.Barrier(2)
+        def receive(_):
+            db = connect(self.path)
+            try:
+                barrier.wait(timeout=5)
+                return s.movement_create(db,{'product_id':pid,'delta':7,'note':'Retry','request_key':'same-receipt'})
+            finally:
+                db.close()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(receive,range(2)))
+        self.assertEqual(sorted(r['replayed'] for r in results),[False,True])
+        self.assertEqual(results[0]['id'],results[1]['id'])
+        self.assertEqual(s.snapshot(self.db)['products'][0]['stock'],7)
+        self.assertEqual(len(s.snapshot(self.db)['movements']),1)
+
+    def test_rejected_movement_does_not_reserve_request_key(self):
+        pid = self.product()
+        request = {'product_id':pid,'delta':-1,'note':'Ship','request_key':'pending-ship'}
+        with self.assertRaises(ValidationError):
+            s.movement_create(self.db,request)
+        s.movement_create(self.db,{'product_id':pid,'delta':2,'note':'Receive'})
+        self.assertFalse(s.movement_create(self.db,request)['replayed'])
+        for invalid in ['', 'bad key', 17, True, 'a'*129]:
+            with self.subTest(key=invalid), self.assertRaises(ValidationError):
+                s.movement_create(self.db,{**request,'request_key':invalid})
 
     def test_experiment_rates_and_zero_baseline(self):
         s.experiment_create(self.db, {'name':'CTA','a_visitors':100,'a_conversions':0,'b_visitors':100,'b_conversions':10})
@@ -141,6 +185,18 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(response.status,status)
         with self.request('/api/state') as response:
             self.assertEqual(json.load(response)['products'][0]['sku'],'MOUSE')
+
+    def test_movement_retry_and_conflict_http(self):
+        headers = {'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/products',b'{"name":"Retry product","sku":"RETRY-SKU","reorder_point":1}',headers) as response:
+            pid = json.load(response)['id']
+        payload = {'product_id':pid,'delta':3,'note':'Receipt','request_key':'http-receipt'}
+        for replayed in (False,True):
+            with self.request('/api/movements',json.dumps(payload).encode(),headers) as response:
+                self.assertEqual(response.status,201)
+                self.assertEqual(json.load(response)['replayed'],replayed)
+        with self.request('/api/movements',json.dumps({**payload,'delta':4}).encode(),headers) as response:
+            self.assertEqual(response.status,409)
 
     def test_extension_routes_and_validation(self):
         headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}

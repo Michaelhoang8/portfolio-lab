@@ -177,7 +177,7 @@ The original product endpoints below require `Content-Type: application/json` an
 | POST | `/api/tickets` | `title`, `description`, `priority` (low/medium/high) |
 | POST | `/api/tickets/{id}/status` | `status` (backlog/active/done) |
 | POST | `/api/products` | `name`, `sku`, `reorder_point` (integer ≥ 0) |
-| POST | `/api/movements` | `product_id`, `delta` (nonzero signed integer), `note` |
+| POST | `/api/movements` | `product_id`, `delta` (nonzero signed integer), `note`, optional `request_key` |
 | POST | `/api/experiments` | `name`, `a_visitors`, `a_conversions`, `b_visitors`, `b_conversions` |
 
 Counts must be integers; visitors must be positive and conversions cannot exceed visitors. Relative lift is undefined (`null`, shown as N/A) when baseline conversion is zero. Absolute difference is B minus A. Wilson intervals describe each proportion; they are not a hypothesis test or a sequential testing procedure.
@@ -187,3 +187,7 @@ Counts must be integers; visitors must be positive and conversions cannot exceed
 This is a local, single-user portfolio demo, not an internet-ready service. It binds to loopback and uses Python's development HTTP server. The Notes API has shared-key authentication and pagination; the original apps remain unauthenticated. There is no multi-user authorization, rate limiting, migration runner, or cloud deployment. The custom JSON header and content security policy are limited defense-in-depth measures, not substitutes for production security. Data refreshes after local actions or page reload; there is no live collaboration.
 
 The initial implementation was created with AI assistance. Commit timestamps reflect actual development milestones; no historical activity is simulated. Demo records and experiment outcomes are fictional. See [DEVELOPMENT.md](DEVELOPMENT.md) for practical follow-up work and interview preparation.
+
+### Retry-safe stock movements
+
+Stockroom generates a request key for each movement. Retrying the unchanged form after a network failure reuses that key for the lifetime of the page. The server records the key and ledger entry in the same transaction, so concurrent retries write only once. A replay returns the original movement ID and balance with `replayed: true`; the current balance is available from `/api/state`. Reusing a key with different movement data returns HTTP 409. Rejected movements do not consume keys. API callers should retain and reuse their own key when retrying. Reloading the browser clears its pending key.

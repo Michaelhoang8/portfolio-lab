@@ -1,8 +1,9 @@
 """Domain operations. Caller owns the connection; mutations own transactions."""
 from math import sqrt
+import re
 from datetime import date
 from .db import rows
-from .validation import ValidationError, NotFoundError, text, integer, choice
+from .validation import ValidationError, NotFoundError, ConflictError, text, integer, choice
 
 def ticket_create(db, data):
     title = text(data, 'title')
@@ -38,18 +39,31 @@ def movement_create(db, data):
     product_id = integer(data, 'product_id', 1)
     delta = integer(data, 'delta', -1_000_000, 1_000_000)
     note = text(data, 'note', 500)
+    request_key = data.get('request_key')
+    if request_key is not None and (not isinstance(request_key, str) or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request_key)):
+        raise ValidationError('request_key must contain 1–128 ASCII letters, digits, or _ . : -')
     if delta == 0:
         raise ValidationError('Quantity must not be zero')
     with db:
         # Acquire the write lock before reading stock: concurrent withdrawals cannot oversell.
         db.execute('BEGIN IMMEDIATE')
+        if request_key is not None:
+            previous = db.execute('SELECT * FROM movement_requests WHERE request_key=?', (request_key,)).fetchone()
+            if previous:
+                if (previous['product_id'], previous['delta'], previous['note']) != (product_id, delta, note):
+                    raise ConflictError('request_key was already used for a different movement')
+                return {'id': previous['movement_id'], 'stock': previous['stock_after'], 'replayed': True}
+
         if db.execute('SELECT id FROM products WHERE id=?', (product_id,)).fetchone() is None:
             raise NotFoundError('Product not found')
         stock = db.execute('SELECT COALESCE(SUM(delta),0) FROM movements WHERE product_id=?', (product_id,)).fetchone()[0]
         if stock + delta < 0:
             raise ValidationError(f'Insufficient stock: only {stock} available')
-        db.execute('INSERT INTO movements(product_id,delta,note) VALUES (?,?,?)', (product_id, delta, note))
-    return {'stock': stock + delta}
+        movement_id = db.execute('INSERT INTO movements(product_id,delta,note) VALUES (?,?,?)', (product_id, delta, note)).lastrowid
+        if request_key is not None:
+            db.execute('INSERT INTO movement_requests VALUES (?,?,?,?,?,?)',
+                       (request_key, movement_id, product_id, delta, note, stock + delta))
+    return {'id': movement_id, 'stock': stock + delta, 'replayed': False}
 
 def wilson(successes, total):
     """95% Wilson score interval for a binomial proportion."""
