@@ -118,6 +118,7 @@ def handler_for(database, api_key=None):
                      '/data.js': ('data.js', 'text/javascript; charset=utf-8'),
                      '/data.css': ('data.css', 'text/css; charset=utf-8'),
                      '/rest_transport.js': ('rest_transport.js', 'text/javascript; charset=utf-8'),
+                     '/rest_collection.js': ('rest_collection.js', 'text/javascript; charset=utf-8'),
                      '/text_file.js': ('text_file.js', 'text/javascript; charset=utf-8'),
                      '/csv_columns.js': ('csv_columns.js', 'text/javascript; charset=utf-8'),
                      '/app.js': ('app.js', 'text/javascript; charset=utf-8'),

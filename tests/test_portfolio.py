@@ -562,7 +562,8 @@ class HttpTests(unittest.TestCase):
             self.assertEqual(json.load(response)['predictions'][0]['score'],.5)
         with self.request('/api/extensions/predict',b'{"model":{}}',headers) as response:self.assertEqual(response.status,400)
         with self.request('/capabilities.js') as response:self.assertEqual(response.status,200)
-        with self.request('/rest_transport.js') as response:self.assertEqual(response.status,200)
+        for asset in ('/rest_transport.js','/rest_collection.js','/text_file.js'):
+            with self.request(asset) as response:self.assertEqual(response.status,200)
         with self.request('/api/extensions/model',json.dumps({'text':json.dumps(model)}).encode(),headers) as response:
             self.assertEqual(response.status,200)
             self.assertEqual(json.load(response)['model']['features'],['x'])

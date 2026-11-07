@@ -77,3 +77,26 @@ pagination.addEventListener('click',event=>{
  for(const id of ['page-size','status-filter','query'])$('#'+id).value=pageResult.form[id];
  $('#page').value=page;$('#operation').value='list';view();$('#run').click();
 });
+
+const importPanel=document.createElement('details');importPanel.className='secondary-options';
+importPanel.innerHTML='<summary>Import a request collection</summary><p class="hint">Choose an exported Portfolio Lab collection (UTF-8 JSON, up to 1 MB and 10 requests). Import only prepares requests; review before sending. Authentication stays separate.</p><label>Collection file<input id="import-collection" type="file" accept=".json,application/json"></label><p id="import-feedback" role="status"></p><div id="imported-requests"></div>';
+historyPanel.append(importPanel);
+let importedRequests=[],collectionRevision=0;
+$('#import-collection').addEventListener('change',async()=>{
+ const file=$('#import-collection').files?.[0];$('#import-collection').value='';if(!file)return;
+ const revision=++collectionRevision;$('#import-feedback').textContent=`Reading ${file.name}…`;
+ try{
+  const text=await window.localTextFile.read(file,1000000,'1 MB');
+  if(revision!==collectionRevision)return;
+  const entries=window.requestCollection.parse(text);
+  importedRequests=entries;
+  $('#imported-requests').innerHTML=entries.map((entry,index)=>`<div class="note"><div><strong>${esc(entry.method)}</strong><small>${esc(entry.path)}</small></div><button type="button" data-import-request="${index}">Prepare imported request</button></div>`).join('');
+  $('#import-feedback').textContent=`Loaded ${entries.length} ${entries.length===1?'request':'requests'}. Nothing was sent; choose one to prepare.`;
+ }catch(error){if(revision===collectionRevision)$('#import-feedback').textContent=`${error.message} Previously imported requests are preserved.`;}
+});
+$('#imported-requests').addEventListener('click',event=>{
+ const button=event.target.closest('[data-import-request]');if(!button||$('#run').disabled)return;
+ const entry=importedRequests[Number(button.dataset.importRequest)];if(!entry)return;
+ for(const id of historyFields)$('#'+id).value=entry.form[id];
+ view();notice('Imported request prepared. Review its body, version, and idempotency key before sending. Nothing was sent.');$('#operation').focus();
+});

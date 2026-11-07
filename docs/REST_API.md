@@ -92,3 +92,11 @@ Transport tests cover stalled bodies, cancellation before and during fetch, HTTP
 The outer local HTTP adapter validates Host before API authentication or routing. Missing, duplicate, or non-loopback Host values return a generic 400 JSON error rather than a route-specific problem response. Use the documented localhost/127.0.0.1 URL; custom hostnames and forwarded-host overrides are unsupported.
 
 [Cancelled-request browser capture](design/rest-cancellation.png), using a deliberately delayed local QA response.
+
+## Reusing request collections
+
+REST Studio can import its exported `portfolio-lab-request-collection-v1` files through **Import a request collection** beneath session history. Choose a UTF-8 JSON file up to 1 MB containing 1–10 requests, then choose **Prepare imported request**. Import and preparation make no API calls. Review the body, current version, and idempotency key before explicitly sending; saved validators may be stale. API authentication must be supplied separately and is never imported.
+
+The parser accepts only supported methods and local Notes API paths. It restores list filters, bodies (including intentionally malformed JSON used to test errors), conditional headers, and creation idempotency keys. External URLs, authentication/unsupported headers, repeated query parameters, and invalid method/path combinations are rejected. Imported items are separate from completed-response history; saved status/timing metadata is ignored. A malformed file leaves the previous import and builder untouched, and newer file selections supersede pending older reads. Imported requests stay only in memory until the page is left.
+
+Tests cover all seven operations, malformed collections, unsupported paths/headers, query bounds, and atomic validation. A browser check prepared a POST without sending it, retained a previous import after a malformed file, and round-tripped an exported GET with filters ([capture](design/request-collection-import.png)).
