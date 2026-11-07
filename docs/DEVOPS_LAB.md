@@ -21,6 +21,8 @@ Pod-level runAsNonRoot and seccompProfile are inherited unless explicitly overri
 
 The isolation checks follow selected controls from the [Kubernetes Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) and [application security checklist](https://kubernetes.io/docs/concepts/security/application-security-checklist/). Read-only root filesystems are an application hardening recommendation, not a claim of Restricted-profile compliance. Seccomp profile contents, availability on nodes, and enforcement are not verified. Regression tests cover inheritance, container overrides, malformed shapes, strict booleans, and capability additions. The sample browser report flags the three missing container controls ([capture](design/manifest-isolation.png)).
 
+Reports initially show **Review needed** checks, with **All checks** and **Observed** views available from the selector. Each view displays up to 25 findings per page; changing filters returns to page one and preserves the complete JSON download and capacity analysis. Tests cover page boundaries, filter reset, escaped text, and empty-review messaging. A ten-container browser fixture produced 116 checks (51 for review), verified the final-page boundary, and downloaded all 116 checks ([capture](design/manifest-pagination.png)).
+
 The [Kubernetes rolling-update documentation](https://kubernetes.io/docs/tasks/run-application/update-deployment-rolling/) explains why readiness, available capacity, maxSurge, and maxUnavailable also affect a rollout. The app only checks the strategy name; it does not certify zero downtime.
 
 ## Pipeline Planner

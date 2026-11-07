@@ -3,20 +3,49 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>n===null?'N/A':Number(n.toFixed(4)).toLocaleString(undefined,{maximumFractionDigits:4});
 const burn=n=>n===null?'N/A':`${fmt(n)}×`;
-let mode='manifest',result=null,busy=false,fileRevision=0;
+let mode='manifest',result=null,busy=false,fileRevision=0,manifestView=null;
+const manifestPageSize=25;
 const config={manifest:['Deployment manifest','Policy report','Review manifest →','One Linux apps/v1 Deployment in JSON, up to 200 KB. Reviews selected pod and regular-container policies; excludes init/ephemeral containers and full schema validation.'],pipeline:['Pipeline definition','Execution plan','Simulate pipeline →','JSON object with jobs: id, needs, duration (seconds), optional retries and fail_attempts. 1–50 jobs. Commands are never run.'],reliability:['Hourly service metrics','Reliability report','Calculate reliability →','CSV: timestamp,total,bad. Use unique hour-aligned timestamps with timezone. Up to 5,000 completed hourly buckets.']};
 const manifestSample={apiVersion:'apps/v1',kind:'Deployment',metadata:{name:'demo-api'},spec:{replicas:1,selector:{matchLabels:{app:'demo-api'}},template:{metadata:{labels:{app:'demo-api'}},spec:{containers:[{name:'api',image:'example.invalid/demo-api:latest',resources:{requests:{cpu:'100m',memory:'128Mi'},limits:{cpu:'500m',memory:'256Mi'}},readinessProbe:{httpGet:{path:'/ready',port:8080}},securityContext:{runAsNonRoot:true,allowPrivilegeEscalation:false}}]}}}};
 const pipelineSample={jobs:[{id:'lint',needs:[],duration:20},{id:'unit-tests',needs:[],duration:40},{id:'build',needs:['lint','unit-tests'],duration:35},{id:'integration',needs:['build'],duration:30,retries:1,fail_attempts:1},{id:'security-scan',needs:['build'],duration:25},{id:'deploy-staging',needs:['integration','security-scan'],duration:20}]};
 const samples={manifest:JSON.stringify(manifestSample,null,2),pipeline:JSON.stringify(pipelineSample,null,2),reliability:'timestamp,total,bad\n2026-01-15T00:00:00Z,100000,20\n2026-01-15T01:00:00Z,100000,35\n2026-01-15T02:00:00Z,100000,50\n2026-01-15T03:00:00Z,100000,45\n2026-01-15T04:00:00Z,100000,120\n2026-01-15T05:00:00Z,100000,250'};
 function message(text,error=false){$('#notice').textContent=text;$('#notice').className=error?'error':'';}
-function invalidate(){result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
+function invalidate(){manifestView=null;result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
 function switchMode(next){if(busy)return;fileRevision++;mode=config[next]?next:'manifest';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#pipeline-options').hidden=mode!=='pipeline';$('#reliability-options').hidden=mode!=='reliability';$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#file-label').textContent=mode==='reliability'?'Choose a metrics CSV':'Choose a JSON file';$('#file').accept=mode==='reliability'?'.csv,text/csv':'.json,application/json';$('#source').value='';invalidate();message('');}
 const stats=items=>`<div class="stats">${items.map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 function timeline(r){const height=r.jobs.length*34+35;return `<div class="timeline"><h3>Runner timeline · seconds</h3><svg viewBox="0 0 660 ${height}" role="img" aria-label="Simulated job start and end times">${r.jobs.map((j,i)=>`<text x="0" y="${i*34+20}">${esc(j.id)}</text><rect class="${j.status==='passed'?'job':j.status}" x="${170+(j.start||0)/r.elapsed*400}" y="${i*34+5}" width="${j.start===null?4:Math.max(2,(j.end-j.start)/r.elapsed*400)}" height="20" rx="3"/><text x="580" y="${i*34+20}">${j.end===null?'skipped':`${j.start}–${j.end}`}</text>`).join('')}<text x="170" y="${height-5}">0</text><text x="545" y="${height-5}">${r.elapsed}s</text></svg></div>`;}
+function manifestFindings(){
+ const {items,filter}=manifestView;
+ const matches=items.filter(item=>filter==='all'||item.status===filter);
+ const last=Math.max(0,Math.ceil(matches.length/manifestPageSize)-1);
+ manifestView.page=Math.max(0,Math.min(last,manifestView.page));
+ const start=manifestView.page*manifestPageSize,end=Math.min(start+manifestPageSize,matches.length);
+ const controls=`<label>Show checks<select id="manifest-filter"><option value="review" ${filter==='review'?'selected':''}>Review needed</option><option value="all" ${filter==='all'?'selected':''}>All checks</option><option value="observed" ${filter==='observed'?'selected':''}>Observed</option></select></label><p role="status">${matches.length?`${start+1}–${end} of ${matches.length}`:'0'} matching checks · ${items.length} checks in full report</p>`;
+ const cards=matches.slice(start,end).map(f=>`<article class="finding ${f.status}"><h3>${esc(f.rule)}<small>${f.status}</small></h3><code>${esc(f.path)}</code><p>${esc(f.action)}</p></article>`).join('');
+ const empty=filter==='review'?'No selected checks require review. This is not a security certification; inspect All checks and the report scope.':'No checks match this view.';
+ const pager=matches.length>manifestPageSize?`<div class="response-pagination" role="group" aria-label="Manifest finding pages"><button type="button" data-manifest-page="-1" ${manifestView.page===0?'disabled':''}>Previous checks</button><button type="button" data-manifest-page="1" ${manifestView.page===last?'disabled':''}>Next checks</button></div>`:'';
+ return controls+(cards||`<p>${empty}</p>`)+pager;
+}
+function updateManifestView(){
+ $('#manifest-findings').innerHTML=manifestFindings();
+ $('#manifest-filter').focus({preventScroll:true});
+ $('#manifest-findings').scrollIntoView({block:'start'});
+}
+$('#result').addEventListener('change',event=>{
+ if(event.target.id!=='manifest-filter'||!manifestView)return;
+ const value=event.target.value;if(!['review','all','observed'].includes(value))return;
+ manifestView.filter=value;manifestView.page=0;updateManifestView();
+});
+$('#result').addEventListener('click',event=>{
+ const button=event.target.closest('[data-manifest-page]');if(!button||button.disabled||!manifestView)return;
+ const step=Number(button.dataset.manifestPage);if(![-1,1].includes(step))return;
+ manifestView.page+=step;updateManifestView();
+});
 function render(r){
  if(mode==='manifest'){
-  $('#result').innerHTML=stats([['Containers',r.containers],['Checks',r.findings.length],['Review needed',r.review_count]])+`<p class="summary">${esc(r.note)}</p>`+r.findings.map(f=>`<article class="finding ${f.status}"><h3>${esc(f.rule)}<small>${f.status}</small></h3><code>${esc(f.path)}</code><p>${esc(f.action)}</p></article>`).join('');
+  manifestView={items:r.findings,filter:'review',page:0};
+  $('#result').innerHTML=stats([['Containers',r.containers],['Checks',r.findings.length],['Review needed',r.review_count]])+`<p class="summary">${esc(r.note)}</p>`+`<div id="manifest-findings">${manifestFindings()}</div>`;
  }else if(mode==='pipeline'){
   $('#result').innerHTML=stats([['Elapsed',`${r.elapsed}s`],['Workers',r.workers],['Ideal critical path',`${r.ideal_critical_path}s`]])+`<span class="status ${r.status}">${r.status.toUpperCase()}</span><p class="summary">${esc(r.note)}</p><p class="hint">Ideal dependency chain: ${r.ideal_critical_jobs.map(esc).join(' → ')}</p>`+timeline(r)+table(['Job','Dependencies','Attempts','Status'],r.jobs.map(j=>[j.id,j.needs.join(', ')||'none',j.attempts,j.status]));
  }else{
