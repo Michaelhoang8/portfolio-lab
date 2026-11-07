@@ -41,6 +41,12 @@ def build_spec():
     create['responses']['201']['headers'].update({'Location':{'schema':{'type':'string'}},'Idempotency-Replayed':{'schema':{'type':'string','enum':['true','false']}}})
     item={'parameters':[{'name':'id','in':'path','required':True,'schema':{'type':'string','format':'uuid'}}],
           'get':operation('Get a note and its current ETag',200,'Note')}
+    item['get']['parameters']=[{'name':'If-None-Match','in':'header',
+        'description':'Optional known entity tags (weak comparison), or *. Matching GET/HEAD returns 304 without a body. At most 8192 characters and 100 tags. Supported only on individual-note reads.',
+        'schema':{'type':'string','maxLength':8192}}]
+    item['get']['responses']['304']=response(304)
+    item['get']['responses']['304']['description']='The note matches a supplied entity tag; no response body'
+    item['get']['responses']['304']['headers']['ETag']={'schema':{'type':'string'}}
     for method,schema,code in [('put','NoteInput',200),('patch','NotePatch',200),('delete',None,204)]:
         item[method]=operation({'put':'Replace a note','patch':'Partially update a note','delete':'Delete a note'}[method],code,'Note' if code==200 else None,schema)
         item[method]['parameters']=[{'name':'If-Match','in':'header','required':True,'description':'Exact current ETag. Wildcards, weak tags, and lists are not supported.','schema':{'type':'string'}}]

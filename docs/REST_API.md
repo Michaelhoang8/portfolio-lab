@@ -32,7 +32,8 @@ A note has UUID `id`, `title` (1–200 characters, trimmed), `content` (1–10,0
 | --- | --- | --- |
 | GET | `/api/v1/notes` | List, filter, search, paginate |
 | POST | `/api/v1/notes` | Create; returns 201, Location, ETag |
-| GET | `/api/v1/notes/{id}` | Retrieve a note and ETag |
+| GET | `/api/v1/notes/{id}` | Retrieve a note and ETag; optional If-None-Match |
+| HEAD | Both resource paths | GET metadata without a body; optional If-None-Match on individual notes |
 | PUT | `/api/v1/notes/{id}` | Replace writable fields; requires If-Match |
 | PATCH | `/api/v1/notes/{id}` | Partial update; requires If-Match |
 | DELETE | `/api/v1/notes/{id}` | Permanently delete; requires If-Match; returns empty 204 |
@@ -50,9 +51,17 @@ HEAD supports the same resources, authentication, and query validation as GET, w
 
 ### Conditional updates
 
-GET, HEAD, and successful writes return a strong ETag shaped as `"uuid:version"`. Send that exact value in `If-Match` for PUT, PATCH, or DELETE. Missing preconditions return 428; stale or unsupported tags return 412. Wildcards, weak validators, and comma-separated ETag lists are not supported by this demonstration API. Successful PUT/PATCH increments the version, including same-value updates.
+GET, HEAD, and successful writes return a strong ETag shaped as `"uuid:version"`. Send that exact value in `If-Match` for PUT, PATCH, or DELETE. Missing preconditions return 428; stale or unsupported tags return 412. For write preconditions, wildcards, weak validators, and comma-separated ETag lists are not supported. Successful PUT/PATCH increments the version, including same-value updates.
 
-The ETag comparison and mutation run inside one `BEGIN IMMEDIATE` transaction. Two competing writers using the same version cannot both succeed. A 412 response is a request to fetch the latest note and reconsider the edit; the server does not merge conflicting changes automatically. Conditional cache reads (`If-None-Match`/304) are not implemented; responses use `Cache-Control: no-store`.
+The ETag comparison and mutation run inside one `BEGIN IMMEDIATE` transaction. Two competing writers using the same version cannot both succeed. A 412 response is a request to fetch the latest note and reconsider the edit; the server does not merge conflicting changes automatically.
+
+### Conditional reads
+
+Individual-note GET and HEAD accept optional `If-None-Match`. A matching tag (including a weak `W/` tag), a matching member of a comma-separated list, or `*` returns 304 with the current ETag and no body. Nonmatching tags return the usual 200 response. Authentication and missing-resource checks still apply. Tag lists allow quoted commas and repeated header lines; malformed values return 400. Input is limited to 8,192 combined characters and 100 tags. Collection reads and write operations reject this header with 400 rather than silently ignoring an unsupported condition.
+
+The browser offers HEAD and an optional If-None-Match field for individual-note reads, records 304 in request history, and shows an explicit empty-response explanation. It does not substitute an earlier response body. Responses remain `Cache-Control: no-store`; this feature demonstrates explicit version validation, not persistent browser caching. A new note selection clears the read condition. The OpenAPI contract includes the conditional parameter and bodyless 304 response.
+
+Matching follows [RFC 9110 If-None-Match semantics](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.2). Empty 204 and 304 responses omit Content-Length; HEAD 200 reports the matching GET representation length, following [HTTP content-length rules](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6). Tests cover matching, stale, weak, list, wildcard, malformed, oversized, unauthorized, and missing-note cases. Browser checks verified GET 200 → conditional GET 304 and HEAD 200 without a response body ([capture](design/rest-conditional-read.png)).
 
 ### Retry-safe creation
 

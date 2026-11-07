@@ -67,6 +67,46 @@ class RestTests(unittest.TestCase):
         self.assertEqual(headers['Content-Type'],'application/problem+json')
         self.assertIsNone(body)
 
+    def test_conditional_note_reads_support_weak_tags_lists_and_wildcards(self):
+        _,created,_=self.create();path=created['Location'];tag=created['ETag']
+        for method in ('GET','HEAD'):
+            for value in (tag,'W/'+tag,'*','"unrelated,tag", W/'+tag,', , '+tag+','):
+                with self.subTest(method=method,value=value):
+                    status,headers,body=self.request(method,path,headers={'If-None-Match':value})
+                    self.assertEqual(status,304)
+                    self.assertEqual(headers['ETag'],tag)
+                    self.assertNotIn('Content-Length',headers)
+                    self.assertNotIn('Content-Type',headers)
+                    self.assertIsNone(body)
+                    self.assertEqual(headers['Cache-Control'],'no-store')
+        for value in ('"other"','W/"other"','',', ,'):
+            self.assertEqual(self.request(path=path,headers={'If-None-Match':value})[0],200)
+        self.assertEqual(self.request(path=path,headers={'If-None-Match':tag,'X-API-Key':'wrong'})[0],401)
+        _,updated,_=self.request('PATCH',path,{'title':'A new version'},{'If-Match':tag})
+        status,headers,body=self.request(path=path,headers={'If-None-Match':tag})
+        self.assertEqual((status,headers['ETag'],body['version']),(200,updated['ETag'],2))
+
+    def test_conditional_reads_reject_malformed_or_unsupported_conditions(self):
+        _,created,_=self.create();path=created['Location'];tag=created['ETag']
+        for value in ('unquoted','w/'+tag,tag+tag,'*, '+tag,'"unterminated','"x" '*2,'"x",'*101,'x'*8193):
+            with self.subTest(value=value[:80]):
+                self.assertEqual(self.request(path=path,headers={'If-None-Match':value})[0],400)
+        self.assertEqual(self.request(headers={'If-None-Match':'*'})[0],400)
+        self.assertEqual(self.request('PATCH',path,{'title':'unchanged'},
+                                     {'If-Match':tag,'If-None-Match':'*'})[0],400)
+        self.assertEqual(self.request(path=path)[1]['ETag'],tag)
+        self.assertEqual(self.request(path='/api/v1/notes/'+str(uuid.uuid4()),headers={'If-None-Match':'*'})[0],404)
+
+    def test_no_content_responses_omit_representation_framing(self):
+        _,created,_=self.create()
+        for method,path,headers in [('OPTIONS','/api/v1/notes',{}),
+                                    ('DELETE',created['Location'],{'If-Match':created['ETag']})]:
+            status,returned,body=self.request(method,path,headers=headers)
+            self.assertEqual(status,204)
+            self.assertIsNone(body)
+            self.assertNotIn('Content-Length',returned)
+            self.assertNotIn('Content-Type',returned)
+
     def test_create_location_get_and_persistence(self):
         status,headers,note=self.create()
         self.assertEqual(status,201)

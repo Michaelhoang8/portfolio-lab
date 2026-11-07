@@ -29,6 +29,27 @@ class Problem(Exception):
 def etag(note):
     return f'"{note["id"]}:{note["version"]}"'
 
+def if_none_matches(value,current):
+    """Weak comparison for bounded RFC 9110 entity-tag lists (commas can be inside tags)."""
+    if len(value)>8192:
+        raise Problem(400,'If-None-Match must be at most 8192 characters')
+    value=value.strip(' \t')
+    if value=='*':
+        return True
+    pattern=r'(?:W/)?"[\x21\x23-\x7e\x80-\xff]*"'
+    tags=[]
+    while value.strip(' \t,'):
+        value=value.lstrip(' \t,')
+        match=re.match(pattern,value)
+        if match is None or len(tags)>=100:
+            raise Problem(400,'If-None-Match must contain at most 100 entity tags or a single wildcard')
+        tags.append(match[0])
+        value=value[match.end():].lstrip(' \t')
+        if value and not value.startswith(','):
+            raise Problem(400,'If-None-Match entity tags must be comma-separated')
+    return any(tag.removeprefix('W/')==current for tag in tags)
+
+
 def validate(data,partial=False):
     if not isinstance(data,dict) or not data or set(data)-{'title','content','status'}:
         raise Problem(422,'Provide an object containing only title, content, and status')
@@ -53,8 +74,9 @@ def handle(handler,database,api_key):
         raw=b'' if body is None else json.dumps(body).encode('utf-8')
         try:
             handler.send_response(status)
-            handler.send_header('Content-Type','application/problem+json' if problem else 'application/json')
-            handler.send_header('Content-Length',str(len(raw)))
+            if status not in (204,304):
+                handler.send_header('Content-Type','application/problem+json' if problem else 'application/json')
+                handler.send_header('Content-Length',str(len(raw)))
             handler.send_header('Cache-Control','no-store')
             handler.send_header('X-Content-Type-Options','nosniff')
             handler.send_header('X-Request-ID',request_id)
@@ -81,6 +103,9 @@ def handle(handler,database,api_key):
             send(204,headers={'Allow':allowed});return
         if handler.command not in allowed.split(', '):
             send(405,{'type':'about:blank','title':'Method Not Allowed','status':405,'detail':'Method not supported on this resource','instance':path},headers={'Allow':allowed},problem=True);return
+        conditional=handler.headers.get_all('If-None-Match',[])
+        if conditional and (not item or handler.command not in ('GET','HEAD')):
+            raise Problem(400,'If-None-Match is supported only for individual-note GET and HEAD')
         db=connect(database)
         if handler.command in ('GET','HEAD') and collection:
             query=parse_qs(parsed.query,keep_blank_values=True,max_num_fields=10)
@@ -116,7 +141,10 @@ def handle(handler,database,api_key):
             row=db.execute('SELECT * FROM api_notes WHERE id=?',(item[1],)).fetchone()
             if row is None:
                 raise Problem(404,'Note not found')
-            note=dict(row);send(200,note,{'ETag':etag(note)});return
+            note=dict(row)
+            if conditional and if_none_matches(','.join(conditional),etag(note)):
+                send(304,headers={'ETag':etag(note)});return
+            send(200,note,{'ETag':etag(note)});return
         payload=None
         if handler.command in ('POST','PUT','PATCH'):
             if handler.headers.get_content_type()!='application/json':

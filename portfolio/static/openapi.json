@@ -474,8 +474,35 @@
                 }
               }
             }
+          },
+          "304": {
+            "description": "The note matches a supplied entity tag; no response body",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "description": "Optional known entity tags (weak comparison), or *. Matching GET/HEAD returns 304 without a body. At most 8192 characters and 100 tags. Supported only on individual-note reads.",
+            "schema": {
+              "type": "string",
+              "maxLength": 8192
+            }
+          }
+        ]
       },
       "put": {
         "summary": "Replace a note",
@@ -656,8 +683,35 @@
           },
           "default": {
             "description": "Problem details: 400 malformed request, 401 invalid key, 404 missing resource, 405 unsupported method, 408 request body timeout, 409 idempotency conflict, 412 stale ETag, 413 large body, 415 unsupported media type, 422 invalid fields, 428 missing If-Match, 500 internal error, or 503 API key not configured."
+          },
+          "304": {
+            "description": "The note matches a supplied entity tag; no response body",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "description": "Optional known entity tags (weak comparison), or *. Matching GET/HEAD returns 304 without a body. At most 8192 characters and 100 tags. Supported only on individual-note reads.",
+            "schema": {
+              "type": "string",
+              "maxLength": 8192
+            }
+          }
+        ]
       },
       "options": {
         "summary": "Discover allowed methods",
