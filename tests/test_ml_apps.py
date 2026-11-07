@@ -84,6 +84,32 @@ class MLTests(unittest.TestCase):
         self.assertAlmostEqual(sum(t['contribution'] for t in r['results'][0]['matched_terms']),r['results'][0]['score'])
         self.assertEqual(m.search({**data,'query':'spaceships'})['results'],[])
 
+    def test_search_explanations_follow_selected_algorithm_and_reconcile(self):
+        data={'documents':'apple apple banana\n---\napple cherry\n---\nbanana cherry cherry cherry','query':'apple banana'}
+        reports={algorithm:m.search({**data,'algorithm':algorithm}) for algorithm in ('tfidf','bm25')}
+        for algorithm,report in reports.items():
+            for item in report['results']:
+                self.assertAlmostEqual(sum(term['contribution'] for term in item['matched_terms']),item['score'])
+                self.assertAlmostEqual(sum(term['tfidf_contribution'] for term in item['matched_terms']),item['tfidf_score'])
+                self.assertAlmostEqual(sum(term['bm25_contribution'] for term in item['matched_terms']),item['bm25_score'])
+                self.assertEqual([term['contribution'] for term in item['matched_terms']],
+                                 sorted((term['contribution'] for term in item['matched_terms']),reverse=True))
+        first=next(item for item in reports['bm25']['results'] if item['document']==1)
+        terms={term['term']:term for term in first['matched_terms']}
+        # N=3, df=2; this document and corpus average both have length 3.
+        import math
+        self.assertAlmostEqual(terms['apple']['contribution'],math.log(1.6)*5/3.5)
+        self.assertAlmostEqual(terms['banana']['contribution'],math.log(1.6))
+        self.assertEqual((terms['apple']['term_frequency'],terms['apple']['document_frequency']),(2,2))
+        repeated=m.search({**data,'query':'apple apple banana','algorithm':'bm25'})
+        self.assertEqual([(item['document'],item['score']) for item in repeated['results']],
+                         [(item['document'],item['score']) for item in reports['bm25']['results']])
+        for item in repeated['results']:
+            original=next(row for row in reports['bm25']['results'] if row['document']==item['document'])
+            self.assertEqual([(term['term'],term['contribution']) for term in item['matched_terms']],
+                             [(term['term'],term['contribution']) for term in original['matched_terms']])
+        self.assertNotEqual(terms['apple']['contribution'],terms['apple']['tfidf_contribution'])
+
     def test_search_empty_vocabulary_and_document_limit(self):
         for docs in ['the and\n---\na an','only one document']:
             with self.assertRaises(ValidationError):

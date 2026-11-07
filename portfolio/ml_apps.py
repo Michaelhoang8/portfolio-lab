@@ -169,11 +169,17 @@ def search(data):
         contributions=sorted(((term,qv*vec.get(term,0)) for term,qv in q.items() if term in vec),key=lambda x:-x[1])
         score=sum(value for _,value in contributions)
         if score>0:
-            bm25=sum(math.log(1+(len(docs)-df[term]+.5)/(df[term]+.5))*(count[term]*2.5)/(count[term]+1.5*(.25+.75*sum(count.values())/average_length)) for term in q if count[term])
+            length=sum(count.values())
+            bm25_terms={term:math.log(1+(len(docs)-df[term]+.5)/(df[term]+.5))*(count[term]*2.5)/(count[term]+1.5*(.25+.75*length/average_length)) for term in q if count[term]}
+            bm25=sum(bm25_terms.values())
+            explained=[{'term':term,'contribution':bm25_terms[term] if algorithm=='bm25' else value,
+                        'tfidf_contribution':value,'bm25_contribution':bm25_terms[term],
+                        'term_frequency':count[term],'document_frequency':df[term]} for term,value in contributions]
+            explained.sort(key=lambda item:(-item['contribution'],item['term']))
             results.append({'document':index+1,'score':bm25 if algorithm=='bm25' else min(1.,score),'tfidf_score':min(1.,score),'bm25_score':bm25,'excerpt':docs[index][:600],
-                            'matched_terms':[{'term':term,'contribution':value} for term,value in contributions]})
+                            'matched_terms':explained})
     results.sort(key=lambda r:(-r['score'],r['document']))
     return {'documents':len(docs),'vocabulary':len(idf),'query_terms':list(q),
             'unseen_terms':sorted(set(tokens(query))-set(idf)), 'results':results[:top_k], 'algorithm':algorithm, 'top_k':top_k,
-            'capabilities':{'tables':[{'title':'Ranking comparison','headers':['Document','TF-IDF cosine','BM25 score'],'rows':[[r['document'],round(r['tfidf_score'],5),round(r['bm25_score'],5)] for r in results[:top_k]]}], 'notes':['BM25 uses k1=1.5, b=0.75 and unique query terms. Scores are unbounded ranking values, not probabilities. Matched-term contributions still describe TF-IDF.']},
+            'capabilities':{'tables':[{'title':'Ranking comparison','headers':['Document','TF-IDF cosine','BM25 score'],'rows':[[r['document'],round(r['tfidf_score'],5),round(r['bm25_score'],5)] for r in results[:top_k]]}], 'notes':['BM25 uses k1=1.5, b=0.75 and unique query terms. Scores are unbounded ranking values, not probabilities. Matched-term contributions explain the selected ranking algorithm; the report also preserves both contribution values and term/document frequencies. Display rounding may prevent badge totals from matching the rounded score exactly.']},
             'method':('BM25 lexical ranking' if algorithm=='bm25' else 'TF-IDF cosine similarity (lexical baseline, not neural semantic embeddings)')}
