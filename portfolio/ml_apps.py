@@ -106,7 +106,7 @@ def train(data):
         count=max(1,round(len(ids)*.25))
         test_ids.extend(ids[:count]); train_ids.extend(ids[count:])
     means=[statistics.mean(x[i][j] for i in train_ids) for j in range(len(features))]
-    scales=[statistics.pstdev(x[i][j] for i in train_ids) or 1 for j in range(len(features))]
+    scales=[max(statistics.pstdev(x[i][j] for i in train_ids) or 1,1e-12) for j in range(len(features))]
     scaled=[[1,*[(row[j]-means[j])/scales[j] for j in range(len(features))]] for row in x]
     weights=[0.]*(len(features)+1)
     losses=[]
