@@ -30,9 +30,9 @@ Reference material: [MDN CSP guide](https://developer.mozilla.org/en-US/docs/Web
 
 ## Secret Sentinel
 
-Scans pasted text for private-key blocks, legacy GitHub-style tokens, AWS-style access-key IDs, common credential assignments, and bearer credentials. Overlapping matches are merged. Results contain rule, severity, line number, and remediation guidance. They never include matched values, snippets, fingerprints, hashes, or the original text. The browser clears the input after a successful scan. The fictional samples intentionally match rules and contain no working credentials.
+Scans pasted text for private-key blocks (including encrypted PEM blocks), legacy and fine-grained GitHub-style tokens, AWS-style access-key IDs, common credential assignments (including AWS secret/session keys and refresh tokens), and bearer credentials. Overlapping matches are merged. Results contain rule, severity, line number, and remediation guidance. They never include matched values, snippets, fingerprints, hashes, or the original text. The browser clears the input after a successful scan. The fictional samples intentionally match rules and contain no working credentials.
 
-This is pattern matching, not a full repository scanner: it does not inspect Git history, nested files, encoded content, all provider formats, or token validity. Findings may be false positives; no findings does not prove an absence of secrets. It generates a value-free report, not a rewritten/sanitized copy of the input. If a real secret was exposed, verify and rotate/revoke it with its provider; deleting a string alone does not revoke it.
+This is pattern matching, not a full repository scanner: it does not inspect Git history, nested files, encoded content, all provider formats, or token validity. The `github_pat_` prefix follows [GitHub’s credential type reference](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/github-credential-types); matching is deliberately heuristic and does not validate issuance, scope, or token length against a live service. Findings may be false positives; no findings does not prove an absence of secrets. It generates a value-free report, not a rewritten/sanitized copy of the input. If a real secret was exposed, verify and rotate/revoke it with its provider; deleting a string alone does not revoke it.
 
 ## Input handling and API
 
@@ -59,3 +59,11 @@ Interview topics: explain false positives and false negatives, event-time versus
 Auth Watch maintains per-source user counts as failures enter and leave the time window, avoiding repeated reconstruction of the user set. Existing alert rules and inclusive window boundaries are preserved.
 
 Run `python -m benchmarks.auth_logs --baseline ca152db --events 4000 --runs 5` from the repository root to compare with the prior implementation. The script checks report equality before timing. A local Windows / Python 3.13.17 run measured medians of 26.7 ms for the incremental implementation and 520.2 ms for the baseline. This measures the repeated-source synthetic fixture; other workloads and machines differ. An additional manual equivalence check compared 100 randomized batches with mixed sources, users, successes, and timestamps.
+
+## Secret scan timing fixture
+
+```sh
+python -m benchmarks.secret_scan --baseline ba1ccc0 --findings 4000 --runs 5
+```
+
+The fixture contains 4,000 synthetic password assignments, with no real credentials. Before timing, the harness verifies that both revisions return identical reports. One Windows/Python 3.13.17 run measured a five-run median of 19.692 ms for indexed line lookup versus 274.793 ms for the earlier repeated-prefix scan. Hardware, input shape, and system load affect timings; this is not a general speedup guarantee or a CI performance threshold. The optional baseline executes the security module from the named local Git revision, so compare reviewed revisions only. Line-location tests also cover LF, CRLF, CR, and Unicode line separators.
