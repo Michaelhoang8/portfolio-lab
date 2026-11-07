@@ -18,16 +18,19 @@ def ticket_create(db, data):
 
 def ticket_move(db, ticket_id, data):
     status = choice(data, 'status', ('backlog', 'active', 'done'))
+    version=integer(data,'expected_version',1) if 'expected_version' in data else None
     with db:
         db.execute('BEGIN IMMEDIATE')
-        old = db.execute('SELECT status FROM tickets WHERE id=?', (ticket_id,)).fetchone()
+        old = db.execute('SELECT status,version FROM tickets WHERE id=?', (ticket_id,)).fetchone()
         if old is None:
             raise NotFoundError('Ticket not found')
         if old['status'] != status:
+            if version is not None and version!=old['version']:
+                raise ConflictError('This issue changed since it was loaded. Review the latest issue before changing its status.')
             db.execute('UPDATE tickets SET status=?,version=version+1 WHERE id=?', (status, ticket_id))
             db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',
                        (ticket_id, f'{old["status"]} → {status}'))
-    return {'id': ticket_id, 'status': status}
+    return {'id': ticket_id, 'status': status, 'version':old['version']+(old['status']!=status)}
 
 def product_create(db, data):
     values = (text(data, 'sku', 40).upper(), text(data, 'name'), integer(data, 'reorder_point'))

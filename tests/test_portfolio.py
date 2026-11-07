@@ -39,6 +39,36 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(state['tickets'][0]['status'], 'done')
         self.assertEqual(len(state['events']), 3)
 
+    def test_versioned_issue_status_rejects_stale_changes_but_allows_noops(self):
+        ticket=s.ticket_create(self.db,{'title':'Status conflict','description':'Context','priority':'medium'})['id']
+        result=s.ticket_move(self.db,ticket,{'status':'active','expected_version':1})
+        self.assertEqual(result['version'],2)
+        self.assertEqual(s.ticket_move(self.db,ticket,{'status':'active','expected_version':1}),result)
+        with self.assertRaises(ConflictError):
+            s.ticket_move(self.db,ticket,{'status':'done','expected_version':1})
+        with self.assertRaises(ValidationError):
+            s.ticket_move(self.db,ticket,{'status':'done','expected_version':True})
+        self.assertEqual(len(s.snapshot(self.db)['events']),2)
+        s.ticket_details(self.db,ticket,{'title':'Updated details','expected_version':2})
+        with self.assertRaises(ConflictError):
+            s.ticket_move(self.db,ticket,{'status':'done','expected_version':2})
+        self.assertEqual(s.ticket_move(self.db,ticket,{'status':'done','expected_version':3})['version'],4)
+
+    def test_concurrent_versioned_status_changes_have_one_winner(self):
+        ticket=s.ticket_create(self.db,{'title':'Race','description':'Context','priority':'medium'})['id']
+        barrier=threading.Barrier(2)
+        def move(status):
+            db=connect(self.path)
+            try:
+                barrier.wait(timeout=5)
+                try:return s.ticket_move(db,ticket,{'status':status,'expected_version':1})['version']
+                except ConflictError:return 'conflict'
+            finally:db.close()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results=list(pool.map(move,['active','done']))
+        self.assertCountEqual(results,[2,'conflict'])
+        self.assertEqual(len(s.snapshot(self.db)['events']),2)
+
     def test_issue_edit_preserves_omitted_fields_and_audits_once(self):
         ticket=s.ticket_create(self.db,{'title':'Original','description':'Context','priority':'medium',
                                       'assignee':'Ada','due_date':'2026-12-01'})['id']

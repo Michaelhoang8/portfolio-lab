@@ -150,8 +150,13 @@ wireForm('#experiment-form','/api/experiments',['a_visitors','a_conversions','b_
 $('#board').addEventListener('change', async event => {
   const select=event.target,id=select.dataset.ticket;if(!id||movingTickets.has(id))return;
   movingTickets.add(id);select.disabled=true;let saved=false;
-  try {await post(`/api/tickets/${id}/status`,{status:select.value});saved=true;await refresh();notice('Issue status updated.');}
-  catch(error){renderTickets();notice(saved?'Issue status saved, but the workspace could not refresh. Reload to see the latest data.':error.message,true);}
+  try {await post(`/api/tickets/${id}/status`,{status:select.value,expected_version:state.tickets.find(ticket=>String(ticket.id)===id).version});saved=true;await refresh();notice('Issue status updated.');}
+  catch(error){
+    if(!saved && error.status===409){
+      try{await refresh();notice('This issue changed elsewhere. The board is refreshed; review it before choosing a status again.',true);}
+      catch{renderTickets();notice('This issue changed elsewhere, and the latest board could not load. Reload before trying again.',true);}
+    }else{renderTickets();notice(saved?'Issue status saved, but the workspace could not refresh. Reload to see the latest data.':error.message,true);}
+  }
   finally{movingTickets.delete(id);const current=document.querySelector(`[data-ticket="${id}"]`);if(current)current.disabled=false;}
 });
 function readIssueFilters(){
