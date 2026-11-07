@@ -30,10 +30,29 @@
   function download(name,text,type='application/json') {
     const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  const pendingRequests=new Set();
+  const cancelRequests=()=>pendingRequests.forEach(controller=>controller.abort());
+  window.addEventListener('hashchange',cancelRequests);
+  window.addEventListener('pagehide',cancelRequests);
   async function request(path,body) {
-    const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(body)});
-    const data=await response.json(); if(!response.ok)throw Error(data.error||'Request failed');return data;
+    const controller=new AbortController();pendingRequests.add(controller);
+    let timedOut=false;
+    const timeout=setTimeout(()=>{timedOut=true;controller.abort();},30000);
+    try {
+      const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(body),signal:controller.signal});
+      let data;
+      try {data=await response.json();}
+      catch(error) {if(error.name==='AbortError')throw error;throw Error('The server returned an unreadable response. Try again after checking the server.');}
+      if(!data || typeof data!=='object' || Array.isArray(data))throw Error('The server returned an unreadable response. Try again after checking the server.');
+      if(!response.ok)throw Error(typeof data.error==='string'?data.error:`Request failed (HTTP ${response.status}).`);
+      return data;
+    } catch(error) {
+      if(error.name==='AbortError')throw Error(timedOut?'The request timed out after 30 seconds. Your inputs are preserved; try again.':'Request cancelled. Your inputs are preserved.');
+      if(error instanceof TypeError)throw Error('Could not reach the local server. Check that it is running, then try again.');
+      throw error;
+    } finally {clearTimeout(timeout);pendingRequests.delete(controller);}
   }
+  window.utilityRequest=request;
   function exportButton(parent,label,name,text,type) {
     const button=document.createElement('button');button.type='button';button.textContent=label;
     button.addEventListener('click',()=>download(name,text,type));parent.append(button);
