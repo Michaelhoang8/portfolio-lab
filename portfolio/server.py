@@ -13,6 +13,14 @@ from .json_input import decode, read_exact
 
 STATIC = Path(__file__).parent / 'static'
 
+def record_id(value):
+    # SQLite row IDs are signed 64-bit integers; reject impossible IDs before binding.
+    digits=value.lstrip('0')
+    if not digits or len(digits)>19 or (len(digits)==19 and digits>'9223372036854775807'):
+        raise NotFoundError('Record not found')
+    return int(digits)
+
+
 def handler_for(database, api_key=None):
     api_key = os.environ.get('PORTFOLIO_API_KEY','') if api_key is None else api_key
     class Handler(BaseHTTPRequestHandler):
@@ -164,13 +172,13 @@ def handler_for(database, api_key=None):
                     self.reply(200,capabilities.stock_plan(db,data));return
                 archive=re.fullmatch(r'/api/tickets/(\d+)/archive',self.path)
                 if archive:
-                    self.reply(200,services.ticket_archive(db,int(archive[1]),data));return
+                    self.reply(200,services.ticket_archive(db,record_id(archive[1]),data));return
                 details=re.fullmatch(r'/api/tickets/(\d+)/details',self.path)
                 if details:
-                    self.reply(200,services.ticket_details(db,int(details[1]),data));return
+                    self.reply(200,services.ticket_details(db,record_id(details[1]),data));return
                 product_details=re.fullmatch(r'/api/products/(\d+)/details',self.path)
                 if product_details:
-                    self.reply(200,services.product_details(db,int(product_details[1]),data));return
+                    self.reply(200,services.product_details(db,record_id(product_details[1]),data));return
                 devops_routes={'/api/devops/manifest':devops_apps.manifest,'/api/devops/pipeline':devops_apps.pipeline,'/api/devops/reliability':devops_apps.reliability}
                 if self.path in devops_routes:
                     self.reply(200,capabilities.enrich(self.path,data,devops_routes[self.path](data)))
@@ -193,7 +201,7 @@ def handler_for(database, api_key=None):
                           '/api/movements': services.movement_create, '/api/experiments': services.experiment_create}
                 move = re.fullmatch(r'/api/tickets/(\d+)/status', self.path)
                 if move:
-                    result = services.ticket_move(db, int(move[1]), data)
+                    result = services.ticket_move(db, record_id(move[1]), data)
                 elif self.path in routes:
                     result = routes[self.path](db, data)
                 else:

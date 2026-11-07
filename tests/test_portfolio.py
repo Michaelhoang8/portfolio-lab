@@ -492,6 +492,26 @@ class HttpTests(unittest.TestCase):
         with self.request('/api/extensions/experiment-plan',b'{}',headers) as response:
             self.assertEqual(response.status,200)
 
+    def test_numeric_routes_bound_impossible_ids_before_sqlite(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/state') as response:before=json.load(response)
+        routes=(('tickets','status',{'status':'active'}),
+                ('tickets','details',{'title':'Cannot be applied'}),
+                ('tickets','archive',{'archived':True,'expected_version':1}),
+                ('products','details',{'name':'Cannot be applied','expected_version':1}))
+        for identifier in ('0','9223372036854775807','9223372036854775808','9'*5000):
+            for resource,action,body in routes:
+                with self.subTest(identifier=identifier[:25],action=action):
+                    with self.request(f'/api/{resource}/{identifier}/{action}',json.dumps(body).encode(),headers) as response:
+                        self.assertEqual(response.status,404)
+                        self.assertNotIn(identifier,json.load(response)['error'])
+        with self.request('/api/state') as response:self.assertEqual(json.load(response),before)
+        with self.request('/api/tickets',b'{"title":"Leading zero ID","description":"Fixture","priority":"low"}',headers) as response:
+            identifier=json.load(response)['id']
+        with self.request(f'/api/tickets/000{identifier}/status',b'{"status":"active"}',headers) as response:
+            self.assertEqual(response.status,200)
+            self.assertEqual(json.load(response)['id'],identifier)
+
     def test_experiment_context_http_round_trip_and_validation(self):
         headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
         body={'name':'HTTP context','a_visitors':100,'a_conversions':10,'b_visitors':100,'b_conversions':12,

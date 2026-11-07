@@ -220,6 +220,8 @@ Issue Desk status changes now send `expected_version`. Changed statuses from sta
 
 Workspace refreshes apply only the most recently requested response. Superseded responses and failures cannot overwrite newer data or display stale errors. If the newest refresh fails, the last successfully applied snapshot stays visible. JavaScript regression tests explicitly complete concurrent requests out of order, simulate newer-request failures, and check malformed response recovery.
 
+Numeric issue/product route IDs are bounded before SQLite parameter binding. Zero and IDs above SQLite’s signed 64-bit range return 404 without attempting a write; ordinary leading zeroes remain accepted. HTTP tests cover every numeric mutation route, the largest representable ID, oversized decimal strings, and an unchanged workspace snapshot after rejected requests.
+
 ### Larger issue boards
 
 Each stage displays ten issues per page with independent Previous/Next controls. Filtering and browser history navigation reset the pages; changes that shorten a stage clamp its page to the last available one. Unsaved issue drafts survive paging away and back within the current page session. Counts reflect all matching issues. This limits rendered cards, not API response size: `/api/state` still loads the complete workspace. Regression tests cover page boundaries, independent columns, and filter clamping; a browser check also verified draft retention ([capture](docs/design/issue-pagination.png)).
