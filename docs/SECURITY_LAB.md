@@ -71,3 +71,7 @@ The fixture contains 4,000 synthetic password assignments, with no real credenti
 Security reports display at most 50 finding cards per page, with keyboard-accessible previous/next controls and an announced range. Changing pages keeps the detailed analysis and export controls intact. Totals, downloaded JSON, and redacted findings CSV contain all findings, not just the visible page.
 
 [Paginated report and full-export browser capture](design/security-pagination.png), using 120 synthetic findings.
+
+### Local file input
+
+Security tools accept local UTF-8 files up to 500 KB, with the existing 5,000-line server limit. Auth Watch suggests JSON Lines/log extensions; Header Review and Secret Sentinel accept text files. Choosing a file only loads it into the editor: analysis still starts explicitly. Empty, unreadable, oversized, and invalid UTF-8 files preserve the previous input and report. Slow reads are discarded after typing, choosing a newer file, clearing input, switching tools, or starting analysis. The file picker resets after selection, and Secret Sentinel still clears source text after a successful scan ([capture](design/security-file-import.png)).

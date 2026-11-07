@@ -1,13 +1,13 @@
 'use strict';
 const $=s=>document.querySelector(s);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let mode='logs',result=null,busy=false,findingView=null;
+let mode='logs',result=null,busy=false,fileRevision=0,findingView=null;
 const config={logs:['Authentication events','Detection report','Analyze events →','JSON Lines: timestamp (with timezone), ip, user, status (failure or success). Events are sorted before analysis.'],headers:['Response headers','Header review','Inspect headers →','Paste one HTTP response header block. Review is heuristic; HTTPS and real browser behavior are not tested.'],secrets:['Source text','Secret findings','Scan text →','Paste configuration or source text. Reports include rule names and line numbers, never credential values or snippets.']};
 const logSample=Array.from({length:5},(_,i)=>JSON.stringify({timestamp:`2026-01-15T10:0${i}:00Z`,ip:'192.0.2.10',user:'demo-admin',status:'failure'})).concat([JSON.stringify({timestamp:'2026-01-15T10:05:00Z',ip:'192.0.2.10',user:'demo-admin',status:'success'})],Array.from({length:5},(_,i)=>JSON.stringify({timestamp:`2026-01-15T11:0${i}:00Z`,ip:'198.51.100.20',user:`demo-user-${i}`,status:'failure'}))).join('\n');
 const samples={logs:logSample,headers:"HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'\nStrict-Transport-Security: max-age=3600\nX-Content-Type-Options: nosniff\nReferrer-Policy: strict-origin-when-cross-origin\nSet-Cookie: demo_session=FICTIONAL; Secure; SameSite=Lax",secrets:'# Fictional examples. These are not real credentials.\npassword = "DEMO_ONLY_NOT_A_REAL_PASSWORD"\napi_key = "DEMO_ONLY_NOT_A_REAL_API_KEY"\nAuthorization: Bearer DEMO_ONLY_NOT_A_REAL_BEARER\n'};
 function message(text,error=false){$('#notice').textContent=text;$('#notice').className=error?'error':'';}
 function invalidate(){findingView=null;result=null;$('#download').disabled=true;$('#result').innerHTML=window.analysisEmpty(mode);}
-function switchMode(next){if(busy)return;mode=config[next]?next:'logs';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#log-options').hidden=mode!=='logs';$('#source').value='';invalidate();message('');}
+function switchMode(next){if(busy)return;fileRevision++;mode=config[next]?next:'logs';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#log-options').hidden=mode!=='logs';$('#file-label').textContent=mode==='logs'?'Choose a log file':'Choose a text file';$('#file').accept=mode==='logs'?'.jsonl,.ndjson,.log,.txt':'';$('#source').value='';invalidate();message('');}
 const stats=items=>`<div class="stats">${items.map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(v=>`<th>${esc(v)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const findingPageSize=50;
@@ -44,11 +44,22 @@ function render(r){
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.mode;}));
 window.addEventListener('hashchange',()=>switchMode(location.hash.slice(1)));
-$('#sample').addEventListener('click',()=>{$('#source').value=samples[mode];invalidate();message('Fictional sample loaded.');});
-$('#clear').addEventListener('click',()=>{$('#source').value='';invalidate();message('Input and results cleared.');});
-document.querySelectorAll('textarea,input').forEach(e=>e.addEventListener('input',()=>{invalidate();message('Input changed. Run the analysis to update the report.');}));
+$('#sample').addEventListener('click',()=>{fileRevision++;$('#source').value=samples[mode];invalidate();message('Fictional sample loaded.');});
+$('#clear').addEventListener('click',()=>{fileRevision++;$('#source').value='';invalidate();message('Input and results cleared.');});
+document.querySelectorAll('textarea,input:not([type=file])').forEach(e=>e.addEventListener('input',()=>{fileRevision++;invalidate();message('Input changed. Run the analysis to update the report.');}));
+$('#file').addEventListener('change',async()=>{
+ const file=$('#file').files?.[0];$('#file').value='';if(!file)return;
+ const revision=++fileRevision;
+ const limit=500000,limitLabel='500 KB';
+ try{
+  message(`Reading ${file.name}…`);
+  const text=await window.localTextFile.read(file,limit,limitLabel);
+  if(revision!==fileRevision||busy)return;
+  $('#source').value=text;invalidate();message(`Loaded ${file.name}. Review the input, then run the analysis.`);
+ }catch(error){if(revision===fileRevision)message(error.message,true);}
+});
 $('#run').addEventListener('click',async()=>{
- if(busy)return;busy=true;window.analysisBusy(true);result=null;const controls=[...document.querySelectorAll('button,input,select,textarea')];controls.forEach(c=>c.disabled=true);message('Analyzing locally…');
+ if(busy)return;fileRevision++;busy=true;window.analysisBusy(true);result=null;const controls=[...document.querySelectorAll('button,input,select,textarea')];controls.forEach(c=>c.disabled=true);message('Analyzing locally…');
  try{const body={text:$('#source').value,threshold:Number($('#threshold').value),window_minutes:Number($('#window').value)};const data=await window.analysisRequest(`/api/security/${mode}`,{...body,...window.capabilityInputs()});result=data;if(mode==='secrets')$('#source').value='';render(data);window.renderCapabilities(data);message(mode==='secrets'?'Scan complete. Input cleared; raw credentials are absent from the report.':'Analysis complete. Input was not saved.');}catch(e){invalidate();message(e.message,true);}finally{busy=false;controls.forEach(c=>c.disabled=false);$('#download').disabled=!result;window.analysisBusy(false,!!result);if((config[location.hash.slice(1)]?location.hash.slice(1):'logs')!==mode)switchMode(location.hash.slice(1));}
 });
 $('#download').addEventListener('click',()=>{if(!result)return;const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`security-${mode}-report.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});

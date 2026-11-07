@@ -37,12 +37,9 @@ document.querySelectorAll('textarea, fieldset input').forEach(input=>input.addEv
 $('#file').addEventListener('change',async()=>{
  const file=$('#file').files[0];if(!file)return;$('#file').value='';const revision=++fileRevision;
  try{
-  if(file.size>1000000)throw Error('Choose a CSV no larger than 1 MB.');
   message(`Reading ${file.name}…`);
-  const buffer=await file.arrayBuffer();
+  const text=await window.localTextFile.read(file,1000000,'1 MB');
   if(revision!==fileRevision||busy)return;
-  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer);}catch{throw Error('This file is not valid UTF-8 text. Export it as UTF-8 and try again.');}
-  if(!text.trim())throw Error('The selected file is empty. Choose a CSV with input data.');
   $('#source').value=text;invalidate();message(`Loaded ${file.name}. Review the input, then run the analysis.`);document.dispatchEvent(new Event('source-loaded'));
  }catch(error){if(revision===fileRevision)message(error.message,true);}
  finally{if(revision===fileRevision)$('#file').value='';}

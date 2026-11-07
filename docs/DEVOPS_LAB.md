@@ -82,3 +82,7 @@ Next milestones: validate against a versioned Kubernetes schema, add OPA/Rego po
 Reliability Desk reports the first and last observed UTC buckets, observed hours, expected hours within that inclusive span, and compact missing-hour ranges. Each range lists the first and last missing bucket start (both inclusive) and its count. Ranges are calculated between sorted observations without expanding individual missing hours, even across very large spans. Nothing is inferred before the first or after the last observation.
 
 Detailed analysis previews up to 20 ranges and exports every range as CSV. JSON includes full coverage and range data. Tests cover timezone normalization, unsorted input, single-hour and multi-hour gaps, a single zero-traffic observation, extreme date spans, and an export exceeding the preview limit. A browser fixture reconciled four missing hours across two ranges and kept the six-hour burn status unavailable ([capture](design/reliability-coverage.png)).
+
+### Local file input
+
+Manifest Review and Pipeline Planner accept local UTF-8 JSON files up to 200 KB; Reliability Desk accepts metrics CSV up to 1 MB. File selection loads the editor without running analysis. Invalid files preserve the previous input and downloadable report. Delayed reads cannot overwrite manual edits, a newer file, another tool, or a running analysis. Browser checks covered a two-job JSON pipeline, invalid-file recovery, and metrics CSV ([capture](design/devops-file-import.png)).

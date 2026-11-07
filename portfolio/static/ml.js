@@ -31,12 +31,9 @@ $('#file').addEventListener('change',async()=>{
  const file=$('#file').files?.[0];$('#file').value='';if(!file)return;
  const revision=++fileRevision,limit=mode==='search'?200000:1000000;
  try {
-  if(file.size>limit)throw Error(`Choose a file no larger than ${mode==='search'?'200 KB':'1 MB'}.`);
   message(`Reading ${file.name}…`);
-  const buffer=await file.arrayBuffer();
+  const text=await window.localTextFile.read(file,limit,mode==='search'?'200 KB':'1 MB');
   if(revision!==fileRevision || busy)return;
-  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer);}catch{throw Error('This file is not valid UTF-8 text. Export it as UTF-8 and try again.');}
-  if(!text.trim())throw Error('The selected file is empty. Choose a file with input data.');
   $('#source').value=text;invalidate();message(`Loaded ${file.name}. Review the input, then run the analysis.`);document.dispatchEvent(new Event('source-loaded'));
  } catch(error) {if(revision===fileRevision)message(error.message,true);}
 });
