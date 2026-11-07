@@ -33,20 +33,22 @@ The security apps are at **http://127.0.0.1:8000/security**. See [Security Lab d
 
 The three data apps are at **http://127.0.0.1:8000/data** after starting the server. Use **Load sample** for fictional data containing deliberate quality problems. See [Data Lab documentation](docs/DATA_LAB.md).
 
-## Individual visual identities
+## The Observatory
 
-Each application has its own typography, navigation treatment, layout, and information hierarchy. Shared API behavior and accessible native controls remain in place. Select an app name below to view its working browser screenshot.
+A retro-futurist research station ties the collection together: printed-paper textures, numbered instrument plates, original vector illustrations, and field-note captions. Each app keeps its own palette, typography, and workspace layout, from a green radar console to a warm reading library. Select an app name below to view its working browser screenshot.
+
+Orbiting diagrams, radar sweeps, line tracing, tactile buttons, and completion highlights add movement. **Sound** enables short, locally synthesized click and result tones; it starts off and never needs audio files or network requests. **Motion** pauses the effects. Both preferences persist locally, system reduced-motion settings take precedence, and background tabs pause animation and audio.
 
 | App | Design direction |
 | --- | --- |
-| [Issue Desk](docs/design/issue-desk.png) | Compact indigo navigation, soft kanban lanes, inline counters |
+| [Issue Desk](docs/design/issue-desk.png) | Paper mission board, constellation diagram, indigo navigation |
 | [Stockroom](docs/design/stockroom.png) | Yellow warehouse masthead, serif title, full-width movement ledger |
 | [Experiment Studio](docs/design/experiment-studio.png) | Dark research bench, narrow configuration pane, large comparison metrics |
-| [Dataset Explorer](docs/design/dataset-explorer.png) | Dense blue workstation, tab strip, monospace data tables |
+| [Dataset Explorer](docs/design/dataset-explorer.png) | Pale specimen archive, grid illustration, monospace data tables |
 | [Pipeline Studio](docs/design/pipeline-studio.png) | Charcoal process station, orange controls, side-by-side source and steps |
 | [Revenue Lens](docs/design/revenue-lens.png) | Cream editorial report, serif typography, report-first layout |
 | [Auth Watch](docs/design/auth-watch.png) | Green event console, terminal typography, wide log editor |
-| [Header Review](docs/design/header-review.png) | Centered field guide, blue checklist, compact input sidebar |
+| [Header Review](docs/design/header-review.png) | Sage field guide, shield illustration, compact input sidebar |
 | [Secret Sentinel](docs/design/secret-sentinel.png) | Plum private review desk, spacious source area, findings below |
 | [Classifier Lab](docs/design/classifier-lab.png) | Ruled scientific notebook, margin controls, chart-led results |
 | [Retrieval Studio](docs/design/retrieval-studio.png) | Warm reading library, prominent query bar, editorial result list |
