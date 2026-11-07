@@ -1,0 +1,73 @@
+# REST Studio and Notes API
+
+A real SQLite-backed resource API with a browser request builder, OpenAPI contract, and runnable Python client. Routes are versioned under `/api/v1/notes`. These routes use an API key; the other portfolio apps keep their existing local-demo behavior.
+
+![REST Studio](rest-studio.png)
+
+## Start locally
+
+From the repository root in PowerShell, generate a session key, copy it for the explorer, and start the server:
+
+```powershell
+$env:PORTFOLIO_API_KEY = python -c "import secrets; print(secrets.token_urlsafe(32))"
+Set-Clipboard $env:PORTFOLIO_API_KEY
+python -m portfolio.server
+```
+
+Open http://127.0.0.1:8000/rest and paste the key into the password field. The explorer keeps it in memory only; it does not use localStorage or cookies. The key is captured from the environment when the server starts; restart to change it. A missing server key disables the versioned API with 503. Requests with a missing or wrong client key receive 401. No key is included in the source repository, response body, or OpenAPI document. Tests use explicitly fictional keys.
+
+In another terminal configured with the same `PORTFOLIO_API_KEY`, run:
+
+```sh
+python -m portfolio.rest_client
+```
+
+The client creates its own temporary note, retries creation with the same idempotency key, lists notes, gets the resource, updates it, and deletes its temporary note. `--base-url http://127.0.0.1:8765` supports a different local port. The client sends its key to the selected base URL, so choose that destination deliberately.
+
+## Resource model and routes
+
+A note has UUID `id`, `title` (1–200 characters, trimmed), `content` (1–10,000 characters, whitespace-only rejected), `status` (`draft` or `published`), integer `version`, and UTC `created_at`/`updated_at` timestamps. Unknown input fields and duplicate JSON keys are rejected. Create and replace require all three writable fields; PATCH accepts one or more writable fields.
+
+| Method | Route | Behavior |
+| --- | --- | --- |
+| GET | `/api/v1/notes` | List, filter, search, paginate |
+| POST | `/api/v1/notes` | Create; returns 201, Location, ETag |
+| GET | `/api/v1/notes/{id}` | Retrieve a note and ETag |
+| PUT | `/api/v1/notes/{id}` | Replace writable fields; requires If-Match |
+| PATCH | `/api/v1/notes/{id}` | Partial update; requires If-Match |
+| DELETE | `/api/v1/notes/{id}` | Permanently delete; requires If-Match; returns empty 204 |
+| OPTIONS | Both resource paths | Empty 204 with Allow header |
+
+Every route above requires `X-API-Key`. Write bodies use `application/json` and have a 65,536-byte limit. Chunked request bodies are unsupported. The explorer and `/openapi.json` are public local documentation endpoints. These API routes do not require the older `X-Portfolio-Client` header.
+
+### Querying
+
+Collection GET supports `page` (default 1, maximum 100,000), `page_size` (default 20, maximum 100), optional `status`, and optional `q` (up to 200 characters). Search is a literal case-insensitive substring over title/content using SQLite's default case folding, which is primarily ASCII. Query parameters cannot repeat. Unknown parameters are rejected.
+
+Responses contain `items`, `page`, `page_size`, `total`, and a relative `next` link or null. Ordering is `created_at DESC, id DESC`. Count and rows are read in one database transaction. This is offset pagination: records inserted or deleted between requests can shift page boundaries. It is not a cross-request snapshot or cursor pagination implementation.
+
+### Conditional updates
+
+GET and successful writes return a strong ETag shaped as `"uuid:version"`. Send that exact value in `If-Match` for PUT, PATCH, or DELETE. Missing preconditions return 428; stale or unsupported tags return 412. Wildcards, weak validators, and comma-separated ETag lists are not supported by this demonstration API. Successful PUT/PATCH increments the version, including same-value updates.
+
+The ETag comparison and mutation run inside one `BEGIN IMMEDIATE` transaction. Two competing writers using the same version cannot both succeed. A 412 response is a request to fetch the latest note and reconsider the edit; the server does not merge conflicting changes automatically. Conditional cache reads (`If-None-Match`/304) are not implemented; responses use `Cache-Control: no-store`.
+
+### Retry-safe creation
+
+POST accepts an optional `Idempotency-Key` of 1–128 ASCII letters, digits, `_`, `.`, `:`, or `-`. The first request stores a canonical payload hash and the original response atomically with the note. Concurrent duplicate requests create one resource. Repeating the key with the same validated payload returns the original 201 response and `Idempotency-Replayed: true`; a changed payload returns 409.
+
+Keys are scoped to the configured API key's SHA-256 digest. They are not automatically expired. The stored response is a snapshot: after a note is updated or deleted, replay still returns the original creation response/ETag and does not recreate a deleted note. Fetch Location to determine current state. Key rotation creates a new idempotency scope but does not create separate note ownership. Idempotency records retain the original note content even after deletion, so deletion is not an erasure workflow. Add retention rules before using this design with real sensitive records.
+
+## Errors and contract
+
+Implemented REST operations return errors as `application/problem+json` with `type`, `title`, `status`, `detail`, and `instance`, following the basic [RFC 9457 problem-details structure](https://www.rfc-editor.org/rfc/rfc9457.html). Each response includes a generated `X-Request-ID`. Unsupported implemented methods return 405 with Allow. Error messages avoid echoing keys or entire request bodies. The base Python server can still emit its own errors for unsupported protocol methods or malformed HTTP framing.
+
+Common status codes: 400 malformed JSON/query, 401 invalid key, 404 missing resource, 405 unsupported method, 409 idempotency conflict, 412 stale ETag, 413 body size, 415 content type, 422 field validation, 428 missing precondition, and 503 unconfigured API.
+
+The checked-in [OpenAPI JSON](../portfolio/static/openapi.json) describes paths, request bodies, schemas, API-key security, and response headers using [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html). Regenerate with `python -m portfolio.openapi`. A test ensures the checked-in document matches its generator. It is usable as an API reference/import contract; no third-party OpenAPI validator or generated SDK is claimed.
+
+## Verification and scope
+
+The repository has 73 tests, including 15 REST tests. New checks cover persisted CRUD, replacement/partial updates, deletion, request validation, authentication, missing server configuration, filter/pagination behavior, method discovery, ETags, concurrent writers, concurrent idempotency replay, replay after deletion, problem responses, static assets, and contract regeneration. The Python sample client was run end to end. Browser checks verified authenticated creation and conditional PATCH from version 1 to version 2. Automated browser/mobile tests remain future work.
+
+The server binds to loopback and remains a local demo on Python's development HTTP server. API-key authentication covers only `/api/v1` and does not make the rest of the portfolio internet-ready. There is one shared workspace, no per-user ownership, OAuth, TLS termination, rate limiting, key rotation service, idempotency TTL, or production deployment. UUIDs are identifiers, not authorization boundaries. Notes and idempotency snapshots persist in the existing ignored SQLite database. Future milestones: a production framework, identity and resource ownership, cursor pagination, retention/erasure policies, structured observability, and a generated client validated against the schema.
