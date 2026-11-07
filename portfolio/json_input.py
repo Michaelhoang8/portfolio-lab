@@ -4,7 +4,7 @@ import math
 
 
 def decode(raw):
-    """Reject ambiguous keys, non-finite numbers, and invalid/deep JSON."""
+    """Reject ambiguous keys, non-finite numbers, invalid Unicode, and deep JSON."""
     def unique(pairs):
         result = {}
         for key, value in pairs:
@@ -28,6 +28,11 @@ def decode(raw):
         pending = [(value, 0)]
         while pending:
             node, depth = pending.pop()
+            if isinstance(node,str):
+                node.encode('utf-8')  # Reject unpaired surrogate escapes before storage/analysis.
+            if isinstance(node,dict):
+                for key in node:
+                    key.encode('utf-8')
             if isinstance(node, (dict, list)):
                 if depth >= 64:
                     raise ValueError('JSON nesting limit exceeded')

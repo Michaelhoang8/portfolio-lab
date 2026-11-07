@@ -62,6 +62,7 @@ class RestTests(unittest.TestCase):
 
     def test_nonstandard_json_is_a_parse_error(self):
         for body in [b'{"title":"a","title":"b"}', b'{"title":NaN}',
+                     br'{"title":"PRIVATE_PREFIX_\ud800"}',
                      b'{"title":1e999}', b'{"title":' + b'['*1500+b'0'+b']'*1500+b'}']:
             with self.subTest(body=body[:50]):
                 status, headers, problem = self.request('POST',body=body)

@@ -239,3 +239,5 @@ Issue Desk status changes now send `expected_version`. Changed statuses from sta
 Workspace refreshes apply only the most recently requested response. Superseded responses and failures cannot overwrite newer data or display stale errors. If the newest refresh fails, the last successfully applied snapshot stays visible. JavaScript regression tests explicitly complete concurrent requests out of order, simulate newer-request failures, and check malformed response recovery.
 
 All twelve stateless analysis apps now accept local UTF-8 files appropriate to their input format. A shared decoder enforces each tool’s byte limit and consistent recovery messages. Eleven JavaScript tests cover byte limits, BOM/Unicode decoding, unreadable files, invalid encoding, and stale-file completions across the data, ML, security, and DevOps collections. Files load into the editor first; analysis requires an explicit run.
+
+The shared JSON decoder rejects unpaired Unicode surrogate escapes in values and object keys before data reaches SQLite or analysis functions. Valid paired escapes and ordinary Unicode remain supported; malformed-input errors do not echo submitted content.
