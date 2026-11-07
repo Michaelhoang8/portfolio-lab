@@ -155,3 +155,20 @@ def ticket_details(db, ticket_id, data):
             db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',
                        (ticket_id,'Updated '+', '.join(name.replace('_',' ') for name in changed)))
         return {'id':ticket_id, **values, 'version':old['version'] + bool(changed)}
+
+
+def movement_csv(db, batch_size=500):
+    """Yield the full ledger as CSV chunks from one SQLite query snapshot."""
+    from .data_apps import safe_csv
+    cursor = db.execute("""SELECT m.id,m.created_at,p.sku,p.name,m.delta,
+        SUM(m.delta) OVER (PARTITION BY m.product_id ORDER BY m.id) AS balance,m.note
+        FROM movements m JOIN products p ON p.id=m.product_id ORDER BY m.id""")
+    try:
+        yield safe_csv(['Movement ID','Timestamp UTC','SKU','Product','Quantity change','Balance after movement','Reason'],[])
+        while True:
+            batch = cursor.fetchmany(batch_size)
+            if not batch:
+                break
+            yield safe_csv([],[[str(value) for value in row] for row in batch],include_header=False)
+    finally:
+        cursor.close()

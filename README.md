@@ -165,7 +165,7 @@ Browser: semantic HTML + responsive CSS + vanilla JavaScript
 
 Each HTTP request opens and closes its own database connection. Stock mutations acquire `BEGIN IMMEDIATE` before reading the ledger balance, so two withdrawals cannot both spend the same units. Failed mutations roll back. Inventory balances derive from the ledger rather than a second mutable counter. Issue status changes and audit entries commit together. Repeating the current status adds no extra event.
 
-The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. For a full backup, stop the server and copy the SQLite database.
+The UI uses escaped text, native labeled controls, live status messages, disabled submit buttons while saving, and mobile breakpoints. Navigation is deep-linkable with `#tickets`, `#inventory`, and `#experiments`. The export button downloads the loaded workspace snapshot; events and movements are limited to the latest 100, so it is **not a full database backup**. Stockroom also offers **Export full ledger CSV**, which includes every movement, timestamp, product, reason, and running balance. Spreadsheet formula prefixes in text cells are escaped. For a full backup, stop the server and copy the SQLite database.
 
 ## API
 
@@ -173,6 +173,7 @@ The original product endpoints below require `Content-Type: application/json` an
 
 | Method | Endpoint | Body |
 | --- | --- | --- |
+| GET | `/api/movements.csv` | Full ledger CSV with per-product running balances; streamed in 500-row batches |
 | GET | `/api/state` | None; returns tickets, events, products, movements, experiments |
 | POST | `/api/tickets` | `title`, `description`, `priority` (low/medium/high) |
 | POST | `/api/tickets/{id}/status` | `status` (backlog/active/done) |

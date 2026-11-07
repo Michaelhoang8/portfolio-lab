@@ -1,4 +1,6 @@
 import json
+import csv
+import io
 import tempfile
 import threading
 import unittest
@@ -132,6 +134,30 @@ class DomainTests(unittest.TestCase):
             with self.subTest(key=invalid), self.assertRaises(ValidationError):
                 s.movement_create(self.db,{**request,'request_key':invalid})
 
+    def test_full_ledger_export_exceeds_preview_and_escapes_spreadsheet_text(self):
+        pid=s.product_create(self.db,{'name':'=SUM(1,2)','sku':'@FORMULA','reorder_point':0})['id']
+        with self.db:
+            for index in range(503):
+                self.db.execute('INSERT INTO movements(product_id,delta,note) VALUES (?,?,?)',
+                                (pid,1,'Receipt, with comma' if index else '=1+1'))
+            self.db.execute('INSERT INTO movements(product_id,delta,note) VALUES (?,?,?)',(pid,-2,'Ship'))
+        chunks=list(s.movement_csv(self.db))
+        self.assertEqual(len(chunks),3)
+        rows=list(csv.DictReader(io.StringIO(''.join(chunks))))
+        self.assertEqual(len(rows),504)
+        self.assertEqual(len(s.snapshot(self.db)['movements']),100)
+        self.assertEqual(rows[0]['SKU'],"'@FORMULA")
+        self.assertEqual(rows[0]['Product'],"'=SUM(1,2)")
+        self.assertEqual(rows[0]['Reason'],"'=1+1")
+        self.assertEqual(rows[1]['Reason'],'Receipt, with comma')
+        self.assertEqual(rows[-1]['Quantity change'],'-2')
+        self.assertEqual(rows[-1]['Balance after movement'],'501')
+
+    def test_empty_ledger_export_still_contains_headers(self):
+        rows=list(csv.reader(io.StringIO(''.join(s.movement_csv(self.db)))))
+        self.assertEqual(len(rows),1)
+        self.assertIn('Balance after movement',rows[0])
+
     def test_experiment_rates_and_zero_baseline(self):
         s.experiment_create(self.db, {'name':'CTA','a_visitors':100,'a_conversions':0,'b_visitors':100,'b_conversions':10})
         result = s.snapshot(self.db)['experiments'][0]
@@ -250,6 +276,16 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(json.load(response)['replayed'],replayed)
         with self.request('/api/movements',json.dumps({**payload,'delta':4}).encode(),headers) as response:
             self.assertEqual(response.status,409)
+
+    def test_ledger_download_headers_and_csv_shape(self):
+        with self.request('/api/movements.csv') as response:
+            self.assertEqual(response.status,200)
+            self.assertEqual(response.headers['Content-Type'],'text/csv; charset=utf-8')
+            self.assertIn('attachment;',response.headers['Content-Disposition'])
+            self.assertEqual(response.headers['X-Content-Type-Options'],'nosniff')
+            records=list(csv.reader(io.StringIO(response.read().decode('utf-8'))))
+            self.assertEqual(records[0][0],'Movement ID')
+            self.assertTrue(all(len(row)==7 for row in records))
 
     def test_extension_routes_and_validation(self):
         headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}

@@ -59,7 +59,7 @@ def profile(data):
             'duplicate_rows':len(records)-len(set(map(tuple,records))),
             'missing_cells':sum(c['missing'] for c in columns), 'preview':records[:10]}
 
-def safe_csv(headers, records):
+def safe_csv(headers, records, *, include_header=True):
     # Export text cannot become a spreadsheet formula when opened in Excel.
     def safe(value):
         if re.fullmatch(r'-[0-9]+(?:\.[0-9]+)?', value):
@@ -67,7 +67,8 @@ def safe_csv(headers, records):
         return "'" + value if value.lstrip().startswith(('=', '+', '-', '@')) or value.startswith(('\t','\r')) else value
     output = io.StringIO(newline='')
     writer = csv.writer(output)
-    writer.writerow([safe(h) for h in headers])
+    if include_header:
+        writer.writerow([safe(h) for h in headers])
     writer.writerows([[safe(value) for value in row] for row in records])
     return output.getvalue()
 

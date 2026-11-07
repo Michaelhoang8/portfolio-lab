@@ -44,6 +44,28 @@ def handler_for(database, api_key=None):
             if self.is_rest():
                 rest_api.handle(self,database,api_key)
                 return
+            if self.path == '/api/movements.csv':
+                db = connect(database)
+                chunks = services.movement_csv(db)
+                try:
+                    first = next(chunks)
+                    self.send_response(200)
+                    self.send_header('Content-Type','text/csv; charset=utf-8')
+                    self.send_header('Content-Disposition','attachment; filename="stock-movements.csv"')
+                    self.send_header('Cache-Control','no-store')
+                    self.send_header('X-Content-Type-Options','nosniff')
+                    self.send_header('Connection','close')
+                    self.close_connection = True
+                    self.end_headers()
+                    self.wfile.write(first.encode('utf-8'))
+                    for chunk in chunks:
+                        self.wfile.write(chunk.encode('utf-8'))
+                except (BrokenPipeError, ConnectionResetError):
+                    pass  # The download was cancelled; close its read cursor below.
+                finally:
+                    chunks.close()
+                    db.close()
+                return
             if self.path == '/api/state':
                 db = connect(database)
                 try:
