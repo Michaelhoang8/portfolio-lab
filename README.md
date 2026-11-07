@@ -64,7 +64,7 @@ Browser QA exercised all twelve analysis samples and the authenticated Notes lis
 
 Use **All collections** to move between workspaces. Each analysis app offers a task-specific starting state and **Load an example** action. Run with **Ctrl+Enter** (or **Command+Enter**), then use **View results** to move keyboard focus directly to the report. Editing an input clears its previous report and prompts a rerun.
 
-Issue Desk shows filtered counts and a clear-filters action. Expand **Edit issue** on a card to update its title, description, priority, assignee, and deadline. Edits are audited, repeated unchanged saves add no duplicate event, and version checks reject stale edits from another tab. Product forms keep save feedback beside the submit button. REST Studio labels the last request with its method, URL, status, and completion time, locks request controls while sending, and supports copying the response body. API keys remain unsaved. Previous/Next controls follow the displayed list response and retain its filters. Wide data tables are keyboard-focusable for horizontal scrolling.
+Issue Desk shows filtered counts and a clear-filters action. Search matches title, description, assignee, or #ID; search and priority filters are stored in the page URL so reloads and bookmarks retain the view. Expand **Edit issue** on a card to update its title, description, priority, assignee, and deadline. Edits are audited, repeated unchanged saves add no duplicate event, and version checks reject stale edits from another tab. Product forms keep save feedback beside the submit button. REST Studio labels the last request with its method, URL, status, and completion time, locks request controls while sending, and supports copying the response body. API keys remain unsaved. Previous/Next controls follow the displayed list response and retain its filters. Wide data tables are keyboard-focusable for horizontal scrolling.
 
 The refinement pass manually verified example loading across all twelve analysis apps, result focus, input invalidation, keyboard execution, skip navigation, issue filtering, response copying, and collection-menu layouts across all sixteen apps at 390px width.
 
@@ -152,7 +152,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 101 tests: eleven product/domain/HTTP tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, fifteen REST tests, and twenty-six capability tests. CI also checks JavaScript syntax for all six interfaces and the shared identity and capability controllers.
+The Python suite covers product workflows, concurrency, HTTP contracts, data analysis, security review, ML, DevOps, and capability extensions. CI runs it across Python 3.11–3.13, checks JavaScript syntax, and runs the JavaScript request-lifecycle tests.
 
 ## Architecture
 

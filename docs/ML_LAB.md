@@ -60,7 +60,7 @@ Inputs and models are processed in memory, not saved to SQLite or uploaded to th
 
 ## Tests and next steps
 
-The repository now has 45 tests. Thirteen ML tests cover known AUC examples and ties, confusion counts, probability losses, undefined metrics, calibration boundaries, invalid probabilities, deterministic fitting, training-only scaling, disjoint splits, exported-model inference, duplicate rows, search rankings, unseen terms, invalid corpora, and HTTP routes. Browser smoke checks verify all three sample flows. Automated browser/mobile regression tests are future work.
+ML tests cover known AUC examples and ties, confusion counts, probability losses, undefined metrics, calibration boundaries, invalid probabilities, deterministic fitting, training-only scaling, disjoint splits, exported-model inference, duplicate rows, search rankings, unseen terms, invalid corpora, and HTTP routes. Browser smoke checks verify all three sample flows. Automated browser/mobile regression tests are future work.
 
 Next milestones: compare outputs against a pinned scikit-learn reference, add cross-validation with proper preprocessing isolation, save versioned experiment metadata, benchmark retrieval with relevance judgments, and compare lexical retrieval to a local embedding model. The current code does not depend on scikit-learn and is not claimed to be bit-for-bit equivalent to its solvers.
 

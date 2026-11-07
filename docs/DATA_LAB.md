@@ -28,6 +28,6 @@ These are bounded, local analytics apps, not a distributed ETL service. The brow
 
 ## Verification and next milestones
 
-The repository has 19 tests, including 10 added data tests covering malformed CSV, multiline quoting, BOMs, missing values, duplicates, numeric edge cases, transformation order, idempotence, safe export, exact decimal totals, refunds, invalid dates, column mappings, and HTTP input validation. Browser smoke checks exercise all three apps using the fictional sample. File chooser and mobile viewport automation are not included.
+Data tests cover malformed CSV, multiline quoting, BOMs, missing values, duplicates, numeric edge cases, transformation order, idempotence, safe export, exact decimal totals, refunds, invalid dates, column mappings, and HTTP input validation. Browser smoke checks exercise all three apps using the fictional sample. File chooser and mobile viewport automation are not included.
 
 Useful follow-ups: schema contracts with per-column validation rules, saved pipeline configurations, Parquet support, source-to-output lineage, large-file streaming, SQL transformations, and scheduled ingestion. For interviews, explain the distinction between row rejection and whole-file rejection, why Decimal is used for monetary aggregation, and why missing values are not automatically filled.

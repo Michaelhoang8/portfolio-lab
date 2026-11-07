@@ -2,7 +2,7 @@
 
 These are proposed milestones, not claims of completed work. Make future commits when each change is actually implemented and verified.
 
-1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. Next, add archival, pagination, and URL-backed filters for larger datasets.
+1. **Issue Desk:** issue editing now preserves audit history and rejects stale versions. Search and priority filters persist in the URL. Next, add archival and pagination for larger datasets.
 2. **Stockroom:** retry-safe receipts and withdrawals are implemented with concurrent-request tests. A streamed full-ledger CSV export includes running balances. Next, add receiving documents and supplier lead-time history.
 3. **Experiment Studio:** add experiment hypotheses and guardrail metrics. Implement a documented two-proportion comparison with tests against an independent reference. Keep sample-size planning separate from observed outcomes.
 4. **Shared backend:** introduce schema migrations, a production HTTP framework, structured logging, and API contract tests.
@@ -25,6 +25,6 @@ Use claims only after you can explain, maintain, and demonstrate the implementat
 
 - Developed a three-app portfolio with JavaScript interfaces, Python JSON APIs, and persistent SQLite storage.
 - Implemented a transactional inventory ledger and tested simultaneous withdrawals to prevent negative stock.
-- Added audit history, validated experiment analysis, and nine automated domain/API tests with a Python-version CI matrix.
+- Added audit history, validated experiment analysis, and automated domain/API regression tests with a Python-version CI matrix.
 
 Add measurable performance or user outcomes only after you collect actual evidence. Describe AI assistance honestly if asked about your process.
