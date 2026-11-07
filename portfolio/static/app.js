@@ -7,8 +7,14 @@ const percent = value => `${(value * 100).toFixed(2)}%`;
 const empty = message => `<p class="empty">${message}</p>`;
 function notice(message, error = false) { $('#notice').textContent = message; $('#notice').className = message ? `notice${error ? ' error' : ''}` : ''; }
 function stats(target, items) { $(target).innerHTML = items.map(([label, value]) => `<div class="stat"><small>${label}</small><strong>${value}</strong></div>`).join(''); }
+let refreshSequence=0;
 async function refresh() {
-  const {response,text}=await window.restTransport.send('/api/state',{method:'GET'});
+  const sequence=++refreshSequence;
+  let received;
+  try{received=await window.restTransport.send('/api/state',{method:'GET'});}
+  catch(error){if(sequence!==refreshSequence)return;throw error;}
+  if(sequence!==refreshSequence)return;
+  const {response,text}=received;
   if (!response.ok) throw new Error('Could not load workspace. Check the server and refresh.');
   let next;try{next=JSON.parse(text);if(!next||!['tickets','events','products','movements','experiments'].every(key=>Array.isArray(next[key])))throw Error();}catch{throw Error('The workspace returned an unreadable response. Check the server and refresh.');}
   const stockChanged = JSON.stringify([state.products,state.movements]) !== JSON.stringify([next.products,next.movements]);
