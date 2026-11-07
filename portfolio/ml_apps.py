@@ -147,6 +147,9 @@ def search(data):
     docs=[doc.strip() for doc in re.split(r'\n\s*---\s*\n',documents) if doc.strip()]
     if not 2<=len(docs)<=100:
         raise ValidationError('Provide 2–100 documents separated by a line containing ---')
+    algorithm=data.get('algorithm','tfidf')
+    if algorithm not in ('tfidf','bm25'): raise ValidationError('algorithm must be tfidf or bm25')
+    top_k=integer(data,'top_k',1,20) if 'top_k' in data else 10
     counts=[Counter(tokens(doc)) for doc in docs]
     df=Counter(term for count in counts for term in count)
     if not df:
@@ -158,14 +161,17 @@ def search(data):
         return {term:v/norm for term,v in raw.items()}
     q=vector(Counter(tokens(query)))
     results=[]
+    average_length=sum(sum(c.values()) for c in counts)/len(docs) or 1
     for index,count in enumerate(counts):
         vec=vector(count)
         contributions=sorted(((term,qv*vec.get(term,0)) for term,qv in q.items() if term in vec),key=lambda x:-x[1])
         score=sum(value for _,value in contributions)
         if score>0:
-            results.append({'document':index+1,'score':min(1.,score),'excerpt':docs[index][:600],
+            bm25=sum(math.log(1+(len(docs)-df[term]+.5)/(df[term]+.5))*(count[term]*2.5)/(count[term]+1.5*(.25+.75*sum(count.values())/average_length)) for term in q if count[term])
+            results.append({'document':index+1,'score':bm25 if algorithm=='bm25' else min(1.,score),'tfidf_score':min(1.,score),'bm25_score':bm25,'excerpt':docs[index][:600],
                             'matched_terms':[{'term':term,'contribution':value} for term,value in contributions]})
     results.sort(key=lambda r:(-r['score'],r['document']))
     return {'documents':len(docs),'vocabulary':len(idf),'query_terms':list(q),
-            'unseen_terms':sorted(set(tokens(query))-set(idf)), 'results':results[:10],
-            'method':'TF-IDF cosine similarity (lexical baseline, not neural semantic embeddings)'}
+            'unseen_terms':sorted(set(tokens(query))-set(idf)), 'results':results[:top_k], 'algorithm':algorithm, 'top_k':top_k,
+            'capabilities':{'tables':[{'title':'Ranking comparison','headers':['Document','TF-IDF cosine','BM25 score'],'rows':[[r['document'],round(r['tfidf_score'],5),round(r['bm25_score'],5)] for r in results[:top_k]]}], 'notes':['BM25 uses k1=1.5, b=0.75 and unique query terms. Scores are unbounded ranking values, not probabilities. Matched-term contributions still describe TF-IDF.']},
+            'method':('BM25 lexical ranking' if algorithm=='bm25' else 'TF-IDF cosine similarity (lexical baseline, not neural semantic embeddings)')}

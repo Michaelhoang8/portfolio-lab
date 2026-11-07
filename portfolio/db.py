@@ -39,6 +39,11 @@ def initialize(path):
     with closing(connect(path)) as db:
         db.execute('PRAGMA journal_mode=WAL')
         db.executescript(SCHEMA)
+        columns = {row['name'] for row in db.execute('PRAGMA table_info(tickets)')}
+        for name in ('assignee','due_date'):
+            if name not in columns:
+                db.execute(f"ALTER TABLE tickets ADD COLUMN {name} TEXT NOT NULL DEFAULT ''")
+        db.commit()
         from .rest_api import SCHEMA as REST_SCHEMA
         db.executescript(REST_SCHEMA)
 

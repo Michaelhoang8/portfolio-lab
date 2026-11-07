@@ -130,5 +130,25 @@ class HttpTests(unittest.TestCase):
         with self.request('/api/state') as response:
             self.assertEqual(json.load(response)['products'][0]['sku'],'MOUSE')
 
+    def test_extension_routes_and_validation(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        for path in ['/api/extensions/experiment-plan','/api/extensions/stock-plan']:
+            with self.request(path,b'{}',headers) as response:self.assertEqual(response.status,200)
+        model={'features':['x'],'weights':[1],'means':[0],'scales':[1],'intercept':0}
+        with self.request('/api/extensions/predict',json.dumps({'model':model,'csv':'x\n0'}).encode(),headers) as response:
+            self.assertEqual(response.status,200)
+            self.assertEqual(json.load(response)['predictions'][0]['score'],.5)
+        with self.request('/api/extensions/predict',b'{"model":{}}',headers) as response:self.assertEqual(response.status,400)
+        with self.request('/capabilities.js') as response:self.assertEqual(response.status,200)
+
+    def test_assignment_endpoint_persists_and_audits(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/tickets',json.dumps({'title':'Assignment test','description':'HTTP','priority':'low'}).encode(),headers) as response:ticket=json.load(response)['id']
+        with self.request(f'/api/tickets/{ticket}/details',b'{"assignee":"Team","due_date":"2026-12-01"}',headers) as response:self.assertEqual(response.status,200)
+        with self.request('/api/state') as response:
+            state=json.load(response)
+            self.assertEqual(next(t for t in state['tickets'] if t['id']==ticket)['assignee'],'Team')
+        with self.request(f'/api/tickets/{ticket}/details',b'{"due_date":"invalid"}',headers) as response:self.assertEqual(response.status,400)
+
 if __name__ == '__main__':
     unittest.main()

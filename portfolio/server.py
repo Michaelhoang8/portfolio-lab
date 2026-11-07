@@ -7,7 +7,7 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .db import connect, initialize
-from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api
+from . import services, data_apps, security_apps, ml_apps, devops_apps, rest_api, capabilities
 from .validation import ValidationError, NotFoundError
 
 STATIC = Path(__file__).parent / 'static'
@@ -68,6 +68,7 @@ def handler_for(database, api_key=None):
                      '/data.js': ('data.js', 'text/javascript; charset=utf-8'),
                      '/data.css': ('data.css', 'text/css; charset=utf-8'),
                      '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                     '/capabilities.js': ('capabilities.js', 'text/javascript; charset=utf-8'),
                      '/identities.js': ('identities.js', 'text/javascript; charset=utf-8'),
                      '/identities.css': ('identities.css', 'text/css; charset=utf-8'),
                      '/style.css': ('style.css', 'text/css; charset=utf-8')}
@@ -89,29 +90,37 @@ def handler_for(database, api_key=None):
             db = connect(database)
             try:
                 length = int(self.headers.get('Content-Length', '0'))
-                limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/','/api/devops/')) else 16384
+                limit = 6_100_000 if self.path.startswith(('/api/data/','/api/security/','/api/ml/','/api/devops/','/api/extensions/')) else 16384
                 if not 0 < length <= limit:
                     raise ValidationError(f'Request must contain 1–{limit} bytes')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValidationError('Expected a JSON object')
+                extensions={'/api/extensions/predict':capabilities.predict,'/api/extensions/experiment-plan':capabilities.experiment_plan}
+                if self.path in extensions:
+                    self.reply(200,extensions[self.path](data));return
+                if self.path == '/api/extensions/stock-plan':
+                    self.reply(200,capabilities.stock_plan(db,data));return
+                details=re.fullmatch(r'/api/tickets/(\d+)/details',self.path)
+                if details:
+                    self.reply(200,services.ticket_details(db,int(details[1]),data));return
                 devops_routes={'/api/devops/manifest':devops_apps.manifest,'/api/devops/pipeline':devops_apps.pipeline,'/api/devops/reliability':devops_apps.reliability}
                 if self.path in devops_routes:
-                    self.reply(200,devops_routes[self.path](data))
+                    self.reply(200,capabilities.enrich(self.path,data,devops_routes[self.path](data)))
                     return
                 ml_routes = {'/api/ml/train':ml_apps.train,'/api/ml/search':ml_apps.search,'/api/ml/evaluate':ml_apps.evaluate}
                 if self.path in ml_routes:
-                    self.reply(200, ml_routes[self.path](data))
+                    self.reply(200, capabilities.enrich(self.path,data,ml_routes[self.path](data)))
                     return
                 security_routes = {'/api/security/logs':security_apps.auth_logs,
                     '/api/security/headers':security_apps.inspect_headers,'/api/security/secrets':security_apps.scan_secrets}
                 if self.path in security_routes:
-                    self.reply(200, security_routes[self.path](data))
+                    self.reply(200, capabilities.enrich(self.path,data,security_routes[self.path](data)))
                     return
                 data_routes = {'/api/data/profile':data_apps.profile, '/api/data/clean':data_apps.clean,
                                '/api/data/sales':data_apps.sales}
                 if self.path in data_routes:
-                    self.reply(200, data_routes[self.path](data))
+                    self.reply(200, capabilities.enrich(self.path,data,data_routes[self.path](data)))
                     return
                 routes = {'/api/tickets': services.ticket_create, '/api/products': services.product_create,
                           '/api/movements': services.movement_create, '/api/experiments': services.experiment_create}

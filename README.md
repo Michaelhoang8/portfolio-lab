@@ -66,6 +66,54 @@ Issue Desk shows filtered counts and a clear-filters action. Product forms keep 
 
 The refinement pass manually verified example loading across all twelve analysis apps, result focus, input invalidation, keyboard execution, skip navigation, issue filtering, response copying, and collection-menu layouts across all sixteen apps at 390px width.
 
+## Deeper capabilities and demo guide
+
+| App | Added capability | Demo / engineering evidence |
+| --- | --- | --- |
+| Issue Desk | Assignees, due dates, overdue labels, editable assignments | Expand a card to update ownership; changes persist with an idempotent audit event. Existing databases upgrade without losing tickets. |
+| Stockroom | Lead-time and safety-coverage replenishment plans | Calculate a plan below the ledger; inspect trailing 30-day withdrawals, days of coverage, and recommended order quantities; export JSON. |
+| Experiment Studio | Sample-size planning | Enter baseline, minimum absolute lift, power, and alpha below saved experiments; export a fixed-horizon experiment design. |
+| Dataset Explorer | IQR outlier diagnostics and pairwise correlations | Run numeric CSV data; inspect flagged record numbers and complete-pair counts. Constant columns are undefined, not zero correlation. |
+| Pipeline Studio | Row-level cleaning provenance | Trace each source record to its output record or removal reason; export the full formula-safe audit CSV. |
+| Revenue Lens | Monthly growth and refund reconciliation | Inspect consecutive-month growth, missing-month gaps, gross sales, refunds, and net amount. |
+| Auth Watch | Prioritized incident queue | Group related alerts by source IP, with implicated-user counts, first/last alert times, and triggered rules. |
+| Header Review | Policy baseline comparisons | Paste an earlier header block under Analysis settings; identify status improvements and regressions without exporting header values. |
+| Secret Sentinel | Configurable scan gate and redacted CSV export | Choose high-only or medium-and-high severity; inspect PASS/BLOCK, per-rule counts, and export locations/remediation without matched values. |
+| Classifier Lab | Batch inference using the trained model | Train, then paste unlabeled feature rows below the model report; reuse training scaling and export predictions. The inference API also accepts a saved model object. |
+| Retrieval Studio | BM25 and TF-IDF ranking comparison | Select BM25 and a result limit; compare both scores for returned documents. BM25 scores are not probabilities. |
+| Model Observatory | Cost-sensitive threshold evaluation | Set false-positive and false-negative costs; inspect the 0.1-step threshold grid and lowest-cost candidate on the supplied data. |
+| Manifest Review | Deployment resource envelope | Inspect CPU/memory requests and limits per container and multiplied by replica count. Missing/unsupported units remain unknown. |
+| Pipeline Planner | Worker-capacity comparison | Compare 1–8 workers using the same dependency/retry simulation, elapsed time, and utilization. |
+| Reliability Desk | Two-window burn-rate checks | Set a threshold for both 1-hour and 6-hour windows; distinguish firing, not firing, and insufficient data. |
+| REST Studio | In-memory request history and collection export | Prepare one of the last ten requests without sending it. Export method/path/body/header snapshots; API-key authentication is excluded. |
+
+All diagnostics state their assumptions in the UI. The sample-size planner uses a pooled null variance and an unpooled alternative variance with the usual normal approximation, ignoring the far tail when solving for sample size; see the [statsmodels reference](https://www.statsmodels.org/v0.14.6/generated/statsmodels.stats.proportion.samplesize_proportions_2indep_onetail.html). It is not a sequential-testing engine. Replenishment uses observed withdrawals, not a learned forecast. Resource envelopes exclude rollout surge and init-container scheduling. Burn checks evaluate uploaded data, not live production traffic.
+
+The new analysis fields are included in existing JSON report downloads. Cleaning additionally exports a complete row-audit CSV; secret scans export redacted finding CSVs. Numeric prediction exports include all rows, while the UI previews the first 50. Nothing is deployed to cloud infrastructure by these features.
+
+### Extension API examples
+
+All extension routes require `Content-Type: application/json` and `X-Portfolio-Client: browser`, like the existing local APIs:
+
+- `POST /api/tickets/{id}/details`: `{ "assignee": "Review team", "due_date": "2026-12-01" }`. Empty strings clear assignment/deadline. Changes are audited; repeating identical values adds no event.
+- `POST /api/extensions/stock-plan`: `{ "lead_days": 7, "safety_days": 7 }`. Reads persisted stock movements; writes no purchase orders.
+- `POST /api/extensions/experiment-plan`: `{ "baseline": 0.1, "absolute_lift": 0.02, "power": 0.8, "alpha": 0.05 }`. Returns 3,841 visitors per variant for this example.
+- `POST /api/extensions/predict`: `{ "model": <model object from training report>, "csv": "feature_a,feature_b\n1,2", "threshold": 0.5 }`. Matches feature names, validates vector lengths/scales, and reuses the fitted preprocessing.
+
+Optional settings on existing routes: `baseline_text` for header review, `gate_severity` for secret scans, `algorithm`/`top_k` for retrieval, `false_positive_cost`/`false_negative_cost` for evaluation, and `burn_threshold` for reliability. Existing defaults remain compatible. These local extension routes are separate from the versioned Notes API and its OpenAPI contract.
+
+### Resume discussion prompts
+
+Describe what you can demonstrate and explain. Examples to adapt after reviewing the implementation:
+
+- Implemented transactional SQLite workflows with audit trails, additive schema migration, and concurrent stock-withdrawal protection.
+- Built reproducible model training and batch inference with training-only preprocessing, held-out evaluation, and cost-sensitive decision analysis.
+- Developed bounded data-quality pipelines with row-level provenance and formula-safe CSV exports.
+- Implemented dependency-graph simulation, resource-capacity analysis, and SLO diagnostics with explicit missing-data semantics.
+- Built an authenticated REST API with optimistic concurrency and idempotent creation, plus an inspectable request client.
+
+Avoid claiming production deployments, real business impact, or forecast accuracy from synthetic demos. The repository includes AI-assisted implementation; understand the tradeoffs and tests before presenting the work.
+
 ## Run locally
 
 Requires Python 3.11 or later. No pip packages required. Run from this repository:
@@ -94,7 +142,7 @@ Node is optional for running the apps; it is used only for the JavaScript syntax
 
 Manual browser smoke checks verified issue creation, navigation across all three apps, rendering saved experiment results, and a visible error when withdrawing four units from a product with three available. Automated end-to-end browser and mobile viewport tests are future work.
 
-The full suite now contains 73 tests: nine original domain/API tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, and fifteen REST tests. CI also checks JavaScript syntax for all six interfaces and the shared identity controller.
+The full suite now contains 96 tests: eleven product/domain/HTTP tests, ten data tests, thirteen security tests, thirteen ML tests, thirteen DevOps tests, fifteen REST tests, and twenty-one capability tests. CI also checks JavaScript syntax for all six interfaces and the shared identity and capability controllers.
 
 ## Architecture
 

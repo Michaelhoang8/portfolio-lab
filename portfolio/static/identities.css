@@ -328,6 +328,21 @@ body[data-app=sales] nav button[data-mode][aria-pressed=true]{background:transpa
 .filter-feedback{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:-8px 0 18px;font-size:12px;color:var(--muted)}
 .form-feedback{font-size:12px;line-height:1.6}
 .form-feedback:empty{display:none}
+.extension-report{margin-top:28px;padding-top:22px;border-top:2px solid var(--line)}
+.extension-report>h3{margin-top:26px}
+.extension-report button{margin:10px 8px 0 0}
+.extension-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;align-items:end}
+.extension-form .primary{margin:0 0 14px}
+.extension-output{min-width:0;overflow-wrap:anywhere}
+.prediction-panel{border:1px solid var(--line);padding:20px;background:var(--bg,var(--paper))}
+.prediction-panel textarea{height:150px}
+#capability-options{grid-column:1/-1;border:1px solid var(--line);padding:14px;margin:18px 0}
+body[data-app] #capability-options select{display:block;width:100%;padding:10px;margin-top:7px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:inherit}
+#capability-options textarea{height:180px}
+.ticket-assignment{border-top:1px solid var(--line);padding-top:12px;margin:12px 0;font-size:12px}
+.ticket-assignment summary{cursor:pointer;overflow-wrap:anywhere}
+.ticket-assignment button{padding:8px 12px;border:1px solid var(--line)}
+#request-history small{overflow-wrap:anywhere;white-space:normal}
 .collection-menu summary{cursor:pointer;padding:9px 12px;border:1px solid currentColor;border-radius:5px;list-style-position:inside}
 .collection-links{position:absolute;right:0;top:calc(100% + 10px);width:215px;padding:7px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 35px #0002}
 body[data-app] header .collection-links a{display:block;padding:11px 13px;font:13px/1.5 system-ui;text-decoration:none;border-radius:4px;color:var(--ink)}

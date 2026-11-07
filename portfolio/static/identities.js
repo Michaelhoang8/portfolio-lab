@@ -21,6 +21,7 @@ window.designIdentity = function (app) {
   const identity = identities[app];
   if (!identity) return;
   document.body.dataset.app = app;
+  window.installCapabilities?.(app);
   document.title = `${identity[0]} · Portfolio Lab`;
   const intro = document.querySelector('.intro');
   if (intro) {

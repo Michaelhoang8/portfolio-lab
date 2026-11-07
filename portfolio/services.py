@@ -1,5 +1,6 @@
 """Domain operations. Caller owns the connection; mutations own transactions."""
 from math import sqrt
+from datetime import date
 from .db import rows
 from .validation import ValidationError, NotFoundError, text, integer, choice
 
@@ -7,9 +8,10 @@ def ticket_create(db, data):
     title = text(data, 'title')
     description = text(data, 'description', 4000)
     priority = choice(data, 'priority', ('low', 'medium', 'high'))
+    assignee,due_date = assignment(data)
     with db:
-        ticket_id = db.execute('INSERT INTO tickets(title,description,priority) VALUES (?,?,?)',
-                               (title, description, priority)).lastrowid
+        ticket_id = db.execute('INSERT INTO tickets(title,description,priority,assignee,due_date) VALUES (?,?,?,?,?)',
+                               (title, description, priority, assignee, due_date)).lastrowid
         db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)', (ticket_id, 'Created in backlog'))
     return {'id': ticket_id}
 
@@ -87,3 +89,29 @@ def snapshot(db):
         'movements': rows(db.execute('SELECT m.*,p.sku FROM movements m JOIN products p ON m.product_id=p.id ORDER BY m.id DESC LIMIT 100')),
         'experiments': [experiment_summary(row) for row in db.execute('SELECT * FROM experiments ORDER BY id DESC')],
     }
+
+
+def assignment(data):
+    assignee=data.get('assignee','')
+    due=data.get('due_date','')
+    if not isinstance(assignee,str) or len(assignee)>120:
+        raise ValidationError('Assignee must be text of at most 120 characters')
+    if not isinstance(due,str): raise ValidationError('Due date must be YYYY-MM-DD or empty')
+    if due:
+        try:
+            if date.fromisoformat(due).isoformat()!=due: raise ValueError()
+        except ValueError:
+            raise ValidationError('Due date must be YYYY-MM-DD or empty') from None
+    return assignee.strip(),due
+
+
+def ticket_details(db,ticket_id,data):
+    assignee,due=assignment(data)
+    with db:
+        db.execute('BEGIN IMMEDIATE')
+        old=db.execute('SELECT assignee,due_date FROM tickets WHERE id=?',(ticket_id,)).fetchone()
+        if old is None: raise NotFoundError('Ticket not found')
+        if (old['assignee'],old['due_date'])!=(assignee,due):
+            db.execute('UPDATE tickets SET assignee=?,due_date=? WHERE id=?',(assignee,due,ticket_id))
+            db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',(ticket_id,f"Assignment: {assignee or 'unassigned'}; due: {due or 'none'}"))
+    return {'id':ticket_id,'assignee':assignee,'due_date':due}
