@@ -218,6 +218,10 @@ Issue Desk status changes now send `expected_version`. Changed statuses from sta
 
 Workspace refreshes apply only the most recently requested response. Superseded responses and failures cannot overwrite newer data or display stale errors. If the newest refresh fails, the last successfully applied snapshot stays visible. JavaScript regression tests explicitly complete concurrent requests out of order, simulate newer-request failures, and check malformed response recovery.
 
+### Larger issue boards
+
+Each stage displays ten issues per page with independent Previous/Next controls. Filtering and browser history navigation reset the pages; changes that shorten a stage clamp its page to the last available one. Unsaved issue drafts survive paging away and back within the current page session. Counts reflect all matching issues. This limits rendered cards, not API response size: `/api/state` still loads the complete workspace. Regression tests cover page boundaries, independent columns, and filter clamping; a browser check also verified draft retention ([capture](docs/design/issue-pagination.png)).
+
 ### Reversible issue archiving
 
 Open an issue’s editor and choose **Archive issue** to remove it from the default board. **View options → Issue visibility** switches between current, archived, or all issues, and persists as `issue_archive` in the URL. Archived cards retain their stage, details, assignee, deadline, and audit history; **Restore issue** returns them to the current board. Archive status controls visibility, not edit permissions. Overview totals include all issues.

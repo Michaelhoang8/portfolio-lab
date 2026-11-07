@@ -25,6 +25,8 @@ function localToday() { const now=new Date(); return `${now.getFullYear()}-${Str
 const ticketDrafts = new Map();
 const savingTickets = new Set();
 const movingTickets = new Set();
+const boardPageSize=10,boardPages={backlog:0,active:0,done:0};
+function resetBoardPages(){for(const status of Object.keys(boardPages))boardPages[status]=0;}
 const editFields = ['title','description','priority','assignee','due'];
 function renderTickets() {
   const opened = new Set([...document.querySelectorAll('.ticket-assignment[open]')].map(panel=>panel.querySelector('[data-save-assignment]').dataset.saveAssignment));
@@ -43,12 +45,18 @@ function renderTickets() {
     if(order!=='newest') {const byPriority=priorityRank[a.priority]-priorityRank[b.priority];if(byPriority)return byPriority;}
     return b.id-a.id;
   });
-  $('#filter-summary').textContent = `${filtered.length} of ${state.tickets.length} issues shown`;
+  const paged=Object.keys(boardPages).some(status=>filtered.filter(ticket=>ticket.status===status).length>boardPageSize);
+  $('#filter-summary').textContent = `${filtered.length} of ${state.tickets.length} issues ${paged?'match · 10 per column per page':'shown'}`;
   $('#reset-filters').hidden = !$('#search').value && !priority && !due && order==='newest' && archive==='current';
   $('#issue-view-options summary').textContent=due || order!=='newest' || archive!=='current'?'View options · customized':'View options';
   $('#board').innerHTML = ['backlog', 'active', 'done'].map(status => {
     const tickets = filtered.filter(t => t.status === status);
-    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}${t.archived?' · archived':''}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment" data-version="${t.version}"><summary>Edit issue · ${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Title<input data-title="${t.id}" value="${escape(t.title)}" maxlength="200" required></label><label>Description<textarea data-description="${t.id}" maxlength="4000" required>${escape(t.description)}</textarea></label><label>Priority<select data-priority="${t.id}">${["low","medium","high"].map(p=>`<option ${p===t.priority?"selected":""}>${p}</option>`).join("")}</select></label><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save changes</button><button type="button" data-archive-ticket="${t.id}" data-archived="${!!t.archived}">${t.archived?'Restore issue':'Archive issue'}</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
+    const last=Math.max(0,Math.ceil(tickets.length/boardPageSize)-1);
+    boardPages[status]=Math.max(0,Math.min(last,boardPages[status]));
+    const start=boardPages[status]*boardPageSize,end=Math.min(start+boardPageSize,tickets.length);
+    const pager=tickets.length>boardPageSize?`<div class="response-pagination" role="group" aria-label="${status} issue pages"><button type="button" data-board-status="${status}" data-board-step="-1" ${boardPages[status]===0?'disabled':''}>Previous</button><span role="status">${start+1}–${end} of ${tickets.length}</span><button type="button" data-board-status="${status}" data-board-step="1" ${boardPages[status]===last?'disabled':''}>Next</button></div>`:'';
+
+    return `<div class="column" data-board-column="${status}"><h2 tabindex="-1">${status}<span>${tickets.length}</span></h2>${pager}${tickets.slice(start,end).map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}${t.archived?' · archived':''}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment" data-version="${t.version}"><summary>Edit issue · ${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Title<input data-title="${t.id}" value="${escape(t.title)}" maxlength="200" required></label><label>Description<textarea data-description="${t.id}" maxlength="4000" required>${escape(t.description)}</textarea></label><label>Priority<select data-priority="${t.id}">${["low","medium","high"].map(p=>`<option ${p===t.priority?"selected":""}>${p}</option>`).join("")}</select></label><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save changes</button><button type="button" data-archive-ticket="${t.id}" data-archived="${!!t.archived}">${t.archived?'Restore issue':'Archive issue'}</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
   }).join('');
   document.querySelectorAll('.ticket-assignment').forEach(panel=>{
     const id=panel.querySelector('[data-save-assignment]').dataset.saveAssignment,draft=ticketDrafts.get(id);
@@ -221,6 +229,7 @@ function readIssueFilters(){
   $('#issue-sort').value=['priority','due'].includes(order)?order:'newest';
 }
 function updateIssueFilters(){
+  resetBoardPages();
   const url=new URL(location.href),query=$('#search').value.trim(),priority=$('#priority-filter').value;
   if(query)url.searchParams.set('issue_q',query);else url.searchParams.delete('issue_q');
   if(priority)url.searchParams.set('issue_priority',priority);else url.searchParams.delete('issue_priority');
@@ -237,7 +246,7 @@ $('#priority-filter').addEventListener('change',updateIssueFilters);
 $('#due-filter').addEventListener('change',updateIssueFilters);
 $('#issue-sort').addEventListener('change',updateIssueFilters);
 $('#issue-archive').addEventListener('change',updateIssueFilters);
-window.addEventListener('popstate',()=>{readIssueFilters();renderTickets();});
+window.addEventListener('popstate',()=>{readIssueFilters();resetBoardPages();renderTickets();});
 readIssueFilters();
 const titles = {tickets:'Issue Desk',inventory:'Stockroom',experiments:'Experiment Studio'};
 function navigate(page) {
@@ -345,4 +354,13 @@ $('#board').addEventListener('click',async event=>{
   const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
   (current?[...current.querySelectorAll('input,textarea,select,button')]:fields).forEach(field=>field.disabled=false);
  }
+});
+
+$('#board').addEventListener('click',event=>{
+ const button=event.target.closest('[data-board-status]');if(!button||button.disabled)return;
+ const status=button.dataset.boardStatus,step=Number(button.dataset.boardStep);
+ if(!Object.hasOwn(boardPages,status)||![-1,1].includes(step))return;
+ boardPages[status]+=step;renderTickets();
+ const column=document.querySelector(`[data-board-column="${status}"]`);
+ column.querySelector('h2').focus({preventScroll:true});column.scrollIntoView({block:'start'});
 });

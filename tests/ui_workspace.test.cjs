@@ -112,3 +112,22 @@ test('issue visibility defaults to current work and can show archived or all iss
   query('#issue-archive').value='all';h.context.renderTickets();
   assert.equal(query('#filter-summary').textContent,'2 of 2 issues shown');
 });
+
+test('large issue columns page independently and clamp after their data shrinks',()=>{
+  const h=harness(),query=selector=>h.context.document.querySelector(selector);
+  const base={description:'Context',priority:'medium',status:'backlog',version:1,assignee:'',due_date:'',archived:0};
+  const tickets=Array.from({length:25},(_,i)=>({...base,id:i+1,title:`Item ${i+1}`}));
+  tickets.push({...base,id:26,title:'Active item',status:'active'});
+  vm.runInContext('state='+JSON.stringify({tickets,events:[],products:[],movements:[],experiments:[]}),h.context);
+  h.context.renderTickets();
+  assert.equal((query('#board').innerHTML.match(/data-ticket=/g)||[]).length,11);
+  assert.match(query('#board').innerHTML,/1–10 of 25/);
+  vm.runInContext('boardPages.backlog=2',h.context);h.context.renderTickets();
+  assert.equal((query('#board').innerHTML.match(/data-ticket=/g)||[]).length,6);
+  assert.match(query('#board').innerHTML,/21–25 of 25/);
+  assert.match(query('#board').innerHTML,/data-board-status="backlog" data-board-step="1" disabled/);
+  assert.match(query('#board').innerHTML,/data-ticket="26"/);
+  query('#search').value='Active item';h.context.renderTickets();
+  assert.equal(vm.runInContext('boardPages.backlog',h.context),0);
+  assert.equal((query('#board').innerHTML.match(/data-ticket=/g)||[]).length,1);
+});
