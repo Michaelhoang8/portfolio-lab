@@ -26,7 +26,8 @@ class BackupTests(unittest.TestCase):
         for index in range(125):
             services.movement_create(self.db, {'product_id':product,'delta':1,'note':'Fixture',
                                               'request_key':f'backup-{index}'})
-        services.ticket_create(self.db, {'title':'Recover me','description':'Fixture','priority':'high'})
+        ticket=services.ticket_create(self.db, {'title':'Recover me','description':'Fixture','priority':'high'})['id']
+        services.ticket_archive(self.db,ticket,{'archived':True,'expected_version':1})
         services.experiment_create(self.db, {'name':'Fixture','a_visitors':100,'a_conversions':10,
                                            'b_visitors':100,'b_conversions':15})
         with self.db:
@@ -47,6 +48,7 @@ class BackupTests(unittest.TestCase):
             replay = services.movement_create(db, {'product_id':product,'delta':1,'note':'Fixture','request_key':'backup-124'})
             self.assertTrue(replay['replayed'])
             self.assertEqual(services.snapshot(db)['products'][0]['stock'],125)
+            self.assertEqual(services.snapshot(db)['tickets'][0]['archived'],1)
         self.assertFalse(Path(str(self.output)+'-wal').exists())
         self.assertEqual(backup.verify(self.output)['rows']['movements'],125)
 

@@ -252,7 +252,7 @@ class PersistentCapabilities(unittest.TestCase):
             db.commit()
         initialize(path);initialize(path)
         with closing(sqlite3.connect(path)) as db:
-            self.assertEqual(db.execute('SELECT title,assignee,due_date FROM tickets').fetchone(),('Old','',''))
+            self.assertEqual(db.execute('SELECT title,assignee,due_date,archived FROM tickets').fetchone(),('Old','','',0))
             self.assertEqual(db.execute('SELECT sku,name,reorder_point,version FROM products').fetchone(),('OLD','Original product',3,1))
 
     def test_replenishment_uses_withdrawals_and_preserves_ledger(self):

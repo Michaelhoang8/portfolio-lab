@@ -69,6 +69,44 @@ class DomainTests(unittest.TestCase):
         self.assertCountEqual(results,[2,'conflict'])
         self.assertEqual(len(s.snapshot(self.db)['events']),2)
 
+    def test_archive_restore_preserve_details_status_and_audit_idempotently(self):
+        ticket=s.ticket_create(self.db,{'title':'Keep history','description':'Context','priority':'high'})['id']
+        s.ticket_move(self.db,ticket,{'status':'done','expected_version':1})
+        archived=s.ticket_archive(self.db,ticket,{'archived':True,'expected_version':2})
+        self.assertEqual(archived,{'id':ticket,'archived':True,'version':3})
+        self.assertEqual(s.ticket_archive(self.db,ticket,{'archived':True,'expected_version':2}),archived)
+        row=s.snapshot(self.db)['tickets'][0]
+        self.assertEqual((row['title'],row['description'],row['status'],row['archived']),('Keep history','Context','done',1))
+        self.assertEqual(len(s.snapshot(self.db)['events']),3)
+        with self.assertRaises(ConflictError):
+            s.ticket_archive(self.db,ticket,{'archived':False,'expected_version':2})
+        restored=s.ticket_archive(self.db,ticket,{'archived':False,'expected_version':3})
+        self.assertEqual(restored['version'],4)
+        row=s.snapshot(self.db)['tickets'][0]
+        self.assertEqual((row['status'],row['archived']),('done',0))
+        self.assertEqual(s.snapshot(self.db)['events'][0]['detail'],'Restored issue')
+        for body in ({'archived':1,'expected_version':4},{'archived':True},
+                     {'archived':True,'expected_version':True},{'archived':True,'expected_version':4,'title':'No'}):
+            with self.subTest(body=body),self.assertRaises(ValidationError):
+                s.ticket_archive(self.db,ticket,body)
+
+    def test_concurrent_archive_and_edit_have_one_winner(self):
+        ticket=s.ticket_create(self.db,{'title':'Race','description':'Context','priority':'medium'})['id']
+        barrier=threading.Barrier(2)
+        def mutate(archive):
+            db=connect(self.path)
+            try:
+                barrier.wait(timeout=5)
+                try:
+                    result=s.ticket_archive(db,ticket,{'archived':True,'expected_version':1}) if archive else s.ticket_details(db,ticket,{'title':'Updated','expected_version':1})
+                    return result['version']
+                except ConflictError:return 'conflict'
+            finally:db.close()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results=list(pool.map(mutate,[True,False]))
+        self.assertCountEqual(results,[2,'conflict'])
+        self.assertEqual(len(s.snapshot(self.db)['events']),2)
+
     def test_issue_edit_preserves_omitted_fields_and_audits_once(self):
         ticket=s.ticket_create(self.db,{'title':'Original','description':'Context','priority':'medium',
                                       'assignee':'Ada','due_date':'2026-12-01'})['id']
@@ -423,6 +461,21 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(json.load(response),{'error':'Malformed JSON body'})
         with self.request('/api/extensions/experiment-plan',b'{}',headers) as response:
             self.assertEqual(response.status,200)
+
+    def test_archive_route_checks_versions_and_keeps_issues_in_snapshot(self):
+        headers={'Content-Type':'application/json','X-Portfolio-Client':'browser'}
+        with self.request('/api/tickets',b'{"title":"Archive HTTP","description":"Context","priority":"low"}',headers) as response:
+            ticket=json.load(response)['id']
+        with self.request(f'/api/tickets/{ticket}/archive',b'{"archived":true,"expected_version":1}',headers) as response:
+            self.assertEqual(response.status,200)
+            self.assertTrue(json.load(response)['archived'])
+        with self.request(f'/api/tickets/{ticket}/archive',b'{"archived":false,"expected_version":1}',headers) as response:
+            self.assertEqual(response.status,409)
+        with self.request('/api/state') as response:
+            row=next(row for row in json.load(response)['tickets'] if row['id']==ticket)
+            self.assertEqual((row['archived'],row['version']),(1,2))
+        with self.request('/api/tickets/999999/archive',b'{"archived":true,"expected_version":1}',headers) as response:
+            self.assertEqual(response.status,404)
 
     def test_http_create_and_duplicate_sku(self):
         headers = {'Content-Type':'application/json','X-Portfolio-Client':'browser'}

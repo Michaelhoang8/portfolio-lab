@@ -30,11 +30,12 @@ function renderTickets() {
   const opened = new Set([...document.querySelectorAll('.ticket-assignment[open]')].map(panel=>panel.querySelector('[data-save-assignment]').dataset.saveAssignment));
   stats('#ticket-stats', [['Total issues', state.tickets.length], ['In progress', state.tickets.filter(t => t.status === 'active').length], ['Completed', state.tickets.filter(t => t.status === 'done').length]]);
   const search = $('#search').value.trim().toLowerCase(), priority = $('#priority-filter').value;
-  const due=$('#due-filter').value,order=$('#issue-sort').value,today=localToday();
+  const due=$('#due-filter').value,order=$('#issue-sort').value,archive=$('#issue-archive').value,today=localToday();
   const filtered = state.tickets.filter(t => {
     const matchesText=`${t.title} ${t.description} ${t.assignee || ""} #${t.id}`.toLowerCase().includes(search);
     const matchesDue=!due || t.status!=='done' && (due==='overdue'?t.due_date && t.due_date<today:due==='today'?t.due_date===today:!t.due_date);
-    return matchesText && (!priority || t.priority===priority) && matchesDue;
+    const matchesArchive=archive==='all'||(archive==='archived'?!!t.archived:!t.archived);
+    return matchesText && (!priority || t.priority===priority) && matchesDue && matchesArchive;
   });
   const priorityRank={high:0,medium:1,low:2};
   filtered.sort((a,b)=>{
@@ -43,11 +44,11 @@ function renderTickets() {
     return b.id-a.id;
   });
   $('#filter-summary').textContent = `${filtered.length} of ${state.tickets.length} issues shown`;
-  $('#reset-filters').hidden = !$('#search').value && !priority && !due && order==='newest';
-  $('#issue-view-options summary').textContent=due || order!=='newest'?'View options · customized':'View options';
+  $('#reset-filters').hidden = !$('#search').value && !priority && !due && order==='newest' && archive==='current';
+  $('#issue-view-options summary').textContent=due || order!=='newest' || archive!=='current'?'View options · customized':'View options';
   $('#board').innerHTML = ['backlog', 'active', 'done'].map(status => {
     const tickets = filtered.filter(t => t.status === status);
-    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment" data-version="${t.version}"><summary>Edit issue · ${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Title<input data-title="${t.id}" value="${escape(t.title)}" maxlength="200" required></label><label>Description<textarea data-description="${t.id}" maxlength="4000" required>${escape(t.description)}</textarea></label><label>Priority<select data-priority="${t.id}">${["low","medium","high"].map(p=>`<option ${p===t.priority?"selected":""}>${p}</option>`).join("")}</select></label><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save changes</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
+    return `<div class="column"><h2>${status}<span>${tickets.length}</span></h2>${tickets.map(t => `<article class="card"><span class="tag ${t.priority}">#${t.id} · ${t.priority}${t.archived?' · archived':''}</span><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p><details class="ticket-assignment" data-version="${t.version}"><summary>Edit issue · ${escape(t.assignee || "Unassigned")} · ${escape(t.due_date || "No due date")}${t.due_date && t.status!=="done" && t.due_date < localToday() ? " · Overdue" : ""}</summary><label>Title<input data-title="${t.id}" value="${escape(t.title)}" maxlength="200" required></label><label>Description<textarea data-description="${t.id}" maxlength="4000" required>${escape(t.description)}</textarea></label><label>Priority<select data-priority="${t.id}">${["low","medium","high"].map(p=>`<option ${p===t.priority?"selected":""}>${p}</option>`).join("")}</select></label><label>Assignee<input data-assignee="${t.id}" value="${escape(t.assignee || "")}" maxlength="120"></label><label>Due date<input data-due="${t.id}" type="date" value="${escape(t.due_date || "")}"></label><button type="button" data-save-assignment="${t.id}">Save changes</button><button type="button" data-archive-ticket="${t.id}" data-archived="${!!t.archived}">${t.archived?'Restore issue':'Archive issue'}</button><p class="assignment-feedback" role="status"></p></details><label>Move issue<select data-ticket="${t.id}" aria-label="Status for ${escape(t.title)}">${['backlog','active','done'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label></article>`).join('') || empty('No issues here.')}</div>`;
   }).join('');
   document.querySelectorAll('.ticket-assignment').forEach(panel=>{
     const id=panel.querySelector('[data-save-assignment]').dataset.saveAssignment,draft=ticketDrafts.get(id);
@@ -213,6 +214,8 @@ function readIssueFilters(){
   $('#search').value=(params.get('issue_q')||'').slice(0,200);
   const priority=params.get('issue_priority');
   $('#priority-filter').value=['low','medium','high'].includes(priority)?priority:'';
+  const archive=params.get('issue_archive');
+  $('#issue-archive').value=['archived','all'].includes(archive)?archive:'current';
   const due=params.get('issue_due'),order=params.get('issue_sort');
   $('#due-filter').value=['overdue','today','unscheduled'].includes(due)?due:'';
   $('#issue-sort').value=['priority','due'].includes(order)?order:'newest';
@@ -224,13 +227,16 @@ function updateIssueFilters(){
   const due=$('#due-filter').value,order=$('#issue-sort').value;
   if(due)url.searchParams.set('issue_due',due);else url.searchParams.delete('issue_due');
   if(order!=='newest')url.searchParams.set('issue_sort',order);else url.searchParams.delete('issue_sort');
+  const archive=$('#issue-archive').value;
+  if(archive!=='current')url.searchParams.set('issue_archive',archive);else url.searchParams.delete('issue_archive');
   history.replaceState(null,'',url);renderTickets();
 }
-$('#reset-filters').addEventListener('click',()=>{$('#search').value='';$('#priority-filter').value='';$('#due-filter').value='';$('#issue-sort').value='newest';updateIssueFilters();$('#search').focus();});
+$('#reset-filters').addEventListener('click',()=>{$('#search').value='';$('#priority-filter').value='';$('#due-filter').value='';$('#issue-sort').value='newest';$('#issue-archive').value='current';updateIssueFilters();$('#search').focus();});
 $('#search').addEventListener('input',updateIssueFilters);
 $('#priority-filter').addEventListener('change',updateIssueFilters);
 $('#due-filter').addEventListener('change',updateIssueFilters);
 $('#issue-sort').addEventListener('change',updateIssueFilters);
+$('#issue-archive').addEventListener('change',updateIssueFilters);
 window.addEventListener('popstate',()=>{readIssueFilters();renderTickets();});
 readIssueFilters();
 const titles = {tickets:'Issue Desk',inventory:'Stockroom',experiments:'Experiment Studio'};
@@ -306,6 +312,34 @@ $('#board').addEventListener('click',async event=>{
   const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details')||details;
   notice(message,true);current.querySelector('.assignment-feedback').textContent=message;
   if(!saved && error.status===409)reviewIssueConflict(id,current);
+ }finally{
+  savingTickets.delete(id);
+  const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+  (current?[...current.querySelectorAll('input,textarea,select,button')]:fields).forEach(field=>field.disabled=false);
+ }
+});
+
+$('#board').addEventListener('click',async event=>{
+ const button=event.target.closest('[data-archive-ticket]');if(!button)return;
+ const id=button.dataset.archiveTicket,details=button.closest('details'),feedback=details.querySelector('.assignment-feedback');
+ if(savingTickets.has(id))return;
+ if(ticketDrafts.has(id)){feedback.textContent='Save your local edits before archiving or restoring this issue.';return;}
+ const archived=button.dataset.archived!=='true',fields=[...details.querySelectorAll('input,textarea,select,button')];
+ savingTickets.add(id);fields.forEach(field=>field.disabled=true);feedback.textContent=archived?'Archiving issue…':'Restoring issue…';
+ let saved=false;
+ try{
+  await post(`/api/tickets/${id}/archive`,{archived,expected_version:Number(details.dataset.version)});saved=true;
+  await refresh();notice(archived?'Issue archived. Open View options and choose Archived issues to find it.':'Issue restored to the current board.');
+  const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+  if(current)current.querySelector('.assignment-feedback').textContent=archived?'Issue archived.':'Issue restored.';
+  (current?.querySelector('summary')||$('#issue-view-options summary')).focus();
+ }catch(error){
+  if(!saved&&error.status===409){
+   try{await refresh();notice('This issue changed elsewhere. Review the refreshed board before trying again.',true);}
+   catch{notice('The issue changed elsewhere and could not refresh. Reload before trying again.',true);}
+  }else{notice(saved?'Issue visibility saved, but the board could not refresh. Reload to see the latest data.':error.message,true);}
+  const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+  if(current)current.querySelector('.assignment-feedback').textContent=$('#notice').textContent;
  }finally{
   savingTickets.delete(id);
   const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');

@@ -32,6 +32,26 @@ def ticket_move(db, ticket_id, data):
                        (ticket_id, f'{old["status"]} → {status}'))
     return {'id': ticket_id, 'status': status, 'version':old['version']+(old['status']!=status)}
 
+def ticket_archive(db,ticket_id,data):
+    if set(data)-{'archived','expected_version'} or type(data.get('archived')) is not bool:
+        raise ValidationError('Provide archived as a boolean and expected_version')
+    version=integer(data,'expected_version',1)
+    archived=int(data['archived'])
+    with db:
+        db.execute('BEGIN IMMEDIATE')
+        old=db.execute('SELECT archived,version FROM tickets WHERE id=?',(ticket_id,)).fetchone()
+        if old is None:
+            raise NotFoundError('Ticket not found')
+        changed=old['archived']!=archived
+        if changed:
+            if version!=old['version']:
+                raise ConflictError('This issue changed since it was loaded. Review the latest issue before archiving or restoring it.')
+            db.execute('UPDATE tickets SET archived=?,version=version+1 WHERE id=?',(archived,ticket_id))
+            db.execute('INSERT INTO events(ticket_id,detail) VALUES (?,?)',
+                       (ticket_id,'Archived issue' if archived else 'Restored issue'))
+        return {'id':ticket_id,'archived':bool(archived),'version':old['version']+changed}
+
+
 def product_create(db, data):
     values = (text(data, 'sku', 40).upper(), text(data, 'name'), integer(data, 'reorder_point'))
     with db:

@@ -50,6 +50,8 @@ def initialize(path):
                 db.execute(f"ALTER TABLE tickets ADD COLUMN {name} TEXT NOT NULL DEFAULT ''")
         if 'version' not in columns:
             db.execute("ALTER TABLE tickets ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+        if 'archived' not in columns:
+            db.execute("ALTER TABLE tickets ADD COLUMN archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1))")
         product_columns={row['name'] for row in db.execute('PRAGMA table_info(products)')}
         if 'version' not in product_columns:
             db.execute("ALTER TABLE products ADD COLUMN version INTEGER NOT NULL DEFAULT 1")

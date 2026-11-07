@@ -97,3 +97,18 @@ test('inventory filters combine SKU search with exact stock boundaries and stabl
   assert.deepEqual(names('','all','shortfall'),['DOCK-01','DOCK-02','KEY-01','MON-01']);
   assert.equal(products[0].sku,'KEY-01'); // Sorting must not mutate the loaded workspace.
 });
+
+test('issue visibility defaults to current work and can show archived or all issues',()=>{
+  const h=harness(),query=selector=>h.context.document.querySelector(selector);
+  const base={title:'Example',description:'Context',priority:'medium',status:'done',version:1,assignee:'',due_date:''};
+  vm.runInContext('state='+JSON.stringify({tickets:[{...base,id:1,archived:0},{...base,id:2,archived:1}],events:[],products:[],movements:[],experiments:[]}),h.context);
+  h.context.renderTickets();
+  assert.match(query('#board').innerHTML,/data-ticket="1"/);
+  assert.doesNotMatch(query('#board').innerHTML,/data-ticket="2"/);
+  query('#issue-archive').value='archived';h.context.renderTickets();
+  assert.match(query('#board').innerHTML,/Restore issue/);
+  assert.doesNotMatch(query('#board').innerHTML,/data-ticket="1"/);
+  assert.equal(query('#filter-summary').textContent,'1 of 2 issues shown');
+  query('#issue-archive').value='all';h.context.renderTickets();
+  assert.equal(query('#filter-summary').textContent,'2 of 2 issues shown');
+});

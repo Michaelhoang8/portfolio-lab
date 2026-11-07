@@ -159,6 +159,9 @@ def handler_for(database, api_key=None):
                     self.reply(200,extensions[self.path](data));return
                 if self.path == '/api/extensions/stock-plan':
                     self.reply(200,capabilities.stock_plan(db,data));return
+                archive=re.fullmatch(r'/api/tickets/(\d+)/archive',self.path)
+                if archive:
+                    self.reply(200,services.ticket_archive(db,int(archive[1]),data));return
                 details=re.fullmatch(r'/api/tickets/(\d+)/details',self.path)
                 if details:
                     self.reply(200,services.ticket_details(db,int(details[1]),data));return

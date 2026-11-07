@@ -216,6 +216,12 @@ Issue Desk status changes now send `expected_version`. Changed statuses from sta
 
 Workspace refreshes apply only the most recently requested response. Superseded responses and failures cannot overwrite newer data or display stale errors. If the newest refresh fails, the last successfully applied snapshot stays visible. JavaScript regression tests explicitly complete concurrent requests out of order, simulate newer-request failures, and check malformed response recovery.
 
+### Reversible issue archiving
+
+Open an issue’s editor and choose **Archive issue** to remove it from the default board. **View options → Issue visibility** switches between current, archived, or all issues, and persists as `issue_archive` in the URL. Archived cards retain their stage, details, assignee, deadline, and audit history; **Restore issue** returns them to the current board. Archive status controls visibility, not edit permissions. Overview totals include all issues.
+
+Unsaved local edits must be saved before archiving/restoring. Both actions use `POST /api/tickets/{id}/archive` with `{"archived":true,"expected_version":1}` (or false to restore). The version is required; stale changes return 409. Repeating the existing archive state is a no-op without a duplicate event. Migration, simultaneous edit/archive races, API responses, archive filtering, and snapshot recovery are covered by tests. A browser check archived and restored a synthetic issue while preserving its original stage ([capture](docs/design/issue-archive.png)).
+
 ### Retry-safe stock movements
 
 Stockroom generates a request key for each movement. Retrying the unchanged form after a network failure reuses that key for the lifetime of the page. The server records the key and ledger entry in the same transaction, so concurrent retries write only once. A replay returns the original movement ID and balance with `replayed: true`; the current balance is available from `/api/state`. Reusing a key with different movement data returns HTTP 409. Rejected movements do not consume keys. API callers should retain and reuse their own key when retrying. Reloading the browser clears its pending key.
