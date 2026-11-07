@@ -8,15 +8,17 @@ const empty = message => `<p class="empty">${message}</p>`;
 function notice(message, error = false) { $('#notice').textContent = message; $('#notice').className = message ? `notice${error ? ' error' : ''}` : ''; }
 function stats(target, items) { $(target).innerHTML = items.map(([label, value]) => `<div class="stat"><small>${label}</small><strong>${value}</strong></div>`).join(''); }
 async function refresh() {
-  const response = await fetch('/api/state');
+  const {response,text}=await window.restTransport.send('/api/state',{method:'GET'});
   if (!response.ok) throw new Error('Could not load workspace. Check the server and refresh.');
-  const next = await response.json();
+  let next;try{next=JSON.parse(text);if(!next||!['tickets','events','products','movements','experiments'].every(key=>Array.isArray(next[key])))throw Error();}catch{throw Error('The workspace returned an unreadable response. Check the server and refresh.');}
   const stockChanged = JSON.stringify([state.products,state.movements]) !== JSON.stringify([next.products,next.movements]);
   state = next; render();
   if (stockChanged) document.dispatchEvent(new Event('stock-updated'));
 }
 function localToday() { const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
 const ticketDrafts = new Map();
+const savingTickets = new Set();
+const movingTickets = new Set();
 const editFields = ['title','description','priority','assignee','due'];
 function renderTickets() {
   const opened = new Set([...document.querySelectorAll('.ticket-assignment[open]')].map(panel=>panel.querySelector('[data-save-assignment]').dataset.saveAssignment));
@@ -45,7 +47,9 @@ function renderTickets() {
     const id=panel.querySelector('[data-save-assignment]').dataset.saveAssignment,draft=ticketDrafts.get(id);
     panel.open=opened.has(id);
     if(draft){for(const key of editFields)panel.querySelector(`[data-${key}]`).value=draft.values[key];panel.dataset.version=draft.version;panel.querySelector('.assignment-feedback').textContent='Unsaved changes preserved.';}
+    if(savingTickets.has(id)){panel.querySelectorAll('input,textarea,select,button').forEach(field=>field.disabled=true);panel.querySelector('.assignment-feedback').textContent='Saving issue…';}
   });
+  document.querySelectorAll('[data-ticket]').forEach(select=>{select.disabled=movingTickets.has(select.dataset.ticket);});
   $('#activity').innerHTML = state.events.slice(0, 8).map(e => `<div class="activity">#${e.ticket_id} · ${escape(e.detail)}<small>${escape(new Date(e.created_at).toLocaleString())}</small></div>`).join('') || empty('Create an issue to start the activity trail.');
 }
 function comparisonReport(comparison) {
@@ -68,8 +72,15 @@ function render() {
   $('#experiment-results').innerHTML = state.experiments.map(e => `<article class="panel"><h2>${escape(e.name)}</h2>${['a','b'].map(v => `<div class="rate"><label>Variant ${v.toUpperCase()}<strong>${percent(e[v+'_rate'])}</strong></label><meter min="0" max="1" value="${e[v+'_rate']}" aria-label="Variant ${v} conversion rate"></meter><small>${e[v+'_conversions']} / ${e[v+'_visitors']} · 95% CI ${percent(e[v+'_interval'][0])}–${percent(e[v+'_interval'][1])}</small></div>`).join('')}<div class="result-bottom"><div>Absolute difference<strong>${(e.difference*100).toFixed(2)} pp</strong></div><div>Relative lift<strong>${e.relative_lift === null ? 'N/A' : percent(e.relative_lift)}</strong></div></div>${comparisonReport(e.comparison)}</article>`).join('') || `<div class="panel"><h2>Your next insight starts here.</h2>${empty('Enter visitor and conversion counts for two variants to compare rates and uncertainty.')}</div>`;
 }
 async function post(path, data) {
-  const response = await fetch(path, {method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(data)});
-  const result = await response.json();
+  let response,raw;
+  try {
+    const received=await window.restTransport.send(path,{method:'POST',headers:{'Content-Type':'application/json','X-Portfolio-Client':'browser'},body:JSON.stringify(data)});
+    response=received.response;raw=received.text;
+  } catch(error) {
+    if(path==='/api/movements' && data.request_key)throw Error(`${error.message} The movement may have been saved. Keep the same inputs to retry with the same request key; it will not change stock twice.`);
+    throw Error(window.restTransport.recoveryMessage(error,'POST'));
+  }
+  let result;try{result=JSON.parse(raw);if(!result||typeof result!=='object'||Array.isArray(result))throw Error();}catch{throw Error('The server returned an unreadable response. The write may have completed; refresh the workspace before retrying.');}
   if (!response.ok) {const error=new Error(result.error || 'Request failed');error.status=response.status;throw error;}
   return result;
 }
@@ -137,10 +148,11 @@ wireForm('#product-form','/api/products',['reorder_point']);
 wireForm('#movement-form','/api/movements',['product_id','delta']);
 wireForm('#experiment-form','/api/experiments',['a_visitors','a_conversions','b_visitors','b_conversions']);
 $('#board').addEventListener('change', async event => {
-  const select = event.target; if (!select.dataset.ticket) return;
-  select.disabled = true;
-  try { await post(`/api/tickets/${select.dataset.ticket}/status`,{status:select.value}); await refresh(); notice('Issue status updated.'); }
-  catch(error) { renderTickets(); notice(error.message,true); }
+  const select=event.target,id=select.dataset.ticket;if(!id||movingTickets.has(id))return;
+  movingTickets.add(id);select.disabled=true;let saved=false;
+  try {await post(`/api/tickets/${id}/status`,{status:select.value});saved=true;await refresh();notice('Issue status updated.');}
+  catch(error){renderTickets();notice(saved?'Issue status saved, but the workspace could not refresh. Reload to see the latest data.':error.message,true);}
+  finally{movingTickets.delete(id);const current=document.querySelector(`[data-ticket="${id}"]`);if(current)current.disabled=false;}
 });
 function readIssueFilters(){
   const params=new URLSearchParams(location.search);
@@ -201,9 +213,9 @@ function reviewIssueConflict(id,details) {
   review.querySelector('.review-latest').addEventListener('click',async event=>{
     const button=event.currentTarget,save=details.querySelector('[data-save-assignment]');button.disabled=true;save.disabled=true;
     try {
-      const response=await fetch('/api/state');
+      const {response,text}=await window.restTransport.send('/api/state',{method:'GET'});
       if(!response.ok)throw Error('Could not fetch the latest version. Your draft is preserved.');
-      const latestState=await response.json(),latest=latestState.tickets.find(ticket=>String(ticket.id)===id);
+      const latestState=JSON.parse(text),latest=latestState.tickets.find(ticket=>String(ticket.id)===id);
       if(!latest)throw Error('This issue is no longer available. Your draft is preserved.');
       if(!details.isConnected)return;
       const names={title:'Title',description:'Description',priority:'Priority',assignee:'Assignee',due:'Due date'};
@@ -224,10 +236,10 @@ $('#board').addEventListener('click',async event=>{
  const details=event.target.closest('details');
  const fields=[...details.querySelectorAll('input,textarea,select,button')];
  const feedback=details.querySelector('.assignment-feedback');
- if(fields.some(field=>field.disabled))return;
+ if(savingTickets.has(id)||fields.some(field=>field.disabled))return;
  const invalid=fields.find(field=>field.checkValidity&&!field.checkValidity());
  if(invalid){invalid.reportValidity();return;}
- fields.forEach(field=>field.disabled=true);feedback.textContent='Saving issue…';
+ savingTickets.add(id);fields.forEach(field=>field.disabled=true);feedback.textContent='Saving issue…';
  let saved=false;
  try{
   await post(`/api/tickets/${id}/details`,{title:details.querySelector('[data-title]').value,description:details.querySelector('[data-description]').value,priority:details.querySelector('[data-priority]').value,assignee:details.querySelector('[data-assignee]').value,due_date:details.querySelector('[data-due]').value,expected_version:Number(details.dataset.version)});
@@ -237,7 +249,12 @@ $('#board').addEventListener('click',async event=>{
   if(updated){updated.open=true;updated.querySelector('.assignment-feedback').textContent='Issue details saved.';updated.querySelector('summary').focus();}
  }catch(error){
   const message=saved?'Issue details saved, but the workspace could not refresh. Reload to see the saved version.':error.message;
-  notice(message,true);feedback.textContent=message;fields.forEach(field=>field.disabled=false);
-  if(!saved && error.status===409)reviewIssueConflict(id,details);
+  const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details')||details;
+  notice(message,true);current.querySelector('.assignment-feedback').textContent=message;
+  if(!saved && error.status===409)reviewIssueConflict(id,current);
+ }finally{
+  savingTickets.delete(id);
+  const current=document.querySelector(`[data-save-assignment="${id}"]`)?.closest('details');
+  (current?[...current.querySelectorAll('input,textarea,select,button')]:fields).forEach(field=>field.disabled=false);
  }
 });

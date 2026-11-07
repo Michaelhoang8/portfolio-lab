@@ -54,7 +54,7 @@ test('REST recovery distinguishes read failures from uncertain writes',async()=>
   try {await h.send('/api/v1/notes',{method:'POST'});}catch(error){failure=error;}
   assert.equal(failure.code,'network');assert.equal(h.timers.size,0);
   assert.match(h.recoveryMessage(failure,'POST',true),/same Idempotency-Key and body/);
-  assert.match(h.recoveryMessage(failure,'PATCH'),/write may have completed.*Fetch the current notes/);
+  assert.match(h.recoveryMessage(failure,'PATCH'),/write may have completed.*Fetch the current data/);
   assert.match(h.recoveryMessage(failure,'GET'),/inputs are preserved/);
   assert.doesNotMatch(h.recoveryMessage(failure,'GET'),/write may have completed/);
 });

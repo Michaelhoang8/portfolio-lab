@@ -28,7 +28,7 @@
     if(method==='GET'||method==='HEAD')return `${start} Your inputs are preserved. Check the server and try again.`;
     const recovery=method==='POST'&&hasIdempotencyKey?
       'If you retry, keep the same Idempotency-Key and body.':
-      'Fetch the current notes before deciding whether to retry.';
+      'Fetch the current data before deciding whether to retry.';
     return `${start} The write may have completed on the server. ${recovery} No automatic retry was sent.`;
   }
   const api={send,recoveryMessage};
