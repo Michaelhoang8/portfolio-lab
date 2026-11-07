@@ -88,6 +88,19 @@ class MLTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 m.train({'csv':text})
 
+    def test_training_duplicate_errors_identify_records_and_label_conflicts(self):
+        for conflicting,duplicate_index in ((False,1),(True,7)):
+            rows=[[str(index+10000),str(int(index>=4))] for index in range(8)]
+            rows[duplicate_index][0]='10000.0'
+            source='feature,label\n'+'\n'.join(','.join(row) for row in rows)
+            with self.subTest(conflicting=conflicting),self.assertRaises(ValidationError) as caught:
+                m.train({'csv':source})
+            message=str(caught.exception)
+            self.assertIn(f'records 2 and {duplicate_index+2}',message)
+            self.assertIn('conflicting target labels' if conflicting else 'matching target labels',message)
+            self.assertIn('after numeric parsing',message)
+            self.assertNotIn('10000',message)
+
     def test_search_ranking_contributions_and_unseen_query(self):
         data={'documents':'database rollback transaction\n---\nflowers garden\n---\ndatabase backups','query':'rollback transaction'}
         r=m.search(data)

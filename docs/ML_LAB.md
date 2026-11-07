@@ -28,6 +28,8 @@ def predict_probability(model, values):
     return 1 / (1 + math.exp(-z)) if z >= 0 else math.exp(z) / (1 + math.exp(z))
 ```
 
+When duplicate feature vectors are rejected, the error identifies the first offending pair of logical source records and states whether their target labels match or conflict. Equality is checked after numeric parsing, so `10000` and `10000.0` match. Record numbers include the header as record 1 and exclude blank physical lines. The error omits submitted feature values; the editor retains the source for correction. Tests cover matching/conflicting labels and numeric-equivalent text, and a browser check verified the message and recovery ([capture](design/classifier-duplicate-guidance.png)).
+
 The synthetic browser example is intentionally small and simple. Its scores are not evidence of real-world model quality. Repeatedly changing seeds or features based on the test score contaminates evaluation. Random splitting is inappropriate for many time-series or grouped datasets; use a suitable split before treating results as evidence. Rejecting exact duplicates does not prevent target leakage, near-duplicate leakage, or entity overlap. There is no model registry, cross-validation, fairness assessment, hyperparameter search, or production serving system.
 
 Use **Download model JSON** in the detailed training report to save only the inference parameters. After a reload, open **Use a saved model** and choose that JSON file (or a full training report), up to 200 KB. The server validates the algorithm, feature names, numeric vectors, and threshold before enabling batch prediction. Imported models reuse their original scaling and threshold; nothing is retrained or stored. Batch predictions can be downloaded as CSV.

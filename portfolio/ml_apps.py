@@ -108,8 +108,14 @@ def train(data):
     if min(y.count(0),y.count(1)) < 4:
         raise ValidationError('Include at least four examples of each class')
     # Identical feature vectors across a random split would overstate generalization.
-    if len(set(map(tuple,x))) != len(x):
-        raise ValidationError('Duplicate feature rows found. Deduplicate or use an appropriate grouped split first')
+    first_features={}
+    for index,features_row in enumerate(x):
+        key=tuple(features_row)
+        if key in first_features:
+            first=first_features[key]
+            detail='conflicting target labels' if y[first]!=y[index] else 'matching target labels'
+            raise ValidationError(f'Duplicate feature rows found at records {first+2} and {index+2} after numeric parsing ({detail}). Review these records, then deduplicate or use an appropriate grouped split first')
+        first_features[key]=index
     rng=random.Random(seed)
     train_ids,test_ids=[],[]
     for label in (0,1):
