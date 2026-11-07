@@ -179,11 +179,21 @@ def reliability(data):
         return float(Decimal(sum(b['bad'] for b in selected))/requests/allowance) if requests else None
     last=buckets[-1]['timestamp']
     recent=[b for b in buckets if last-b['timestamp']<=timedelta(hours=5)]
-    gaps=int((last-buckets[0]['timestamp']).total_seconds()/3600)+1-len(buckets)
+    missing_ranges=[]
+    for previous,current in zip(buckets,buckets[1:]):
+        missing=(current['timestamp']-previous['timestamp'])//timedelta(hours=1)-1
+        if missing:
+            missing_ranges.append({'first_missing':(previous['timestamp']+timedelta(hours=1)).isoformat(),
+                                   'last_missing':(current['timestamp']-timedelta(hours=1)).isoformat(),
+                                   'hours':missing})
+    gaps=sum(item['hours'] for item in missing_ranges)
     return {'target':target,'total':total,'bad':bad,'success_rate':(total-bad)/total if total else None,
             'allowed_bad':float(budget),'remaining_bad':float(budget-bad),
             'budget_used':float(Decimal(bad)/budget) if budget else None,
             'burn_rate':burn(buckets),'latest_hour_burn':burn([buckets[-1]]),
             'recent_six_hour_burn':burn(recent) if len(recent)==6 else None,
-            'missing_hours':gaps,'buckets':[{**b,'timestamp':b['timestamp'].isoformat(),'burn_rate':burn([b])} for b in buckets],
+            'missing_hours':gaps,'missing_ranges':missing_ranges,
+            'coverage':{'first_bucket':buckets[0]['timestamp'].isoformat(),'last_bucket':last.isoformat(),
+                        'observed_hours':len(buckets),'expected_hours':len(buckets)+gaps},
+            'buckets':[{**b,'timestamp':b['timestamp'].isoformat(),'burn_rate':burn([b])} for b in buckets],
             'note':'Request-based SLO for the supplied hourly buckets only. Missing hours are not assumed healthy. Six-hour burn is unavailable without six consecutive buckets. Zero traffic gives undefined rates; no forecast or live alerting is performed.'}

@@ -52,6 +52,18 @@ class AnalysisCapabilities(unittest.TestCase):
         self.assertEqual(r['cost_analysis']['best_grid_threshold'],1)
         with self.assertRaises(ValidationError):enhanced('/api/ml/evaluate',{**data,'false_negative_cost':None},ml.evaluate)
 
+    def test_reliability_gap_export_keeps_all_ranges_beyond_preview(self):
+        from datetime import datetime, timedelta, timezone
+        first=datetime(2026,1,1,tzinfo=timezone.utc)
+        source='timestamp,total,bad\n'+'\n'.join(f'{(first+timedelta(hours=i*2)).isoformat()},100,0' for i in range(26))
+        result=enhanced('/api/devops/reliability',{'csv':source},ops.reliability)
+        rows=list(csv.DictReader(io.StringIO(result['missing_ranges_csv'])))
+        self.assertEqual(len(rows),25)
+        self.assertEqual(sum(int(row['hours']) for row in rows),result['missing_hours'])
+        self.assertEqual(rows[-1]['last_missing_utc'],'2026-01-03T01:00:00+00:00')
+        self.assertEqual(len(result['capabilities']['tables'][-1]['rows']),20)
+        self.assertEqual(result['burn_alert']['state'],'insufficient data')
+
     def test_burn_zero_traffic_is_insufficient_even_with_six_buckets(self):
         csv='timestamp,total,bad\n'+'\n'.join(f'2026-01-01T0{i}:00:00Z,0,0' for i in range(6))
         r=enhanced('/api/devops/reliability',{'csv':csv},ops.reliability)

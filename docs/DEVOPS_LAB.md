@@ -76,3 +76,9 @@ DevOps tests cover selected manifest policies and malformed shapes, dependency s
 Next milestones: validate against a versioned Kubernetes schema, add OPA/Rego policy evaluation, import actual CI run timings, model backoff and environment locks, and ingest sanitized Prometheus metrics. Interview topics include DAG cycle detection, discrete-event simulation, retry capacity costs, the difference between configuration presence and runtime guarantees, and request-based versus time-based reliability measurement.
 
 [Pipeline timing browser capture](design/pipeline-timing.png), using the fictional sample pipeline.
+
+### Missing monitoring coverage
+
+Reliability Desk reports the first and last observed UTC buckets, observed hours, expected hours within that inclusive span, and compact missing-hour ranges. Each range lists the first and last missing bucket start (both inclusive) and its count. Ranges are calculated between sorted observations without expanding individual missing hours, even across very large spans. Nothing is inferred before the first or after the last observation.
+
+Detailed analysis previews up to 20 ranges and exports every range as CSV. JSON includes full coverage and range data. Tests cover timezone normalization, unsorted input, single-hour and multi-hour gaps, a single zero-traffic observation, extreme date spans, and an export exceeding the preview limit. A browser fixture reconciled four missing hours across two ranges and kept the six-hour burn status unavailable ([capture](design/reliability-coverage.png)).

@@ -148,7 +148,7 @@ def enrich(path, data, result):
         result['prediction_audit_csv']=data_apps.safe_csv(
             ['record','actual','score','predicted','outcome','threshold','error_cost'],
             [[str(value) for value in row] for row in audit])
-        tables.append(table(f'Misclassified records · first 20 of {len(errors)}',
+        tables.append(table(f'Misclassified records · {min(20,len(errors))} of {len(errors)} shown',
                             ['Record','Actual','Score','Predicted','Outcome','Threshold','Error cost'],errors[:20]))
         notes.append('The error preview and full prediction audit use your selected threshold, not the lowest-cost grid threshold. Record numbers include the CSV header as record 1. Other source columns are omitted; join by record number when investigating errors.')
     elif path == '/api/devops/manifest':
@@ -184,6 +184,17 @@ def enrich(path, data, result):
         result['burn_alert']={'threshold':threshold,'state':state,'short_hours':1,'long_hours':6}
         tables=[table('Two-window burn check',['1-hour burn','6-hour burn','Threshold','Status'],[[short if short is not None else 'N/A',long if long is not None else 'N/A',threshold,state]])]
         notes=['Both windows must reach the threshold. Missing buckets or zero traffic can make the check unavailable. This evaluates the end of the supplied dataset; no live monitor or notification is configured.']
+        coverage=result['coverage']
+        tables.append(table('Observed coverage',['First UTC bucket','Last UTC bucket','Observed hours','Expected hours'],
+                            [[coverage[key] for key in ('first_bucket','last_bucket','observed_hours','expected_hours')]]))
+        gaps=result['missing_ranges']
+        if gaps:
+            rows=[[gap['first_missing'],gap['last_missing'],gap['hours']] for gap in gaps]
+            tables.append(table(f'Missing-hour ranges · {min(20,len(gaps))} of {len(gaps)} shown',
+                                ['First missing UTC bucket','Last missing UTC bucket','Hours'],rows[:20]))
+            result['missing_ranges_csv']=data_apps.safe_csv(['first_missing_utc','last_missing_utc','hours'],
+                                                           [[str(value) for value in row] for row in rows])
+        notes.append('Coverage spans the first through last supplied bucket, inclusive. Gap endpoints are missing bucket start times, also inclusive. No coverage is inferred before or after this span; missing hours are not treated as healthy or zero traffic.')
     if tables or notes: result['capabilities']={'tables':tables,'notes':notes}
     return result
 
