@@ -74,6 +74,20 @@ class AnalysisCapabilities(unittest.TestCase):
         r=c.predict({'model':model,'csv':'"quoted,feature"\n0'})
         self.assertEqual(r['predictions'][0]['score'],.5)
 
+    def test_profile_duplicate_export_covers_every_record_without_source_values(self):
+        result=enhanced('/api/data/profile',{'csv':'name\n'+'PRIVATE_SYNTHETIC_VALUE\n'*5000},d.profile)
+        self.assertEqual(result['duplicate_rows'],4999)
+        exported=list(csv.DictReader(io.StringIO(result['duplicate_locations_csv'])))
+        self.assertEqual(len(exported),4999)
+        self.assertEqual(exported[0],{'source_record':'3','duplicate_of':'2'})
+        self.assertEqual(exported[-1],{'source_record':'5001','duplicate_of':'2'})
+        self.assertNotIn('PRIVATE_SYNTHETIC_VALUE',result['duplicate_locations_csv'])
+        preview=next(item for item in result['capabilities']['tables'] if item['title'].startswith('Exact duplicate'))
+        self.assertEqual(len(preview['rows']),20)
+        unique=enhanced('/api/data/profile',{'csv':'name\nAda\nBen'},d.profile)
+        self.assertEqual(unique['duplicate_records'],[])
+        self.assertNotIn('duplicate_locations_csv',unique)
+
     def test_outlier_locations_are_complete_and_use_source_column_positions(self):
         data={'csv':'name,amount,constant\n'+'\n'.join(f'row{i},{1 if i<4000 else 99},7' for i in range(5000))}
         result=enhanced('/api/data/profile',data,d.profile)

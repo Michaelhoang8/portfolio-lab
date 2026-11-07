@@ -53,12 +53,19 @@ def enrich(path, data, result):
                     except statistics.StatisticsError:
                         pass
                 correlations.append([left,right,len(pairs),round(value,5) if value is not None else 'Undefined'])
+        duplicates=[[item['source_record'],item['duplicate_of']] for item in result['duplicate_records']]
+        if duplicates:
+            result['duplicate_locations_csv']=data_apps.safe_csv(['source_record','duplicate_of'],
+                                                                [[str(value) for value in row] for row in duplicates])
         result['outlier_records']=outlier_records
         if outlier_locations:
             result['outlier_locations_csv']=data_apps.safe_csv(['column_index','source_record'],outlier_locations)
         tables = [table('IQR outlier diagnostics', ['Column','Q1','Q3','Flagged rows','First 20 record numbers'], outliers),
-                  table('Pairwise Pearson correlations', ['Column A','Column B','Complete pairs','Correlation'],correlations)]
-        notes = ['Outliers use inclusive quartiles and 1.5×IQR fences; they are not automatically errors. Correlations use pairwise complete records, at least three pairs, and the first 12 numeric columns. Constant columns are undefined. The full report preserves every flagged record; the outlier CSV identifies columns by their one-based position in the source header, avoiding repeated very long column names.']
+                  table('Pairwise Pearson correlations', ['Column A','Column B','Complete pairs','Correlation'],correlations),
+                  table(f'Exact duplicate locations · {min(20,len(duplicates))} of {len(duplicates)} shown',
+                        ['Source record','First occurrence'],duplicates[:20])]
+        notes = ['Duplicate matching uses original field values without trimming or numeric normalization. Each duplicate points to its first occurrence. Source record numbers count parsed data records after the header (record 1), excluding blank physical lines; quoted multiline values are one record. Location exports omit source values.',
+                 'Outliers use inclusive quartiles and 1.5×IQR fences; they are not automatically errors. Correlations use pairwise complete records, at least three pairs, and the first 12 numeric columns. Constant columns are undefined. The full report preserves every flagged record; the outlier CSV identifies columns by their one-based position in the source header, avoiding repeated very long column names.']
     elif path == '/api/data/clean':
         headers, rows = data_apps.parse(data)
         options = data.get('options',{})

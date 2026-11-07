@@ -23,6 +23,17 @@ class DataTests(unittest.TestCase):
         self.assertEqual(r['columns'][1]['median'],10)
         self.assertAlmostEqual(r['columns'][1]['mean'],40/3)
 
+    def test_profile_duplicate_locations_use_exact_values_and_logical_records(self):
+        source='name,note\nAda,"hello\nworld"\n\nAda,"hello\nworld"\n Ada,"hello\nworld"\nBen,x\nBen,x\nAda,"hello\nworld"\n'
+        report=d.profile({'csv':source})
+        self.assertEqual(report['rows'],6)
+        self.assertEqual(report['duplicate_rows'],3)
+        self.assertEqual(report['duplicate_records'],[
+            {'source_record':3,'duplicate_of':2}, {'source_record':6,'duplicate_of':5},
+            {'source_record':7,'duplicate_of':2}])
+        numeric=d.profile({'csv':'number\n1\n1.0\n01\n1\n'})
+        self.assertEqual(numeric['duplicate_records'],[{'source_record':5,'duplicate_of':2}])
+
     def test_nonfinite_values_do_not_become_json_numbers(self):
         for value in ['NaN','Infinity','1e999','-inf']:
             result=d.profile({'csv':f'x\n{value}\n'})

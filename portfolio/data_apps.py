@@ -55,8 +55,15 @@ def profile(data):
         if is_numeric:
             item.update(min=min(numbers), max=max(numbers), mean=statistics.mean(numbers), median=statistics.median(numbers))
         columns.append(item)
+    first_records={};duplicates=[]
+    for record,row in enumerate(records,2):
+        key=tuple(row)
+        if key in first_records:
+            duplicates.append({'source_record':record,'duplicate_of':first_records[key]})
+        else:
+            first_records[key]=record
     return {'rows':len(records), 'columns':columns,
-            'duplicate_rows':len(records)-len(set(map(tuple,records))),
+            'duplicate_rows':len(duplicates),'duplicate_records':duplicates,
             'missing_cells':sum(c['missing'] for c in columns), 'preview':records[:10]}
 
 def safe_csv(headers, records, *, include_header=True):
