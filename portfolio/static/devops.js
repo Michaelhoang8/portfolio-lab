@@ -14,7 +14,15 @@ function invalidate(){manifestView=null;result=null;$('#download').disabled=true
 function switchMode(next){if(busy)return;fileRevision++;mode=config[next]?next:'manifest';window.designIdentity(mode);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('#pipeline-options').hidden=mode!=='pipeline';$('#reliability-options').hidden=mode!=='reliability';$('#input-title').textContent=config[mode][0];$('#result-title').textContent=config[mode][1];$('#run').textContent=config[mode][2];$('#input-help').textContent=config[mode][3];$('#file-label').textContent=mode==='reliability'?'Choose a metrics CSV':'Choose a JSON file';$('#file').accept=mode==='reliability'?'.csv,text/csv':'.json,application/json';$('#source').value='';invalidate();message('');}
 const stats=items=>`<div class="stats">${items.map(([k,v])=>`<div class="stat"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-function timeline(r){const height=r.jobs.length*34+35;return `<div class="timeline"><h3>Runner timeline · seconds</h3><svg viewBox="0 0 660 ${height}" role="img" aria-label="Simulated job start and end times">${r.jobs.map((j,i)=>`<text x="0" y="${i*34+20}">${esc(j.id)}</text><rect class="${j.status==='passed'?'job':j.status}" x="${170+(j.start||0)/r.elapsed*400}" y="${i*34+5}" width="${j.start===null?4:Math.max(2,(j.end-j.start)/r.elapsed*400)}" height="20" rx="3"/><text x="580" y="${i*34+20}">${j.end===null?'skipped':`${j.start}–${j.end}`}</text>`).join('')}<text x="170" y="${height-5}">0</text><text x="545" y="${height-5}">${r.elapsed}s</text></svg></div>`;}
+function timeline(r){
+ const height=r.jobs.length*34+35;
+ const jobs=r.jobs.map((job,index)=>{
+  const label=job.id.length>22?job.id.slice(0,21)+'…':job.id;
+  const timing=job.start===null?'skipped':`${job.start}–${job.end} seconds · ${job.attempts} ${job.attempts===1?'attempt':'attempts'}`;
+  return `<text class="job-label" x="0" y="${index*34+20}"><title>${esc(job.id)}</title>${esc(label)}</text><rect class="${job.status==='passed'?'job':job.status}" x="${170+(job.start||0)/r.elapsed*400}" y="${index*34+5}" width="${job.start===null?4:Math.max(2,(job.end-job.start)/r.elapsed*400)}" height="20" rx="3"><title>${esc(job.id)} · ${esc(timing)} · ${esc(job.status)}</title></rect><text x="580" y="${index*34+20}">${job.end===null?'skipped':`${job.start}–${job.end}`}</text>`;
+ }).join('');
+ return `<div class="timeline"><h3>Runner timeline · seconds</h3><svg viewBox="0 0 660 ${height}" role="img" aria-label="Simulated job start and end times; full job IDs are listed in the table below">${jobs}<text x="170" y="${height-5}">0</text><text x="545" y="${height-5}">${r.elapsed}s</text></svg>${r.jobs.some(job=>job.id.length>22)?'<p class="hint">Long job IDs are shortened in the chart. Hover for the full name, or read the table below.</p>':''}</div>`;
+}
 function manifestFindings(){
  const {items,filter}=manifestView;
  const matches=items.filter(item=>filter==='all'||item.status===filter);
