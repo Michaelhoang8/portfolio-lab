@@ -85,3 +85,9 @@ Manual workflow captures: [portable model inference](design/saved-model-workflow
 Model Observatory includes source record numbers, actual labels, scores, and predicted classes for every evaluated row in its JSON report. Detailed analysis shows the first 20 misclassified records and offers a full prediction-audit CSV containing all rows, outcome names, the selected threshold, and each error’s configured cost. The audit uses the threshold you entered; it does not silently substitute the best threshold from the coarse cost grid. Extra input columns are omitted. Join the logical record number back to the input when investigating errors (header is record 1; blank physical rows are skipped).
 
 Tests reconcile all four outcomes with the confusion matrix, cover score-equals-threshold behavior and asymmetric error costs, and verify a 5,000-row export keeps every record and full score precision despite the bounded preview. A browser download was checked against the displayed threshold and confusion matrix ([capture](design/prediction-audit.png)).
+
+### Evaluation performance
+
+Model Observatory computes threshold-independent ROC AUC, Brier loss, and log loss once per evaluation, then reuses them across the selected threshold and eleven-point threshold grid. Classification counts and derived precision/recall/F1 still use each threshold. Response fields and values are unchanged.
+
+A local Windows/Python 3.13 comparison against commit `c54fd20` used 5,000 synthetic rows generated with `random.Random(42)`, alternating `randrange(2)` labels and `random()` scores formatted to ten decimals, selected threshold 0.37, and twelve alternating before/after runs. Median full evaluation time decreased from 92.67 ms to 23.16 ms (4.00×); complete reports compared equal before timing. These are local measurements, not an HTTP latency or cross-platform guarantee. Tests also cover threshold endpoints, tied scores, and single-class undefined metrics.

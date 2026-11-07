@@ -33,7 +33,7 @@ def auc(labels, scores):
         start = end
     return (rank_sum-positives*(positives+1)/2)/(positives*negatives)
 
-def metrics(labels, scores, threshold=.5):
+def threshold_metrics(labels, scores, threshold=.5):
     tp=fp=tn=fn=0
     for y,p in zip(labels,scores):
         predicted=p>=threshold
@@ -45,9 +45,17 @@ def metrics(labels, scores, threshold=.5):
     recall=tp/(tp+fn) if tp+fn else None
     return {'accuracy':(tp+tn)/len(labels),'precision':precision,'recall':recall,
             'f1':2*tp/(2*tp+fp+fn) if 2*tp+fp+fn else None,
-            'confusion':{'tp':tp,'fp':fp,'tn':tn,'fn':fn},'roc_auc':auc(labels,scores),
+            'confusion':{'tp':tp,'fp':fp,'tn':tn,'fn':fn}}
+
+
+def probability_metrics(labels,scores):
+    return {'roc_auc':auc(labels,scores),
             'brier':statistics.mean((p-y)**2 for y,p in zip(labels,scores)),
             'log_loss':-statistics.mean(y*math.log(max(1e-15,p))+(1-y)*math.log(max(1e-15,1-p)) for y,p in zip(labels,scores))}
+
+def metrics(labels,scores,threshold=.5):
+    return {**threshold_metrics(labels,scores,threshold),**probability_metrics(labels,scores)}
+
 
 def evaluate(data):
     headers,rows=parse(data)
@@ -67,11 +75,13 @@ def evaluate(data):
         bins.append({'range':f'{index/5:.1f}–{(index+1)/5:.1f}', 'count':len(selected),
                      'mean_score':statistics.mean(scores[i] for i in selected) if selected else None,
                      'observed_rate':statistics.mean(labels[i] for i in selected) if selected else None})
+    # Ranking and probability losses are invariant across classification thresholds.
+    quality=probability_metrics(labels,scores)
     return {'rows':len(rows),'threshold':threshold,'positive_rate':sum(labels)/len(labels),
-            'metrics':metrics(labels,scores,threshold),'calibration':bins,
+            'metrics':{**threshold_metrics(labels,scores,threshold),**quality},'calibration':bins,
             'predictions':[{'record':index,'actual':actual,'score':score,'predicted':int(score>=threshold)}
                            for index,(actual,score) in enumerate(zip(labels,scores),2)],
-            'thresholds':[{'threshold':i/10,**metrics(labels,scores,i/10)} for i in range(11)]}
+            'thresholds':[{'threshold':i/10,**threshold_metrics(labels,scores,i/10),**quality} for i in range(11)]}
 
 def sigmoid(value):
     if value>=0:

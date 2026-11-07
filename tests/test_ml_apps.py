@@ -43,6 +43,17 @@ class MLTests(unittest.TestCase):
         self.assertEqual(r['calibration'][1]['count'],1)
         self.assertEqual(r['calibration'][-1]['count'],1)
 
+    def test_evaluation_threshold_grid_preserves_all_metric_values(self):
+        for labels,scores in (([0,1,0,1,1],[0,.2,.5,.5,1]),([0,0],[0,1]),([1,1],[0,1])):
+            source='actual,score\n'+'\n'.join(f'{label},{score}' for label,score in zip(labels,scores))
+            report=m.evaluate({'csv':source,'threshold':.37})
+            self.assertEqual(report['metrics'],m.metrics(labels,scores,.37))
+            for entry in report['thresholds']:
+                expected=m.metrics(labels,scores,entry['threshold'])
+                self.assertEqual({key:value for key,value in entry.items() if key!='threshold'},expected)
+            for key in ('roc_auc','brier','log_loss'):
+                self.assertTrue(all(entry[key]==report['metrics'][key] for entry in report['thresholds']))
+
     def test_evaluation_rejects_invalid_inputs(self):
         for csv in ['actual,score\n0,NaN','actual,score\n0,1.1','actual,score\n0.5,0.2','x,y\n1,2']:
             with self.assertRaises(ValidationError):
