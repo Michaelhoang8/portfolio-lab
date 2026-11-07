@@ -26,6 +26,13 @@ class Problem(Exception):
     def __init__(self,status,detail):
         self.status=status;self.detail=detail
 
+def single_header(headers,name,default=None):
+    values=headers.get_all(name,[])
+    if len(values)>1:
+        raise Problem(400,f'Provide at most one {name} header')
+    return values[0] if values else default
+
+
 def etag(note):
     return f'"{note["id"]}:{note["version"]}"'
 
@@ -91,7 +98,7 @@ def handle(handler,database,api_key):
     try:
         if not api_key:
             raise Problem(503,'Set PORTFOLIO_API_KEY in the server environment to enable the Notes API')
-        supplied=handler.headers.get('X-API-Key','')
+        supplied=single_header(handler.headers,'X-API-Key','')
         if not hmac.compare_digest(supplied.encode(),api_key.encode()):
             raise Problem(401,'A valid X-API-Key header is required')
         item=re.fullmatch(r'/api/v1/notes/([0-9a-f-]{36})',path)
@@ -147,6 +154,7 @@ def handle(handler,database,api_key):
             send(200,note,{'ETag':etag(note)});return
         payload=None
         if handler.command in ('POST','PUT','PATCH'):
+            single_header(handler.headers,'Content-Type')
             if handler.headers.get_content_type()!='application/json':
                 raise Problem(415,'Content-Type must be application/json')
             if handler.headers.get('Transfer-Encoding') or len(handler.headers.get_all('Content-Length', [])) != 1:
@@ -165,7 +173,7 @@ def handle(handler,database,api_key):
         with db:
             db.execute('BEGIN IMMEDIATE')
             if handler.command=='POST':
-                key=handler.headers.get('Idempotency-Key')
+                key=single_header(handler.headers,'Idempotency-Key')
                 if key is not None and not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}',key):
                     raise Problem(400,'Idempotency-Key must be 1–128 ASCII letters, digits, or _ . : -')
                 scope=hashlib.sha256(api_key.encode()).hexdigest()
@@ -186,7 +194,7 @@ def handle(handler,database,api_key):
                 if row is None:
                     raise Problem(404,'Note not found')
                 note=dict(row)
-                match=handler.headers.get('If-Match')
+                match=single_header(handler.headers,'If-Match')
                 if match is None:
                     raise Problem(428,'If-Match with the current ETag is required')
                 if match!=etag(note):

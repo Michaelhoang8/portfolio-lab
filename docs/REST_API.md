@@ -28,6 +28,8 @@ The client creates its own temporary note, retries creation with the same idempo
 
 A note has UUID `id`, `title` (1–200 characters, trimmed), `content` (1–10,000 characters, whitespace-only rejected), `status` (`draft` or `published`), integer `version`, and UTC `created_at`/`updated_at` timestamps. Unknown input fields and duplicate JSON keys are rejected. Create and replace require all three writable fields; PATCH accepts one or more writable fields.
 
+Headers that identify a single credential, body type, creation retry key, or write version must not be repeated: duplicate `X-API-Key`, `Content-Type` on JSON writes, `Idempotency-Key` on creation, and `If-Match` on updates/deletion return 400 before mutation. Header names are case-insensitive, and even identical duplicates are rejected. Repeated `If-None-Match` fields remain supported as a combined validator list for individual-note reads.
+
 | Method | Route | Behavior |
 | --- | --- | --- |
 | GET | `/api/v1/notes` | List, filter, search, paginate |

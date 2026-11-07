@@ -48,6 +48,52 @@ class RestTests(unittest.TestCase):
     def create(self,title=None,headers=None):
         return self.request('POST',body={'title':title or str(uuid.uuid4()),'content':'Test content','status':'draft'},headers=headers)
 
+    def test_ambiguous_single_headers_do_not_mutate_notes(self):
+        _,created,note=self.create()
+        before=self.request()[2]['total']
+        payload=json.dumps({'title':'Changed','content':'Test','status':'draft'}).encode()
+        cases=[('GET','/api/v1/notes','X-API-Key',self.key,'wrong'),
+               ('POST','/api/v1/notes','Content-Type','application/json','text/plain'),
+               ('POST','/api/v1/notes','Idempotency-Key','first','second'),
+               ('PATCH',created['Location'],'If-Match',created['ETag'],'"stale"'),
+               ('DELETE',created['Location'],'If-Match',created['ETag'],created['ETag'])]
+        for method,path,name,first,second in cases:
+            with self.subTest(header=name,method=method):
+                connection=HTTPConnection(*self.server.server_address,timeout=5)
+                try:
+                    connection.putrequest(method,path)
+                    if name!='X-API-Key':connection.putheader('X-API-Key',self.key)
+                    if method in ('POST','PATCH'):
+                        if name!='Content-Type':connection.putheader('Content-Type','application/json')
+                        connection.putheader('Content-Length',str(len(payload)))
+                    connection.putheader(name,first)
+                    connection.putheader(name.lower(),second)
+                    connection.endheaders(payload if method in ('POST','PATCH') else None)
+                    response=connection.getresponse()
+                    problem=json.loads(response.read())
+                    self.assertEqual(response.status,400)
+                    self.assertEqual(problem['detail'],f'Provide at most one {name} header')
+                    self.assertNotIn(self.key,json.dumps(problem))
+                finally:connection.close()
+        self.assertEqual(self.request()[2]['total'],before)
+        self.assertEqual(self.request(path=created['Location'])[2],note)
+        with connect(self.path) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM api_idempotency WHERE key IN ('first','second')").fetchone()[0],0)
+
+    def test_repeated_conditional_read_headers_remain_supported(self):
+        _,created,_=self.create()
+        connection=HTTPConnection(*self.server.server_address,timeout=5)
+        try:
+            connection.putrequest('GET',created['Location'])
+            connection.putheader('X-API-Key',self.key)
+            connection.putheader('If-None-Match','"other"')
+            connection.putheader('if-none-match','W/'+created['ETag'])
+            connection.endheaders()
+            response=connection.getresponse()
+            self.assertEqual(response.status,304)
+            self.assertEqual(response.read(),b'')
+        finally:connection.close()
+
     def test_command_line_demo_exercises_protocol_and_cleans_up_its_note(self):
         before=self.request()[2]['total']
         result=subprocess.run([sys.executable,'-m','portfolio.rest_client','--base-url',self.url],
