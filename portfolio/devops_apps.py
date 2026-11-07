@@ -95,9 +95,16 @@ def pipeline(data):
         if not ready:
             raise ValidationError('Pipeline contains a dependency cycle')
         ordered.extend(ready)
-    critical={}
+    critical={}; predecessor={}
     for name in ordered:
-        critical[name]=jobs[name]['duration']+max((critical[d] for d in jobs[name]['needs']),default=0)
+        parent=min(jobs[name]['needs'],key=lambda dep:(-critical[dep],dep),default=None)
+        predecessor[name]=parent
+        critical[name]=jobs[name]['duration']+(critical[parent] if parent else 0)
+    terminal=min(critical,key=lambda name:(-critical[name],name))
+    chain=[]
+    while terminal is not None:
+        chain.append(terminal);terminal=predecessor[terminal]
+    chain.reverse()
     pending=set(jobs); results={}; running=[]; now=0
     while pending or running:
         while running and running[0][0]<=now:
@@ -122,7 +129,18 @@ def pipeline(data):
         elif pending:
             raise ValidationError('Pipeline cannot progress')
     timeline=sorted(results.values(),key=lambda r:(r['start'] is None,r['start'] or 0,r['id']))
+    for job in timeline:
+        if job['start'] is None:
+            job.update(ready_at=None,queue_wait=None,execution_seconds=0,retry_seconds=0)
+        else:
+            ready_at=max((results[dep]['end'] for dep in job['needs']),default=0)
+            execution=job['end']-job['start']
+            job.update(ready_at=ready_at,queue_wait=job['start']-ready_at,
+                       execution_seconds=execution,retry_seconds=execution-jobs[job['id']]['duration'])
     return {'jobs':timeline,'workers':workers,'elapsed':now,'ideal_critical_path':max(critical.values()),
+            'ideal_critical_jobs':chain,'work_seconds':sum(j['execution_seconds'] for j in timeline),
+            'queued_job_seconds':sum(j['queue_wait'] or 0 for j in timeline),
+            'retry_job_seconds':sum(j['retry_seconds'] for j in timeline),
             'status':'failed' if any(r['status']=='failed' for r in timeline) else 'passed',
             'note':'Deterministic simulation only. No commands execute. Alphabetical scheduling; retries hold a worker without backoff. Ideal critical path assumes unlimited workers and first-attempt success.'}
 

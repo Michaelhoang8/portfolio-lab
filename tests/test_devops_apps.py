@@ -41,6 +41,30 @@ class DevOpsTests(unittest.TestCase):
         self.assertEqual(plan(jobs,1)['elapsed'],35)
         self.assertEqual(parallel['jobs'][-1]['start'],20)
 
+    def test_queue_time_excludes_dependencies_and_separates_retries(self):
+        jobs=[{'id':'a','duration':10,'retries':1,'fail_attempts':1},
+              {'id':'b','duration':5},{'id':'c','needs':['a'],'duration':6}]
+        serial=plan(jobs,1);parallel=plan(jobs,2)
+        records={job['id']:job for job in serial['jobs']}
+        self.assertEqual(serial['ideal_critical_jobs'],['a','c'])
+        self.assertEqual(serial['ideal_critical_path'],16)
+        self.assertEqual((serial['elapsed'],serial['work_seconds'],serial['retry_job_seconds']),(31,31,10))
+        self.assertEqual((records['b']['ready_at'],records['b']['queue_wait']),(0,20))
+        self.assertEqual((records['c']['ready_at'],records['c']['queue_wait']),(20,5))
+        self.assertEqual(serial['queued_job_seconds'],25)
+        self.assertEqual((parallel['elapsed'],parallel['queued_job_seconds'],parallel['work_seconds']),(26,0,31))
+
+    def test_critical_chain_ties_are_deterministic_and_skips_have_no_wait(self):
+        jobs=[{'id':'z','duration':10},{'id':'a','duration':10},
+              {'id':'last','needs':['z','a'],'duration':5}]
+        self.assertEqual(plan(jobs)['ideal_critical_jobs'],['a','last'])
+        self.assertEqual(plan(list(reversed(jobs)))['ideal_critical_jobs'],['a','last'])
+        failed=plan([{'id':'a','duration':10,'fail_attempts':1},{'id':'b','needs':['a'],'duration':5}])
+        skipped=next(job for job in failed['jobs'] if job['id']=='b')
+        self.assertIsNone(skipped['ready_at'])
+        self.assertIsNone(skipped['queue_wait'])
+        self.assertEqual(skipped['execution_seconds'],0)
+
     def test_retry_success_and_exhaustion_skip(self):
         jobs=[{'id':'build','duration':10,'retries':1,'fail_attempts':1},{'id':'deploy','needs':['build'],'duration':5}]
         r=plan(jobs)
