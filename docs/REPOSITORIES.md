@@ -1,25 +1,25 @@
 # Standalone application repositories
 
-All 16 applications have independent local Git repositories. **10 are published to GitHub; 6 await GitHub repository creation.** Each app has its own root page, API routes, database schema, tests, CI workflow, README, and preview. Published repositories retain the original private visibility.
+All 16 applications have independent local Git repositories. **16 are published to GitHub; 0 await GitHub repository creation.** Each app has its own root page, API routes, database schema, tests, CI workflow, README, and preview. Current repository visibility is shown below.
 
 | Application | Repository | Publication status |
 | --- | --- | --- |
-| Issue Desk | [issue-desk](https://github.com/Michaelhoang8/issue-desk) | Published · private |
-| Stockroom | [stockroom](https://github.com/Michaelhoang8/stockroom) | Published · private |
-| Experiment Studio | [experiment-studio](https://github.com/Michaelhoang8/experiment-studio) | Published · private |
-| Dataset Explorer | [dataset-explorer](https://github.com/Michaelhoang8/dataset-explorer) | Published · private |
-| Pipeline Studio | [pipeline-studio](https://github.com/Michaelhoang8/pipeline-studio) | Published · private |
-| Revenue Lens | [revenue-lens](https://github.com/Michaelhoang8/revenue-lens) | Published · private |
-| Auth Watch | [auth-watch](https://github.com/Michaelhoang8/auth-watch) | Published · private |
-| Header Review | [header-review](https://github.com/Michaelhoang8/header-review) | Published · private |
-| Secret Sentinel | [secret-sentinel](https://github.com/Michaelhoang8/secret-sentinel) | Published · private |
-| Classifier Lab | [classifier-lab](https://github.com/Michaelhoang8/classifier-lab) | Published · private |
-| Retrieval Studio | `retrieval-studio` — local repository ready | GitHub creation rate-limited |
-| Model Observatory | `model-observatory` — local repository ready | GitHub creation rate-limited |
-| Manifest Review | `manifest-review` — local repository ready | GitHub creation rate-limited |
-| Pipeline Planner | `pipeline-planner` — local repository ready | GitHub creation rate-limited |
-| Reliability Desk | `reliability-desk` — local repository ready | GitHub creation rate-limited |
-| REST Studio | `rest-studio` — local repository ready | GitHub creation rate-limited |
+| Issue Desk | [issue-desk](https://github.com/Michaelhoang8/issue-desk) | Published · public |
+| Stockroom | [stockroom](https://github.com/Michaelhoang8/stockroom) | Published · public |
+| Experiment Studio | [experiment-studio](https://github.com/Michaelhoang8/experiment-studio) | Published · public |
+| Dataset Explorer | [dataset-explorer](https://github.com/Michaelhoang8/dataset-explorer) | Published · public |
+| Pipeline Studio | [pipeline-studio](https://github.com/Michaelhoang8/pipeline-studio) | Published · public |
+| Revenue Lens | [revenue-lens](https://github.com/Michaelhoang8/revenue-lens) | Published · public |
+| Auth Watch | [auth-watch](https://github.com/Michaelhoang8/auth-watch) | Published · public |
+| Header Review | [header-review](https://github.com/Michaelhoang8/header-review) | Published · public |
+| Secret Sentinel | [secret-sentinel](https://github.com/Michaelhoang8/secret-sentinel) | Published · public |
+| Classifier Lab | [classifier-lab](https://github.com/Michaelhoang8/classifier-lab) | Published · public |
+| Retrieval Studio | [retrieval-studio](https://github.com/Michaelhoang8/retrieval-studio) | Published · public |
+| Model Observatory | [model-observatory](https://github.com/Michaelhoang8/model-observatory) | Published · public |
+| Manifest Review | [manifest-review](https://github.com/Michaelhoang8/manifest-review) | Published · public |
+| Pipeline Planner | [pipeline-planner](https://github.com/Michaelhoang8/pipeline-planner) | Published · public |
+| Reliability Desk | [reliability-desk](https://github.com/Michaelhoang8/reliability-desk) | Published · public |
+| REST Studio | [rest-studio](https://github.com/Michaelhoang8/rest-studio) | Published · public |
 
 ## Run an app
 
