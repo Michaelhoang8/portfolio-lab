@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Reach Studio](https://github.com/Michaelhoang8/reach-studio) | Robotics and inverse kinematics | Joint-limited arm solving, deterministic starting-pose comparisons, replay, and independently verified Jacobian geometry | Published · public |
 | [Chance & Choice](https://github.com/Michaelhoang8/chance-and-choice) | Bayesian experimentation | Reproducible Beta posterior comparisons, practical-effect probabilities, expected regret, and independently verified sample exports | Published · public |
 | [Quorum Chamber](https://github.com/Michaelhoang8/quorum-chamber) | Distributed consensus | Single-decree Paxos, controlled message failures, persistent simulated promises, quorum witnesses, and branching replay | Published · public |
 | [Grammar Gallery](https://github.com/Michaelhoang8/grammar-gallery) | Compiler parser construction | LR item automata, nullable and FIRST/FOLLOW sets, explicit SLR conflicts, and shift-reduce replay | Published · public |
