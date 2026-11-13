@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Sum Ledger](https://github.com/Michaelhoang8/sum-ledger) | Numerical precision | Exact binary summation, compensated algorithms, prefix rounding inspection, and independent rational verification | Published · public |
 | [Parcel Relay](https://github.com/Michaelhoang8/parcel-relay) | Transactional messaging | Atomic sender outboxes, idempotent receiver effects, injected delivery failures, and replay evidence | Published · public |
 | [Dominance Desk](https://github.com/Michaelhoang8/dominance-desk) | Compiler control-flow analysis | Dominator trees, natural loops, critical edges, fixed-point replay, and iterated-frontier phi candidates | Published · public |
 | [Reward Atlas](https://github.com/Michaelhoang8/reward-atlas) | Off-policy machine learning evaluation | Importance-weighted and doubly robust estimates, support diagnostics, clipping, and reproducible bootstrap evidence | Published · public |
