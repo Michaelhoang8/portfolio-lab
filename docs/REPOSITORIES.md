@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Seam Atelier](https://github.com/Michaelhoang8/seam-atelier) | Content-aware image processing | Verified seam carving, protection painting, pixel provenance, and reproducible PNG exports | Published · public |
 | [Policy Weave](https://github.com/Michaelhoang8/policy-weave) | Access-control systems | Versioned SQLite policies, explained decisions, optimistic publication, and change-impact comparisons | Published · public |
 | [Type Folio](https://github.com/Michaelhoang8/type-folio) | Programming languages | Principal type inference, let-polymorphism, source-aware unification traces, and portable folios | Published · public |
 | [Orbit Almanac](https://github.com/Michaelhoang8/orbit-almanac) | Numerical dynamics | Orbital integrator comparisons, conservation diagnostics, trajectory playback, and portable experiments | Published · public |
