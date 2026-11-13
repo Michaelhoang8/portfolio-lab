@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Dither Dispatch](https://github.com/Michaelhoang8/dither-dispatch) | Digital image processing and quantization | Palette comparisons, ordered thresholds, audited error diffusion, pixel inspection, and reproducible image exports | Published · public |
 | [Cut Current](https://github.com/Michaelhoang8/cut-current) | Network optimization and flow certificates | Directed maximum flow, residual cancellation replay, minimum-cut witnesses, and independently verified edge sensitivity | Published · public |
 | [Noise Ledger](https://github.com/Michaelhoang8/noise-ledger) | Differential privacy and transactional accounting | Exact geometric noise, rational privacy composition, immutable cached releases, and verifiable canonical exports | Published · public |
 | [Mesh Pavilion](https://github.com/Michaelhoang8/mesh-pavilion) | Computational geometry and mesh topology | Triangle connectivity diagnostics, manifold vertex links, orientability constraints, winding repair, and portable OBJ evidence | Published · public |
