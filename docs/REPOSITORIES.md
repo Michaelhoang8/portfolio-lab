@@ -29,6 +29,8 @@ These projects were built independently after the original 16-app extraction. Ea
 | --- | --- | --- | --- |
 | [Bytecode Atelier](https://github.com/Michaelhoang8/bytecode-atelier) | Compilers | Arithmetic compiler, constant folding, and reversible stack VM | Published · public |
 | [Causal Post](https://github.com/Michaelhoang8/causal-post) | Distributed systems | Vector clocks, network faults, and replayable causal histories | Published · public |
+| [Frame Garden](https://github.com/Michaelhoang8/frame-garden) | Operating systems | Page replacement, dirty writebacks, and capacity sweeps | Published · public |
+| [Dispatch Room](https://github.com/Michaelhoang8/dispatch-room) | Backend infrastructure | Durable SQLite jobs, fenced leases, retries, and an operations console | Published · public |
 
 ## Run an app
 
@@ -38,7 +40,7 @@ From an app repository, run `python run.py` and open http://127.0.0.1:8000/. Use
 
 All 16 apps were exercised in the browser. The standalone suites pass 274 Python tests and 82 JavaScript tests in total, including root-page assets, app-specific API requests, rejection of unrelated app endpoints, and isolated database schemas.
 
-The new projects are verified separately: Bytecode Atelier has 11 JavaScript tests and one Python server test; Causal Post has 11 JavaScript tests and one Python server test. Both have browser-verified workflows. Their READMEs describe the checks and model limitations.
+The new projects are verified separately: Bytecode Atelier has 11 JavaScript tests and one Python server test; Causal Post has 11 JavaScript tests and one Python server test; Frame Garden has 10 JavaScript tests and one Python server test; Dispatch Room has 17 Python tests including a separate worker process. All have browser-verified workflows. Their READMEs describe the checks and model limitations.
 
 ## Local workspace
 
