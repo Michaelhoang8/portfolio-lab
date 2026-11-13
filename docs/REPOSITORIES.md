@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Grammar Gallery](https://github.com/Michaelhoang8/grammar-gallery) | Compiler parser construction | LR item automata, nullable and FIRST/FOLLOW sets, explicit SLR conflicts, and shift-reduce replay | Published · public |
 | [Wavelet Loom](https://github.com/Michaelhoang8/wavelet-loom) | Multiresolution image processing | Haar image decomposition, detail selection, quantized reconstruction, and portable sparse coefficient files | Published · public |
 | [Route Chorus](https://github.com/Michaelhoang8/route-chorus) | Network routing convergence | Distance-vector failure replay, poisoned advertisements, forwarding-loop inspection, and independent route evidence | Published · public |
 | [Cursor Cabinet](https://github.com/Michaelhoang8/cursor-cabinet) | Database API pagination | Signed snapshot-bound keyset cursors, immutable records, concurrent retries, and inspectable SQL evidence | Published · public |
