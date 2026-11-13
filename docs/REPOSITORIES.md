@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Window Foundry](https://github.com/Michaelhoang8/window-foundry) | Stream processing | Durable event-time windows, atomic retry-safe ingestion, explicit watermarks, late arrivals, and projection recovery | Published · public |
 | [Shard Compass](https://github.com/Michaelhoang8/shard-compass) | Distributed storage placement | Hashing-strategy comparisons, replica movement accounting, hot-key load, and explicit outage survival checks | Published · public |
 | [Relation Fold](https://github.com/Michaelhoang8/relation-fold) | Relational database theory | Candidate keys, 3NF and BCNF synthesis, dependency preservation, and inspectable lossless-join proofs | Published · public |
 | [Queue Weather](https://github.com/Michaelhoang8/queue-weather) | Performance engineering | Reproducible queue simulations, Erlang-C capacity forecasts, replicate uncertainty, and workload evidence | Published · public |
