@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Span Journal](https://github.com/Michaelhoang8/span-journal) | Observability backends | Atomic immutable span ingestion, safe retries, parent validation, interval-union timing, and trace evidence | Published · public |
 | [Shift Study](https://github.com/Michaelhoang8/shift-study) | Time-series analysis | Stable optimal partitioning, level-change inspection, penalty sensitivity, and reproducible fitted-data evidence | Published · public |
 | [Threshold Note](https://github.com/Michaelhoang8/threshold-note) | Applied cryptography | Threshold byte sharing over GF(257), unbiased randomness, exact reconstruction, and explicit corruption/consistency boundaries | Published · public |
 | [Cable Census](https://github.com/Michaelhoang8/cable-census) | Graph optimization and resilience | Minimum spanning forests, essential-link classification, outage sensitivity, constrained alternatives, and verified graph evidence | Published · public |
