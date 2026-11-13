@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Journal Balance](https://github.com/Michaelhoang8/journal-balance) | Transactional ledger systems | Balanced integer postings, optimistic concurrency, exact retries, immutable reversals, and historical audit evidence | Published · public |
 | [Match Folio](https://github.com/Michaelhoang8/match-folio) | Algorithmic game theory | Capacity-aware deferred acceptance, proposal replay, blocking-pair witnesses, and exhaustive stable outcomes | Published · public |
 | [Sketch Census](https://github.com/Michaelhoang8/sketch-census) | Probabilistic stream analytics | Mergeable HyperLogLog sketches, exact-reference comparisons, register inspection, and portable count evidence | Published · public |
 | [Span Journal](https://github.com/Michaelhoang8/span-journal) | Observability backends | Atomic immutable span ingestion, safe retries, parent validation, interval-union timing, and trace evidence | Published · public |
