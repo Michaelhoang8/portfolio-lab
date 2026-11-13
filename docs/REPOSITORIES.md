@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Isolation Island](https://github.com/Michaelhoang8/isolation-island) | Database concurrency control | Durable MVCC snapshots, write-skew comparisons, optimistic read-set validation, and replayable command evidence | Published · public |
 | [History Harbor](https://github.com/Michaelhoang8/history-harbor) | Concurrent-object verification | Bounded linearizability search, rational operation witnesses, explicit inconclusive outcomes, and editable failure diagnostics | Published · public |
 | [Motion Margin](https://github.com/Michaelhoang8/motion-margin) | State estimation and probabilistic robotics | Joseph-form Kalman filtering, retrospective smoothing, innovation gating, editable observations, and independently verified covariance evidence | Published · public |
 | [Lease Beacon](https://github.com/Michaelhoang8/lease-beacon) | Backend coordination and fenced writes | Atomic expiring leases, increasing fencing tokens, versioned documents, delayed-client scenarios, and durable retry receipts | Published · public |
