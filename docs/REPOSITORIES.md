@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Hidden Score](https://github.com/Michaelhoang8/hidden-score) | Probabilistic inference | Log-domain HMM filtering, smoothing, Viterbi decoding, seeded observations, and posterior evidence | Published · public |
 | [Coherence Choir](https://github.com/Michaelhoang8/coherence-choir) | Computer architecture | MESI replay, dirty ownership, false sharing, trace branching, and invariant evidence | Published · public |
 | [Slope Studio](https://github.com/Michaelhoang8/slope-studio) | Automatic differentiation and optimization | Reverse-mode tapes, numerical gradient diagnostics, optimizer trajectories, and reproducible loss landscapes | Published · public |
 | [State Lantern](https://github.com/Michaelhoang8/state-lantern) | Temporal model checking | Exact CTL fixed points, nested-property inspection, finite witnesses, and repeatable liveness counterexamples | Published · public |
