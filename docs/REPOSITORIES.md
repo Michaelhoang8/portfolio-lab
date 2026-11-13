@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Queue Weather](https://github.com/Michaelhoang8/queue-weather) | Performance engineering | Reproducible queue simulations, Erlang-C capacity forecasts, replicate uncertainty, and workload evidence | Published · public |
 | [Snapshot Pantry](https://github.com/Michaelhoang8/snapshot-pantry) | Storage systems | Content-addressed file snapshots, transactional manifests, deduplication accounting, and verified ZIP restoration | Published · public |
 | [Qubit Loom](https://github.com/Michaelhoang8/qubit-loom) | Quantum computing | Verified statevector circuits, reduced states, interference inspection, and seeded measurement experiments | Published · public |
 | [Seam Atelier](https://github.com/Michaelhoang8/seam-atelier) | Content-aware image processing | Verified seam carving, protection painting, pixel provenance, and reproducible PNG exports | Published · public |
