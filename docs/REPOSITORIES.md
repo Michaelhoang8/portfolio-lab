@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Mesh Pavilion](https://github.com/Michaelhoang8/mesh-pavilion) | Computational geometry and mesh topology | Triangle connectivity diagnostics, manifold vertex links, orientability constraints, winding repair, and portable OBJ evidence | Published · public |
 | [Mutation Bench](https://github.com/Michaelhoang8/mutation-bench) | Software testing and test-suite optimization | Restricted-expression mutation analysis, baseline-aware fault matrices, bounded counterexamples, and exact test covers | Published · public |
 | [Reach Studio](https://github.com/Michaelhoang8/reach-studio) | Robotics and inverse kinematics | Joint-limited arm solving, deterministic starting-pose comparisons, replay, and independently verified Jacobian geometry | Published · public |
 | [Chance & Choice](https://github.com/Michaelhoang8/chance-and-choice) | Bayesian experimentation | Reproducible Beta posterior comparisons, practical-effect probabilities, expected regret, and independently verified sample exports | Published · public |
