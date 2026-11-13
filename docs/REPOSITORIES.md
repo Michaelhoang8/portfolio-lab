@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Axis Orchard](https://github.com/Michaelhoang8/axis-orchard) | Dimensionality reduction and numerical linear algebra | Inspectable PCA, scaling comparisons, projected observations, reconstruction errors, and numerical evidence | Published · public |
 | [Suffix Folio](https://github.com/Michaelhoang8/suffix-folio) | Text indexing and string algorithms | Unicode suffix arrays, repeated-passage analysis, construction rounds, and binary-search evidence | Published · public |
 | [Fork Pages](https://github.com/Michaelhoang8/fork-pages) | Operating-system memory management | Copy-on-write forks, reference-counted frames, translation-cache invalidation, and branching memory replay | Published · public |
 | [Rescue Stripe](https://github.com/Michaelhoang8/rescue-stripe) | Erasure coding and resilient storage | Systematic Reed-Solomon shards, explicit erasures, verified reconstruction, and portable shard repair | Published · public |
