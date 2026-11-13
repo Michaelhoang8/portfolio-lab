@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Policy Weave](https://github.com/Michaelhoang8/policy-weave) | Access-control systems | Versioned SQLite policies, explained decisions, optimistic publication, and change-impact comparisons | Published · public |
 | [Type Folio](https://github.com/Michaelhoang8/type-folio) | Programming languages | Principal type inference, let-polymorphism, source-aware unification traces, and portable folios | Published · public |
 | [Orbit Almanac](https://github.com/Michaelhoang8/orbit-almanac) | Numerical dynamics | Orbital integrator comparisons, conservation diagnostics, trajectory playback, and portable experiments | Published · public |
 | [Pattern Current](https://github.com/Michaelhoang8/pattern-current) | String algorithms | Streaming Aho-Corasick search, exact aggregate counts, Unicode offsets, and failure-link inspection | Published · public |
