@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Shard Compass](https://github.com/Michaelhoang8/shard-compass) | Distributed storage placement | Hashing-strategy comparisons, replica movement accounting, hot-key load, and explicit outage survival checks | Published · public |
 | [Relation Fold](https://github.com/Michaelhoang8/relation-fold) | Relational database theory | Candidate keys, 3NF and BCNF synthesis, dependency preservation, and inspectable lossless-join proofs | Published · public |
 | [Queue Weather](https://github.com/Michaelhoang8/queue-weather) | Performance engineering | Reproducible queue simulations, Erlang-C capacity forecasts, replicate uncertainty, and workload evidence | Published · public |
 | [Snapshot Pantry](https://github.com/Michaelhoang8/snapshot-pantry) | Storage systems | Content-addressed file snapshots, transactional manifests, deduplication accounting, and verified ZIP restoration | Published · public |
