@@ -39,6 +39,7 @@ These projects were built independently after the original 16-app extraction. Ea
 | [Allocation Desk](https://github.com/Michaelhoang8/allocation-desk) | Operations research | Minimum-cost maximum flow, capacity constraints, and independently checked optimality certificates | Published · public |
 | [Index Press](https://github.com/Michaelhoang8/index-press) | Information retrieval | Persistent positional index, explainable BM25 ranking, phrase search, and versioned document edits | Published · public |
 | [Terrain Pilot](https://github.com/Michaelhoang8/terrain-pilot) | Robotics and planning | Weighted A-star and Dijkstra, footprint clearance, editable costmaps, and route replay | Published · public |
+| [Clause Cabinet](https://github.com/Michaelhoang8/clause-cabinet) | Formal verification | 2-SAT configuration checking, verified contradiction witnesses, forced values, and repair candidates | Published · public |
 
 ## Run an app
 
@@ -48,7 +49,7 @@ From an app repository, run `python run.py` and open http://127.0.0.1:8000/. Use
 
 All 16 apps were exercised in the browser. The standalone suites pass 274 Python tests and 82 JavaScript tests in total, including root-page assets, app-specific API requests, rejection of unrelated app endpoints, and isolated database schemas.
 
-The new projects are verified separately: Bytecode Atelier has 11 JavaScript tests and one Python server test; Causal Post has 11 JavaScript tests and one Python server test; Frame Garden has 10 JavaScript tests and one Python server test; Dispatch Room has 17 Python tests including a separate worker process; Language Lens has nine JavaScript tests and one Python server test; Prefix Atlas has 11 Python tests; Signal Study has 10 JavaScript tests and one Python server test; Proof Parcel has nine JavaScript tests and one Python server test; Ray Room has nine JavaScript tests and one Python server test; Allocation Desk has 11 Python tests including exhaustive small-network optimization oracles; Index Press has 13 Python tests covering ranking, transactions, concurrency, persistence, and API boundaries; Terrain Pilot has 10 JavaScript tests and one Python server test. All have browser-verified workflows. Their READMEs describe the checks and model limitations.
+The new projects are verified separately: Bytecode Atelier has 11 JavaScript tests and one Python server test; Causal Post has 11 JavaScript tests and one Python server test; Frame Garden has 10 JavaScript tests and one Python server test; Dispatch Room has 17 Python tests including a separate worker process; Language Lens has nine JavaScript tests and one Python server test; Prefix Atlas has 11 Python tests; Signal Study has 10 JavaScript tests and one Python server test; Proof Parcel has nine JavaScript tests and one Python server test; Ray Room has nine JavaScript tests and one Python server test; Allocation Desk has 11 Python tests including exhaustive small-network optimization oracles; Index Press has 13 Python tests covering ranking, transactions, concurrency, persistence, and API boundaries; Terrain Pilot has 10 JavaScript tests and one Python server test; Clause Cabinet has 10 JavaScript tests and one Python server test. All have browser-verified workflows. Their READMEs describe the checks and model limitations.
 
 ## Local workspace
 
