@@ -21,6 +21,15 @@ All 16 applications have independent local Git repositories. **16 are published 
 | Reliability Desk | [reliability-desk](https://github.com/Michaelhoang8/reliability-desk) | Published · public |
 | REST Studio | [rest-studio](https://github.com/Michaelhoang8/rest-studio) | Published · public |
 
+## New independent projects
+
+These projects were built independently after the original 16-app extraction. Each has its own public repository, interface, core implementation, tests, documentation, and CI.
+
+| Application | Field | Focus | Publication status |
+| --- | --- | --- | --- |
+| [Bytecode Atelier](https://github.com/Michaelhoang8/bytecode-atelier) | Compilers | Arithmetic compiler, constant folding, and reversible stack VM | Published · public |
+| [Causal Post](https://github.com/Michaelhoang8/causal-post) | Distributed systems | Vector clocks, network faults, and replayable causal histories | Published · public |
+
 ## Run an app
 
 From an app repository, run `python run.py` and open http://127.0.0.1:8000/. Use `--port 8001` to run another app alongside it. REST Studio additionally requires `PORTFOLIO_API_KEY`. Each README provides its setup and verification commands.
@@ -29,10 +38,12 @@ From an app repository, run `python run.py` and open http://127.0.0.1:8000/. Use
 
 All 16 apps were exercised in the browser. The standalone suites pass 274 Python tests and 82 JavaScript tests in total, including root-page assets, app-specific API requests, rejection of unrelated app endpoints, and isolated database schemas.
 
+The new projects are verified separately: Bytecode Atelier has 11 JavaScript tests and one Python server test; Causal Post has 11 JavaScript tests and one Python server test. Both have browser-verified workflows. Their READMEs describe the checks and model limitations.
+
 ## Local workspace
 
 The local repositories are under `outputs/standalone-apps/` beside the original `outputs/portfolio-lab/` folder. The standalone directory contains `publish_remaining.py`; running it with an authenticated GitHub CLI publishes prepared repositories, stops on the first failure, and does not retry rate limits automatically.
 
 ## Migration source
 
-Portfolio Lab is retained as the original combined implementation and development history. New app work belongs in the respective standalone repository. Each standalone repository starts with an explicit extraction commit and links to its source commit. Existing runtime databases were not copied or removed.
+Portfolio Lab is retained as the original combined implementation and development history. New app work belongs in the respective standalone repository. The original 16 standalone repositories start with explicit extraction commits and link to their source commit; the new independent projects have their own implementation history. Existing runtime databases were not copied or removed.
