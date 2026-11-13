@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Palette Proof](https://github.com/Michaelhoang8/palette-proof) | Combinatorial optimization | Bounded exact graph coloring, verified assignments, clique witnesses, conflict editing, and honest unresolved bounds | Published · public |
 | [Servo Notes](https://github.com/Michaelhoang8/servo-notes) | Embedded control systems | Sampled PID and anti-windup comparisons, exact plant updates, delay, disturbances, and reproducible trace evidence | Published · public |
 | [Branch Archive](https://github.com/Michaelhoang8/branch-archive) | Data structures and indexing | B-tree insertion and deletion repairs, range queries, immutable replay, branching, and invariant evidence | Published · public |
 | [Quota Quay](https://github.com/Michaelhoang8/quota-quay) | Backend admission control | Atomic SQLite token buckets, idempotent decisions, exact refill accounting, concurrent admission, and replay audit | Published · public |
