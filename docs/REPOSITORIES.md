@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Reward Atlas](https://github.com/Michaelhoang8/reward-atlas) | Off-policy machine learning evaluation | Importance-weighted and doubly robust estimates, support diagnostics, clipping, and reproducible bootstrap evidence | Published · public |
 | [Perspective Post](https://github.com/Michaelhoang8/perspective-post) | Projective computer vision | Four-corner image rectification, normalized homographies, alpha-aware sampling, and reproducible PNG evidence | Published · public |
 | [Journal Balance](https://github.com/Michaelhoang8/journal-balance) | Transactional ledger systems | Balanced integer postings, optimistic concurrency, exact retries, immutable reversals, and historical audit evidence | Published · public |
 | [Match Folio](https://github.com/Michaelhoang8/match-folio) | Algorithmic game theory | Capacity-aware deferred acceptance, proposal replay, blocking-pair witnesses, and exhaustive stable outcomes | Published · public |
