@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Wavelet Loom](https://github.com/Michaelhoang8/wavelet-loom) | Multiresolution image processing | Haar image decomposition, detail selection, quantized reconstruction, and portable sparse coefficient files | Published · public |
 | [Route Chorus](https://github.com/Michaelhoang8/route-chorus) | Network routing convergence | Distance-vector failure replay, poisoned advertisements, forwarding-loop inspection, and independent route evidence | Published · public |
 | [Cursor Cabinet](https://github.com/Michaelhoang8/cursor-cabinet) | Database API pagination | Signed snapshot-bound keyset cursors, immutable records, concurrent retries, and inspectable SQL evidence | Published · public |
 | [Axis Orchard](https://github.com/Michaelhoang8/axis-orchard) | Dimensionality reduction and numerical linear algebra | Inspectable PCA, scaling comparisons, projected observations, reconstruction errors, and numerical evidence | Published · public |
