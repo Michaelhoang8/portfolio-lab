@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Range Cabinet](https://github.com/Michaelhoang8/range-cabinet) | HTTP protocol engineering | Immutable byte objects, conditional validators, single-range retrieval, and actual response evidence | Published · public |
 | [Runway Store](https://github.com/Michaelhoang8/runway-store) | Storage engine internals | Fsynced WAL records, immutable sorted runs, atomic manifests, compaction, and process-exit recovery | Published · public |
 | [Envelope Room](https://github.com/Michaelhoang8/envelope-room) | Applied cryptography | Authenticated local file encryption, strict envelope parsing, tamper rejection, and cross-API recovery tests | Published · public |
 | [Density Garden](https://github.com/Michaelhoang8/density-garden) | Unsupervised machine learning | Editable DBSCAN studies, explicit border ambiguity, spatial neighborhoods, and clustering evidence | Published · public |
