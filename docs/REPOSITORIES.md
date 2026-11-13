@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Density Garden](https://github.com/Michaelhoang8/density-garden) | Unsupervised machine learning | Editable DBSCAN studies, explicit border ambiguity, spatial neighborhoods, and clustering evidence | Published · public |
 | [Sum Ledger](https://github.com/Michaelhoang8/sum-ledger) | Numerical precision | Exact binary summation, compensated algorithms, prefix rounding inspection, and independent rational verification | Published · public |
 | [Parcel Relay](https://github.com/Michaelhoang8/parcel-relay) | Transactional messaging | Atomic sender outboxes, idempotent receiver effects, injected delivery failures, and replay evidence | Published · public |
 | [Dominance Desk](https://github.com/Michaelhoang8/dominance-desk) | Compiler control-flow analysis | Dominator trees, natural loops, critical edges, fixed-point replay, and iterated-frontier phi candidates | Published · public |
