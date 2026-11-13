@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Branch Archive](https://github.com/Michaelhoang8/branch-archive) | Data structures and indexing | B-tree insertion and deletion repairs, range queries, immutable replay, branching, and invariant evidence | Published · public |
 | [Quota Quay](https://github.com/Michaelhoang8/quota-quay) | Backend admission control | Atomic SQLite token buckets, idempotent decisions, exact refill accounting, concurrent admission, and replay audit | Published · public |
 | [Hidden Score](https://github.com/Michaelhoang8/hidden-score) | Probabilistic inference | Log-domain HMM filtering, smoothing, Viterbi decoding, seeded observations, and posterior evidence | Published · public |
 | [Coherence Choir](https://github.com/Michaelhoang8/coherence-choir) | Computer architecture | MESI replay, dirty ownership, false sharing, trace branching, and invariant evidence | Published · public |
