@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Coherence Choir](https://github.com/Michaelhoang8/coherence-choir) | Computer architecture | MESI replay, dirty ownership, false sharing, trace branching, and invariant evidence | Published · public |
 | [Slope Studio](https://github.com/Michaelhoang8/slope-studio) | Automatic differentiation and optimization | Reverse-mode tapes, numerical gradient diagnostics, optimizer trajectories, and reproducible loss landscapes | Published · public |
 | [State Lantern](https://github.com/Michaelhoang8/state-lantern) | Temporal model checking | Exact CTL fixed points, nested-property inspection, finite witnesses, and repeatable liveness counterexamples | Published · public |
 | [Window Foundry](https://github.com/Michaelhoang8/window-foundry) | Stream processing | Durable event-time windows, atomic retry-safe ingestion, explicit watermarks, late arrivals, and projection recovery | Published · public |
