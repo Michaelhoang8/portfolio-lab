@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Root Register](https://github.com/Michaelhoang8/root-register) | Numerical computing | Four root-finding methods, bracket safeguards, convergence diagnostics, iteration replay, and reproducible numerical evidence | Published · public |
 | [Lock Orchard](https://github.com/Michaelhoang8/lock-orchard) | Database concurrency | Strong strict two-phase locking, deadlock witnesses, buffered writes, rollback, and branching schedule replay | Published · public |
 | [Contract Cove](https://github.com/Michaelhoang8/contract-cove) | API contract evolution | Exact flat-contract compatibility, verified JSON counterexamples, immutable revisions, and optimistic publication | Published · public |
 | [Palette Proof](https://github.com/Michaelhoang8/palette-proof) | Combinatorial optimization | Bounded exact graph coloring, verified assignments, clique witnesses, conflict editing, and honest unresolved bounds | Published · public |
