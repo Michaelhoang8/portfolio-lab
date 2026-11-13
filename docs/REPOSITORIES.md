@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Suffix Folio](https://github.com/Michaelhoang8/suffix-folio) | Text indexing and string algorithms | Unicode suffix arrays, repeated-passage analysis, construction rounds, and binary-search evidence | Published · public |
 | [Fork Pages](https://github.com/Michaelhoang8/fork-pages) | Operating-system memory management | Copy-on-write forks, reference-counted frames, translation-cache invalidation, and branching memory replay | Published · public |
 | [Rescue Stripe](https://github.com/Michaelhoang8/rescue-stripe) | Erasure coding and resilient storage | Systematic Reed-Solomon shards, explicit erasures, verified reconstruction, and portable shard repair | Published · public |
 | [Range Cabinet](https://github.com/Michaelhoang8/range-cabinet) | HTTP protocol engineering | Immutable byte objects, conditional validators, single-range retrieval, and actual response evidence | Published · public |
