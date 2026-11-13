@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Chance & Choice](https://github.com/Michaelhoang8/chance-and-choice) | Bayesian experimentation | Reproducible Beta posterior comparisons, practical-effect probabilities, expected regret, and independently verified sample exports | Published · public |
 | [Quorum Chamber](https://github.com/Michaelhoang8/quorum-chamber) | Distributed consensus | Single-decree Paxos, controlled message failures, persistent simulated promises, quorum witnesses, and branching replay | Published · public |
 | [Grammar Gallery](https://github.com/Michaelhoang8/grammar-gallery) | Compiler parser construction | LR item automata, nullable and FIRST/FOLLOW sets, explicit SLR conflicts, and shift-reduce replay | Published · public |
 | [Wavelet Loom](https://github.com/Michaelhoang8/wavelet-loom) | Multiresolution image processing | Haar image decomposition, detail selection, quantized reconstruction, and portable sparse coefficient files | Published · public |
