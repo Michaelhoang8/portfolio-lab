@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Route Chorus](https://github.com/Michaelhoang8/route-chorus) | Network routing convergence | Distance-vector failure replay, poisoned advertisements, forwarding-loop inspection, and independent route evidence | Published · public |
 | [Cursor Cabinet](https://github.com/Michaelhoang8/cursor-cabinet) | Database API pagination | Signed snapshot-bound keyset cursors, immutable records, concurrent retries, and inspectable SQL evidence | Published · public |
 | [Axis Orchard](https://github.com/Michaelhoang8/axis-orchard) | Dimensionality reduction and numerical linear algebra | Inspectable PCA, scaling comparisons, projected observations, reconstruction errors, and numerical evidence | Published · public |
 | [Suffix Folio](https://github.com/Michaelhoang8/suffix-folio) | Text indexing and string algorithms | Unicode suffix arrays, repeated-passage analysis, construction rounds, and binary-search evidence | Published · public |
