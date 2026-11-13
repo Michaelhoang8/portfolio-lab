@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Regex Kiln](https://github.com/Michaelhoang8/regex-kiln) | Language processing and automata | Thompson NFA compilation, Unicode full matching, active-state replay, bounded work diagnostics, and DOT exports | Published · public |
 | [Slot Ledger](https://github.com/Michaelhoang8/slot-ledger) | Concurrent backend systems | Atomic capacity reservations, half-open interval sweeps, idempotent requests, versioned cancellations, and occupancy evidence | Published · public |
 | [Root Register](https://github.com/Michaelhoang8/root-register) | Numerical computing | Four root-finding methods, bracket safeguards, convergence diagnostics, iteration replay, and reproducible numerical evidence | Published · public |
 | [Lock Orchard](https://github.com/Michaelhoang8/lock-orchard) | Database concurrency | Strong strict two-phase locking, deadlock witnesses, buffered writes, rollback, and branching schedule replay | Published · public |
