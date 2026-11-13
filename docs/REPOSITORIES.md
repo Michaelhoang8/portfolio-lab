@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Perspective Post](https://github.com/Michaelhoang8/perspective-post) | Projective computer vision | Four-corner image rectification, normalized homographies, alpha-aware sampling, and reproducible PNG evidence | Published · public |
 | [Journal Balance](https://github.com/Michaelhoang8/journal-balance) | Transactional ledger systems | Balanced integer postings, optimistic concurrency, exact retries, immutable reversals, and historical audit evidence | Published · public |
 | [Match Folio](https://github.com/Michaelhoang8/match-folio) | Algorithmic game theory | Capacity-aware deferred acceptance, proposal replay, blocking-pair witnesses, and exhaustive stable outcomes | Published · public |
 | [Sketch Census](https://github.com/Michaelhoang8/sketch-census) | Probabilistic stream analytics | Mergeable HyperLogLog sketches, exact-reference comparisons, register inspection, and portable count evidence | Published · public |
