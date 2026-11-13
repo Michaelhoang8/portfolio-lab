@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Threshold Note](https://github.com/Michaelhoang8/threshold-note) | Applied cryptography | Threshold byte sharing over GF(257), unbiased randomness, exact reconstruction, and explicit corruption/consistency boundaries | Published · public |
 | [Cable Census](https://github.com/Michaelhoang8/cable-census) | Graph optimization and resilience | Minimum spanning forests, essential-link classification, outage sensitivity, constrained alternatives, and verified graph evidence | Published · public |
 | [Fair Slice](https://github.com/Michaelhoang8/fair-slice) | Network scheduling | FIFO and round-robin comparisons, weighted deficit credits, partial-byte accounting, latency summaries, and transmission evidence | Published · public |
 | [Regex Kiln](https://github.com/Michaelhoang8/regex-kiln) | Language processing and automata | Thompson NFA compilation, Unicode full matching, active-state replay, bounded work diagnostics, and DOT exports | Published · public |
