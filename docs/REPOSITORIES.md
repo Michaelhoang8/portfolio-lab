@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Orbit Almanac](https://github.com/Michaelhoang8/orbit-almanac) | Numerical dynamics | Orbital integrator comparisons, conservation diagnostics, trajectory playback, and portable experiments | Published · public |
 | [Pattern Current](https://github.com/Michaelhoang8/pattern-current) | String algorithms | Streaming Aho-Corasick search, exact aggregate counts, Unicode offsets, and failure-link inspection | Published · public |
 | [Merge Grove](https://github.com/Michaelhoang8/merge-grove) | Replicated data structures | Observed-remove sets, PN counters, fault-controlled snapshot delivery, and historical replay | Published · public |
 | [Point Envelope](https://github.com/Michaelhoang8/point-envelope) | Computational geometry | Editable point clouds, exact hull predicates, caliper diameters, and oriented enclosing rectangles | Published · public |
