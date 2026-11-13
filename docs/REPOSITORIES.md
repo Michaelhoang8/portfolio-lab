@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Motion Margin](https://github.com/Michaelhoang8/motion-margin) | State estimation and probabilistic robotics | Joseph-form Kalman filtering, retrospective smoothing, innovation gating, editable observations, and independently verified covariance evidence | Published · public |
 | [Lease Beacon](https://github.com/Michaelhoang8/lease-beacon) | Backend coordination and fenced writes | Atomic expiring leases, increasing fencing tokens, versioned documents, delayed-client scenarios, and durable retry receipts | Published · public |
 | [Dither Dispatch](https://github.com/Michaelhoang8/dither-dispatch) | Digital image processing and quantization | Palette comparisons, ordered thresholds, audited error diffusion, pixel inspection, and reproducible image exports | Published · public |
 | [Cut Current](https://github.com/Michaelhoang8/cut-current) | Network optimization and flow certificates | Directed maximum flow, residual cancellation replay, minimum-cut witnesses, and independently verified edge sensitivity | Published · public |
