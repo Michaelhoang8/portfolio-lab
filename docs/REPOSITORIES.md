@@ -27,6 +27,7 @@ These projects were built independently after the original 16-app extraction. Ea
 
 | Application | Field | Focus | Publication status |
 | --- | --- | --- | --- |
+| [Rescue Stripe](https://github.com/Michaelhoang8/rescue-stripe) | Erasure coding and resilient storage | Systematic Reed-Solomon shards, explicit erasures, verified reconstruction, and portable shard repair | Published · public |
 | [Range Cabinet](https://github.com/Michaelhoang8/range-cabinet) | HTTP protocol engineering | Immutable byte objects, conditional validators, single-range retrieval, and actual response evidence | Published · public |
 | [Runway Store](https://github.com/Michaelhoang8/runway-store) | Storage engine internals | Fsynced WAL records, immutable sorted runs, atomic manifests, compaction, and process-exit recovery | Published · public |
 | [Envelope Room](https://github.com/Michaelhoang8/envelope-room) | Applied cryptography | Authenticated local file encryption, strict envelope parsing, tamper rejection, and cross-API recovery tests | Published · public |
